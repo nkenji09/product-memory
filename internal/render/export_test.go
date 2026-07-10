@@ -151,6 +151,13 @@ func TestExportHTML_WritesSelfContainedIndexHTML(t *testing.T) {
 	if _, ok := data.Spec["subject.auth"]; !ok {
 		t.Fatal("baked spec missing subject.auth")
 	}
+
+	if len(data.Tags) != 2 {
+		t.Fatalf("baked tags = %+v, want 2 entries (subject.auth, req.auth-happy)", data.Tags)
+	}
+	if len(data.Vocab) != 2 {
+		t.Fatalf("baked vocab = %+v, want 2 entries (act.user.login, eff.session.issue)", data.Vocab)
+	}
 }
 
 func TestExportHTML_CreatesTargetDir(t *testing.T) {
