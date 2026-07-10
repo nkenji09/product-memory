@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { api } from '../api';
+import { api, isStaticMode } from '../api';
 import type { Config } from '../types';
 
 function toCsv(arr: string[]): string {
@@ -66,31 +66,33 @@ export function ConfigView() {
   return (
     <main class="config-view">
       <h2>config</h2>
-      <form onSubmit={onSubmit}>
+      {isStaticMode && <p class="dim">静的版（pmem export --html）では config は読み取り専用です</p>}
+      <form onSubmit={onSubmit} inert={isStaticMode}>
         <label>
           tagKinds (comma-separated)
-          <input value={tagKinds} onInput={(e) => setTagKinds((e.target as HTMLInputElement).value)} />
+          <input value={tagKinds} onInput={(e) => setTagKinds((e.target as HTMLInputElement).value)} disabled={isStaticMode} />
         </label>
         <label>
           facetKinds (comma-separated)
-          <input value={facetKinds} onInput={(e) => setFacetKinds((e.target as HTMLInputElement).value)} />
+          <input value={facetKinds} onInput={(e) => setFacetKinds((e.target as HTMLInputElement).value)} disabled={isStaticMode} />
         </label>
         <label>
           traceabilityKinds (comma-separated)
           <input
             value={traceabilityKinds}
             onInput={(e) => setTraceabilityKinds((e.target as HTMLInputElement).value)}
+            disabled={isStaticMode}
           />
         </label>
         <label>
           roots (comma-separated)
-          <input value={roots} onInput={(e) => setRoots((e.target as HTMLInputElement).value)} />
+          <input value={roots} onInput={(e) => setRoots((e.target as HTMLInputElement).value)} disabled={isStaticMode} />
         </label>
         <label>
           viewer.port
-          <input value={port} onInput={(e) => setPort((e.target as HTMLInputElement).value)} />
+          <input value={port} onInput={(e) => setPort((e.target as HTMLInputElement).value)} disabled={isStaticMode} />
         </label>
-        <button type="submit">保存</button>
+        {!isStaticMode && <button type="submit">保存</button>}
       </form>
       {error && <p class="error">{error}</p>}
       {message && <p>{message}</p>}

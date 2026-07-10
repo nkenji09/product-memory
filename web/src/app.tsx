@@ -1,13 +1,15 @@
 import { useState } from 'preact/hooks';
+import { isStaticMode } from './api';
 import { Sidebar } from './components/Sidebar';
 import { TransitionList } from './components/TransitionList';
 import { TransitionDetailPanel } from './components/TransitionDetail';
 import { ConfigView } from './components/ConfigView';
 import { TraceabilityView } from './components/TraceabilityView';
 import { SearchBox } from './components/SearchBox';
+import { CompareView } from './components/CompareView';
 
 export function App() {
-  const [view, setView] = useState<'browse' | 'traceability' | 'config'>('browse');
+  const [view, setView] = useState<'browse' | 'traceability' | 'compare' | 'config'>('browse');
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>(undefined);
   const [selectedTxId, setSelectedTxId] = useState<string | undefined>(undefined);
 
@@ -32,6 +34,11 @@ export function App() {
           >
             Traceability
           </button>
+          {!isStaticMode && (
+            <button type="button" class={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>
+              Compare
+            </button>
+          )}
           <button type="button" class={view === 'config' ? 'active' : ''} onClick={() => setView('config')}>
             Config
           </button>
@@ -56,6 +63,7 @@ export function App() {
           <TransitionDetailPanel txId={selectedTxId} />
         </div>
       )}
+      {view === 'compare' && !isStaticMode && <CompareView />}
       {view === 'config' && <ConfigView />}
     </>
   );

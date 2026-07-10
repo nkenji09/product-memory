@@ -311,3 +311,96 @@ pre {
   width: auto;
   border: 1px solid var(--border);
 }
+
+.compare {
+  padding: 1em;
+  overflow-y: auto;
+  max-width: 720px;
+}
+
+.compare-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8em;
+  margin-bottom: 1em;
+}
+
+.compare-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  flex: 1;
+}
+
+.compare-form input {
+  padding: 0.3em;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.compare-form button {
+  padding: 0.4em 1em;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+}
+
+.diff-section {
+  margin-bottom: 1.2em;
+}
+
+.diff-section h3 {
+  margin-bottom: 0.3em;
+}
+
+.diff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--mono);
+}
+
+.diff-list > li {
+  padding: 0.2em 0;
+}
+
+.diff-added {
+  color: #1a7f37;
+}
+
+.diff-removed {
+  color: var(--error);
+}
+
+.diff-changed {
+  color: #9a6700;
+}
+
+.diff-violation {
+  font-weight: bold;
+}
+
+.diff-sublist {
+  list-style: none;
+  margin: 0.2em 0 0.4em 1em;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 0.9em;
+  color: var(--text-dim);
+}
+
+.diff-badge {
+  display: inline-block;
+  margin-left: 0.6em;
+  padding: 0.1em 0.5em;
+  border-radius: 3px;
+  font-family: var(--sans);
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.diff-badge-reorder {
+  background: #fff3cd;
+  color: #9a6700;
+}
