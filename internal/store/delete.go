@@ -153,6 +153,46 @@ func (s *Store) RemoveTag(id string, force bool) (TagRemoveResult, error) {
 	return result, nil
 }
 
+// RemoveTransitionResult summarizes `pmem tx rm` (§6).
+type RemoveTransitionResult struct {
+	ID               string   `json:"id"`
+	Why              string   `json:"why"`
+	RemovedDecisions []string `json:"removedDecisions,omitempty"`
+}
+
+// RemoveTransition deletes a transition together with every decision that
+// targets it (§6 "破壊的...decisions も道連れ"). why is not persisted
+// anywhere — decisions are append-only records, not a place to log a
+// deletion rationale for a record that no longer exists — so it is only
+// echoed back to the caller for a stderr audit line.
+func (s *Store) RemoveTransition(id, why string) (RemoveTransitionResult, error) {
+	if !s.TransitionExists(id) {
+		return RemoveTransitionResult{}, fmt.Errorf("transition %q が見つかりません", id)
+	}
+	snap, err := s.LoadAll()
+	if err != nil {
+		return RemoveTransitionResult{}, err
+	}
+
+	var decisionIDs []string
+	for _, d := range snap.Decisions {
+		if d.Target.Type == model.DecisionTargetTransition && d.Target.ID == id {
+			decisionIDs = append(decisionIDs, d.ID)
+		}
+	}
+	sort.Strings(decisionIDs)
+
+	if err := os.Remove(s.transitionPath(id)); err != nil {
+		return RemoveTransitionResult{}, err
+	}
+	for _, dID := range decisionIDs {
+		if err := os.Remove(s.decisionPath(dID)); err != nil {
+			return RemoveTransitionResult{}, err
+		}
+	}
+	return RemoveTransitionResult{ID: id, Why: why, RemovedDecisions: decisionIDs}, nil
+}
+
 func containsID(list []string, want string) bool {
 	for _, v := range list {
 		if v == want {
