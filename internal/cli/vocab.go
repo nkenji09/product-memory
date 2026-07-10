@@ -9,5 +9,6 @@ func newVocabCmd() *cobra.Command {
 	}
 	cmd.AddCommand(newVocabAddCmd())
 	cmd.AddCommand(newVocabTagCmd())
+	cmd.AddCommand(newVocabRenameCmd())
 	return cmd
 }
