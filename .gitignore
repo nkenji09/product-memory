@@ -1,0 +1,7 @@
+# orchestration scratch (concierge ledger / worker handoff) — not part of the product
+_workspace/
+.concierge/
+
+# local build artifacts
+/pmem
+/dist/
