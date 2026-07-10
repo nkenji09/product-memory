@@ -205,3 +205,109 @@ pre {
   color: #fff;
   border-radius: 4px;
 }
+
+.layout-two {
+  grid-template-columns: 1fr 320px;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+  margin: 0 1em;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.3em 0.6em;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.2em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 10;
+  padding: 0.3em;
+}
+
+.search-results ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.search-result-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.3em 0.4em;
+  text-align: left;
+  border-radius: 4px;
+  font-family: var(--mono);
+}
+
+.search-result-row:hover {
+  background: var(--bg-alt);
+}
+
+.search-matched-on {
+  font-family: var(--sans);
+  font-size: 0.85em;
+}
+
+.traceability {
+  padding: 1em;
+  overflow-y: auto;
+}
+
+.traceability-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.traceability-entry {
+  padding: 0.5em;
+  border-bottom: 1px solid var(--border);
+}
+
+.traceability-entry.gap {
+  background: #fdf0ee;
+}
+
+.traceability-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.gap-badge {
+  color: var(--error);
+  font-weight: bold;
+}
+
+.satisfied-tx-list {
+  list-style: none;
+  margin: 0.3em 0 0;
+  padding: 0 0 0 1em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
+
+.satisfied-tx-list .tx-row {
+  width: auto;
+  border: 1px solid var(--border);
+}

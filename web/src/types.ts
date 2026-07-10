@@ -140,3 +140,19 @@ export interface DiffResult {
   transitions: unknown;
   decisions: unknown;
 }
+
+export interface TraceabilityEntry {
+  tag: Tag;
+  satisfiedBy: string[];
+  gap: boolean;
+}
+
+export interface TraceabilityResponse {
+  kinds: string[];
+  entries: TraceabilityEntry[];
+}
+
+export interface SearchResult {
+  transitions: Transition[];
+  matchedOn: Record<string, string[]>;
+}

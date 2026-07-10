@@ -4,8 +4,10 @@ import type {
   DiffResult,
   FacetsResponse,
   LintResult,
+  SearchResult,
   SpecReport,
   Tag,
+  TraceabilityResponse,
   TransitionDetail,
   TransitionsResponse,
   VocabEntry,
@@ -57,6 +59,8 @@ export const api = {
     request<{ decisions: Decision[] }>('/api/rules' + query(params)),
   getLint: () => request<LintResult>('/api/lint'),
   getDiff: (ref?: string) => request<DiffResult>('/api/diff' + query({ ref })),
+  getTraceability: (kind?: string) => request<TraceabilityResponse>('/api/traceability' + query({ kind })),
+  search: (q: string) => request<SearchResult>('/api/search' + query({ q })),
 };
 
 export { ApiError };
