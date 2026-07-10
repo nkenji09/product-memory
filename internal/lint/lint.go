@@ -33,8 +33,7 @@ type Rule struct {
 	Check    func(snap store.Snapshot) []Finding
 }
 
-// Rules は Phase 0 で実装する error ルール一式（§5）。
-// warn/info ルール（requirement-gap 等）は未実装（Phase 1）だが、この枠組みに追加するだけで拡張できる。
+// Rules は §5 の error/warn/info ルール一式。error のみ lint の exit code を 1 にする（HasError）。
 var Rules = []Rule{
 	{Name: "vocab-ref", Severity: SeverityError, Check: checkVocabRef},
 	{Name: "kind-valid", Severity: SeverityError, Check: checkKindValid},
@@ -42,6 +41,10 @@ var Rules = []Rule{
 	{Name: "decision-target", Severity: SeverityError, Check: checkDecisionTarget},
 	{Name: "empty-then", Severity: SeverityError, Check: checkEmptyThen},
 	{Name: "id-unique", Severity: SeverityError, Check: checkIDUnique},
+	{Name: "requirement-gap", Severity: SeverityWarn, Check: checkRequirementGap},
+	{Name: "ref-freshness", Severity: SeverityWarn, Check: checkRefFreshness},
+	{Name: "decision-coverage", Severity: SeverityInfo, Check: checkDecisionCoverage},
+	{Name: "unused-vocab", Severity: SeverityInfo, Check: checkUnusedVocab},
 }
 
 // Run は全ルールを実行し、検出結果を返す。

@@ -31,10 +31,13 @@ func newLintCmd() *cobra.Command {
 			if asJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
+				errorCount, warnCount, infoCount := countBySeverity(findings)
 				out := struct {
 					Findings   []lint.Finding `json:"findings"`
 					ErrorCount int            `json:"errorCount"`
-				}{Findings: findings, ErrorCount: countErrors(findings)}
+					WarnCount  int            `json:"warnCount"`
+					InfoCount  int            `json:"infoCount"`
+				}{Findings: findings, ErrorCount: errorCount, WarnCount: warnCount, InfoCount: infoCount}
 				if err := enc.Encode(out); err != nil {
 					return err
 				}
@@ -58,11 +61,20 @@ func newLintCmd() *cobra.Command {
 }
 
 func countErrors(findings []lint.Finding) int {
-	n := 0
+	n, _, _ := countBySeverity(findings)
+	return n
+}
+
+func countBySeverity(findings []lint.Finding) (errorCount, warnCount, infoCount int) {
 	for _, f := range findings {
-		if f.Severity == lint.SeverityError {
-			n++
+		switch f.Severity {
+		case lint.SeverityError:
+			errorCount++
+		case lint.SeverityWarn:
+			warnCount++
+		case lint.SeverityInfo:
+			infoCount++
 		}
 	}
-	return n
+	return
 }
