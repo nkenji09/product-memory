@@ -28,6 +28,9 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newLintCmd())
 	cmd.AddCommand(newDecideCmd())
 	cmd.AddCommand(newRulesCmd())
+	cmd.AddCommand(newListCmd())
+	cmd.AddCommand(newSpecCmd())
+	cmd.AddCommand(newDiffCmd())
 
 	return cmd
 }
