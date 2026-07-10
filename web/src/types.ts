@@ -133,12 +133,57 @@ export interface LintResult {
   infoCount: number;
 }
 
+export interface Change<T> {
+  id: string;
+  before: T;
+  after: T;
+}
+
+export interface VocabDiff {
+  added?: VocabEntry[];
+  removed?: VocabEntry[];
+  changed?: Change<VocabEntry>[];
+}
+
+export interface TagDiff {
+  added?: Tag[];
+  removed?: Tag[];
+  changed?: Change<Tag>[];
+}
+
+export interface TransitionChange {
+  id: string;
+  before: Transition;
+  after: Transition;
+  actionChanged?: boolean;
+  givenAdded?: string[];
+  givenRemoved?: string[];
+  thenChanged?: boolean;
+  thenReordered?: boolean;
+  tagsAdded?: string[];
+  tagsRemoved?: string[];
+  testsAdded?: string[];
+  testsRemoved?: string[];
+}
+
+export interface TransitionDiff {
+  added?: Transition[];
+  removed?: Transition[];
+  changed?: TransitionChange[];
+}
+
+export interface DecisionDiff {
+  added?: Decision[];
+  removed?: Decision[];
+  changed?: Change<Decision>[];
+}
+
 export interface DiffResult {
   ref: string;
-  vocab: unknown;
-  tags: unknown;
-  transitions: unknown;
-  decisions: unknown;
+  vocab: VocabDiff;
+  tags: TagDiff;
+  transitions: TransitionDiff;
+  decisions: DecisionDiff;
 }
 
 export interface TraceabilityEntry {
@@ -155,4 +200,29 @@ export interface TraceabilityResponse {
 export interface SearchResult {
   transitions: Transition[];
   matchedOn: Record<string, string[]>;
+}
+
+export interface SearchCandidate {
+  label: string;
+  text: string;
+}
+
+export interface TransitionSearchDoc {
+  transitionId: string;
+  candidates: SearchCandidate[];
+}
+
+// PmemStaticData is what `pmem export --html` bakes into
+// `window.__PMEM_STATIC__` — the same shapes the live /api/* endpoints
+// return, precomputed for every input the SPA's read-only views can ask for
+// (§7). See web/src/api.ts for how this replaces fetch() in static mode.
+export interface PmemStaticData {
+  config: Config;
+  facets: FacetsResponse;
+  traceability: TraceabilityResponse;
+  transitionsByTag: Record<string, TransitionsResponse>;
+  transitionDetail: Record<string, TransitionDetail>;
+  searchCorpus: TransitionSearchDoc[];
+  lint: LintResult;
+  spec: Record<string, SpecReport>;
 }
