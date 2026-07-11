@@ -54,6 +54,15 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
   const [txList, setTxList] = useState<Transition[] | null>(null);
   const [txDetails, setTxDetails] = useState<Record<string, TransitionDetail>>({});
   const [error, setError] = useState<string | null>(null);
+  // Settled-count flags + per-item failure counts (review MINOR-1): readiness
+  // must not depend on "every fetch succeeded" — a single transient getSpec/
+  // getTransition failure must not hang the screen on "loading…" forever.
+  // Cards for failed items just don't render (report/detail stays
+  // undefined); a soft banner below surfaces that something didn't load.
+  const [tagsSettled, setTagsSettled] = useState(false);
+  const [specsSettled, setSpecsSettled] = useState(false);
+  const [tagsFailedCount, setTagsFailedCount] = useState(0);
+  const [specsFailedCount, setSpecsFailedCount] = useState(0);
 
   const [query, setQuery] = useState('');
   const [kindFacet, setKindFacet] = useState('all');
@@ -74,6 +83,10 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
     setFilters(initialFocusTagId ? [{ type: 'tag', id: initialFocusTagId }] : []);
     setOpenTx(initialFocusTxId ? { [initialFocusTxId]: true } : {});
     scrollTarget.current = initialFocusTagId || initialFocusTxId || null;
+    setTagsSettled(false);
+    setSpecsSettled(false);
+    setTagsFailedCount(0);
+    setSpecsFailedCount(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facet, initialFocusTagId, initialFocusTxId]);
 
@@ -101,8 +114,14 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
     ).then((pairs) => {
       if (cancelled) return;
       const next: Record<string, SpecReport> = {};
-      for (const [id, r] of pairs) if (r) next[id] = r;
+      let failed = 0;
+      for (const [id, r] of pairs) {
+        if (r) next[id] = r;
+        else failed++;
+      }
       setSpecReports(next);
+      setTagsFailedCount(failed);
+      setTagsSettled(true);
     });
     return () => {
       cancelled = true;
@@ -123,8 +142,14 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
       .then((details) => {
         if (cancelled || !details) return;
         const next: Record<string, TransitionDetail> = {};
-        for (const d of details) if (d) next[d.id] = d;
+        let failed = 0;
+        for (const d of details) {
+          if (d) next[d.id] = d;
+          else failed++;
+        }
         setTxDetails(next);
+        setSpecsFailedCount(failed);
+        setSpecsSettled(true);
       })
       .catch((err) => setError(String(err)));
     return () => {
@@ -132,8 +157,9 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
     };
   }, [facet]);
 
-  const tagsReady = facet === 'tags' && !!tags && Object.keys(specReports).length === tags.length;
-  const specsReady = facet === 'specs' && !!txList && Object.keys(txDetails).length === txList.length;
+  const tagsReady = facet === 'tags' && tagsSettled;
+  const specsReady = facet === 'specs' && specsSettled;
+  const failedCount = facet === 'tags' ? tagsFailedCount : specsFailedCount;
 
   useEffect(() => {
     const id = scrollTarget.current;
@@ -318,6 +344,7 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
           <h1>{title}</h1>
           <span class="dim">{subtitle}</span>
         </div>
+        {failedCount > 0 && <div class="browse-fetch-warning">{failedCount} 件の読み込みに失敗しました（表示されているカードは正常です。再読み込みで再試行できます）</div>}
         <div class="browse-card-list">{body}</div>
       </main>
     </div>
