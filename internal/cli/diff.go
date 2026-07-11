@@ -18,7 +18,7 @@ func newDiffCmd() *cobra.Command {
 		Short: "現在の作業ツリーと gitref（既定 HEAD）の semantic diff（§4）",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ref := "HEAD"
+			var ref string
 			if len(args) == 1 {
 				ref = args[0]
 			}
@@ -30,6 +30,10 @@ func newDiffCmd() *cobra.Command {
 			result, err := diff.Diff(s, ref)
 			if err != nil {
 				return err
+			}
+
+			if result.BaselineMissing {
+				fmt.Fprintf(cmd.ErrOrStderr(), "注記: %s にベースライン（.pmem）が見つかりません。初回とみなし、現在の全レコードを新規(added)として表示します。\n", result.Ref)
 			}
 
 			if asJSON {
