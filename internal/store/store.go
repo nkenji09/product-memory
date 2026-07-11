@@ -174,11 +174,6 @@ func (s *Store) TransitionExists(id string) bool {
 	return err == nil
 }
 
-func (s *Store) DecisionExists(id string) bool {
-	_, err := os.Stat(s.decisionPath(id))
-	return err == nil
-}
-
 // --- load / save ---
 
 func (s *Store) LoadConfig() (model.Config, error) {
