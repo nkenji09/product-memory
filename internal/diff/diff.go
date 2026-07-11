@@ -1,6 +1,7 @@
 package diff
 
 import (
+	"errors"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -67,6 +68,11 @@ type Result struct {
 	Tags        TagDiff        `json:"tags"`
 	Transitions TransitionDiff `json:"transitions"`
 	Decisions   DecisionDiff   `json:"decisions"`
+	// BaselineMissing は ref に既定値を使い（明示指定なし）、かつそのベースライン
+	// （HEAD のコミット or ref 上の .pmem）が単に存在しないためフォールバックした
+	// ことを示す（初回ユーザー向け。ユーザーが gitref を明示指定した場合はこの
+	// フォールバックは起きず、ベースライン欠落は通常どおりエラーになる）。
+	BaselineMissing bool `json:"baselineMissing,omitempty"`
 }
 
 // Empty は現在の作業ツリーと ref との間に意味のある差分が無いことを返す。
@@ -83,7 +89,12 @@ func (r Result) DecisionViolation() bool {
 }
 
 // Diff は現在の作業ツリー（s の .pmem/）と gitref（既定 "HEAD"）の semantic diff を計算する（§4）。
+// ref を空文字にすると「ユーザーが gitref を明示指定していない」既定呼び出しとして扱われ、
+// ベースライン（HEAD のコミット or ref 上の .pmem）が単に存在しない場合はエラーにせず空
+// ベースラインにフォールバックする（現在の全レコードが added として表示される）。ref を
+// 明示的に渡した場合はベースライン欠落も含めて従来どおりエラーを返す。
 func Diff(s *store.Store, ref string) (Result, error) {
+	explicit := ref != ""
 	if ref == "" {
 		ref = "HEAD"
 	}
@@ -103,9 +114,15 @@ func Diff(s *store.Store, ref string) (Result, error) {
 		return Result{}, err
 	}
 
+	var baselineMissing bool
 	before, err := loadRefSnapshot(repoRootResolved, relDir, ref)
 	if err != nil {
-		return Result{}, err
+		var missing *baselineMissingError
+		if explicit || !errors.As(err, &missing) {
+			return Result{}, err
+		}
+		before = refSnapshot{}
+		baselineMissing = true
 	}
 
 	working, err := s.LoadAll()
@@ -119,7 +136,9 @@ func Diff(s *store.Store, ref string) (Result, error) {
 		Decisions:   working.Decisions,
 	}
 
-	return compute(ref, before, after), nil
+	result := compute(ref, before, after)
+	result.BaselineMissing = baselineMissing
+	return result, nil
 }
 
 func compute(ref string, before, after refSnapshot) Result {
