@@ -27,6 +27,10 @@ pmem の主目的は**バグの早期検知ではない**。次の 2 つ:
 pmem は任意の repo・任意の言語・任意の AI エージェントで動くスタンドアロン CLI（単一バイナリ、ランタイム前提ゼロ）。
 記録は repo 内の素の JSON としてコードと同じ版で版管理される。
 
+新規プロジェクトへの導入直後の「初回 config セットアップ」（tagKinds/facetKinds/traceabilityKinds を
+プロダクトに仕立て、初期 vocab/tags を撒く）は [pmem-config-setup スキル](../pmem-config-setup/SKILL.md) へ。
+このスキルは日々の読み書きの範囲。
+
 ## 基本フロー（記録する）
 
 ```
