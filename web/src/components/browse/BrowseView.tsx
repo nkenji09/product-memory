@@ -331,17 +331,30 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
     return { label: v?.label || f.id, color: kindColor(v?.category), onRemove: () => removeFilter(i) };
   });
 
-  // Combobox candidates (2026-07-11 tweaks3 §3): every tag/vocab entry
-  // already loaded (this view's own `tags` state, and the app-wide vocab
-  // lookup — both plain lists Go already returned, no relationship
-  // recomputation), minus whichever are already an active AND condition.
+  // Combobox candidates (2026-07-11 tweaks3 §3, narrowed 2026-07-11 tweaks4
+  // §1): every tag/vocab entry already loaded (this view's own `tags`
+  // state, and the app-wide vocab lookup — both plain lists Go already
+  // returned, no relationship recomputation), minus whichever are already
+  // an active AND condition, minus whichever would leave zero results if
+  // added — reusing the exact tagMatchesFilters/specMatchesFilters
+  // membership functions the visible-list computation above already calls
+  // (§7/§9: no new relationship logic, just asking the same question — "does
+  // this filter set match anything" — for one more filter than what's
+  // currently applied).
   const activeFilterKeys = new Set(filters.map((f) => `${f.type}:${f.id}`));
+  const wouldMatchAny = (candidate: FilterCondition): boolean => {
+    const testFilters = [...filters, candidate];
+    if (facet === 'tags') {
+      return tags.some((t) => tagMatchesFilters(t, testFilters, facetsData.trees));
+    }
+    return Object.values(txDetails).some((d) => specMatchesFilters(d, testFilters));
+  };
   const suggestions: SuggestionItem[] = [
     ...tags
-      .filter((t) => !activeFilterKeys.has(`tag:${t.id}`))
+      .filter((t) => !activeFilterKeys.has(`tag:${t.id}`) && wouldMatchAny({ type: 'tag', id: t.id }))
       .map((t) => ({ id: t.id, label: t.name || t.id, color: kindColor(t.kind), kindLabel: strings.nav.tags, onSelect: () => addFilter({ type: 'tag', id: t.id }) })),
     ...Array.from(vocabById.values())
-      .filter((v) => !activeFilterKeys.has(`vocab:${v.id}`))
+      .filter((v) => !activeFilterKeys.has(`vocab:${v.id}`) && wouldMatchAny({ type: 'vocab', id: v.id }))
       .map((v) => ({
         id: v.id,
         label: v.label || v.id,

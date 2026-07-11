@@ -120,9 +120,17 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   // entries — Vocab's own entries have no self-filter affordance (see
   // VocabCard.tsx's onFilterSelf comment), so there's nothing meaningful a
   // vocab suggestion would do here that clicking the card itself doesn't
-  // already do.
+  // already do. Narrowed further (2026-07-11 tweaks4 §1) to only tags that
+  // would leave ≥1 entry visible if added — reusing the same category-facet
+  // + tagFilters membership test `visible` above already runs, just with
+  // one more candidate tag appended (no new relationship logic, §7/§9).
+  const categoryPool = vocab.filter((v) => categoryFacet === 'all' || v.category === categoryFacet);
+  const tagWouldMatchAny = (tagId: string): boolean => {
+    const testFilters = [...tagFilters, tagId];
+    return categoryPool.some((v) => testFilters.every((id) => (v.tags || []).includes(id)));
+  };
   const suggestions: SuggestionItem[] = Array.from(tagById.values())
-    .filter((t) => !tagFilters.includes(t.id))
+    .filter((t) => !tagFilters.includes(t.id) && tagWouldMatchAny(t.id))
     .map((t) => ({ id: t.id, label: t.name || t.id, color: kindColor(t.kind), kindLabel: strings.nav.tags, onSelect: () => addTagFilter(t.id) }));
 
   return (
