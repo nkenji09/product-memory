@@ -1,6 +1,7 @@
 import { createContext } from 'preact';
 import type { ComponentChildren } from 'preact';
 import { useContext, useEffect, useState } from 'preact/hooks';
+import { useBodyScrollLock } from './scrollLock';
 
 // Off-canvas rail / sticky-rail responsive state (design reference
 // pmem-viewer.dc.html: componentDidMount's `this.mql`, ~line 640, and the
@@ -48,33 +49,10 @@ export function DrawerProvider({ children }: { children: ComponentChildren }) {
   }, []);
 
   // Lock background scroll while the drawer is open on narrow viewports
-  // (2026-07-11 tweaks5 §6). `overflow:hidden` alone doesn't stop iOS
-  // Safari's rubber-band scroll from reaching content behind a fixed
-  // overlay ("scroll-through") — pinning <body> itself with
-  // position:fixed at its current scroll offset is the standard
-  // workaround, so it's restored (scrolled back to the same position)
-  // when the drawer closes instead of jumping to the top.
-  useEffect(() => {
-    if (!(isNarrow && drawerOpen)) return;
-    const scrollY = window.scrollY;
-    const body = document.body.style;
-    const prev = { position: body.position, top: body.top, left: body.left, right: body.right, width: body.width, overflow: body.overflow };
-    body.position = 'fixed';
-    body.top = `-${scrollY}px`;
-    body.left = '0';
-    body.right = '0';
-    body.width = '100%';
-    body.overflow = 'hidden';
-    return () => {
-      body.position = prev.position;
-      body.top = prev.top;
-      body.left = prev.left;
-      body.right = prev.right;
-      body.width = prev.width;
-      body.overflow = prev.overflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, [isNarrow, drawerOpen]);
+  // (2026-07-11 tweaks5 §6; extracted into a shared hook in #20 so
+  // CommentPanel can lock the same way — see scrollLock.ts's doc comment
+  // for why this doesn't also kill the drawer's own internal scroll).
+  useBodyScrollLock(isNarrow && drawerOpen);
 
   const value: Drawer = {
     isNarrow,

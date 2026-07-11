@@ -1,6 +1,7 @@
 import { useComments, RECORD_TYPE_META } from './useComments';
 import type { CommentRecord } from './useComments';
 import { Icon } from '../shared/Icon';
+import { useBodyScrollLock } from '../../scrollLock';
 
 interface Props {
   onGoto: (c: CommentRecord) => void;
@@ -49,6 +50,11 @@ export function CommentPanel({ onGoto }: Props) {
     copyMsg,
     copyAll,
   } = useComments();
+
+  // Locks background scroll while the panel is open — unlike BrowseRail's
+  // drawer, CommentPanel is a fixed slide-over at every viewport width (not
+  // narrow-only), so the lock isn't gated on isNarrow (#20 drawerscroll fix).
+  useBodyScrollLock(panelOpen);
 
   if (!panelOpen) return null;
 

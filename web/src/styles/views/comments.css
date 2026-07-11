@@ -16,6 +16,11 @@
   right: 0;
   width: 92%;
   max-width: 400px;
+  /* Explicit, not implicit `auto` (#20 drawerscroll fix — same root cause
+     as .browse-rail-narrow in browse.css): without this, the panel grows
+     to fit its content instead of being clipped to the viewport, leaving
+     .comment-panel-body's overflow-y:auto nothing to actually scroll. */
+  height: calc(100dvh - 56px);
   z-index: 80;
   background: var(--lm-bg);
   border-left: 1px solid var(--lm-border);
@@ -99,6 +104,11 @@
 .comment-panel-body {
   flex: 1;
   overflow-y: auto;
+  /* Same rationale as .browse-rail in browse.css (#20 drawerscroll fix):
+     keeps this panel's own touch-scroll working while <body> is pinned via
+     useBodyScrollLock for the background lock. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: var(--sp-4);
   display: flex;
   flex-direction: column;

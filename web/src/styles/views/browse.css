@@ -28,6 +28,13 @@
   flex-direction: column;
   gap: var(--sp-4);
   overflow-y: auto;
+  /* Keeps the rail's own touch-scroll working while the off-canvas drawer
+     variant is open and <body> is pinned via useBodyScrollLock (#20
+     drawerscroll fix) — without these, WebKit can fail to recognize this
+     as an independently touch-scrollable region once the background is
+     locked, killing scroll everywhere including inside the drawer itself. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   position: sticky;
   top: var(--header-h, 56px);
   align-self: flex-start;
@@ -41,7 +48,15 @@
   left: 0;
   width: 86%;
   max-width: 340px;
-  height: auto;
+  /* Explicit, not `auto` (#20 drawerscroll fix): a `position:fixed` box
+     with `top`+`bottom` set and `height:auto` is *supposed* to resolve to
+     the space between them per CSS2.1 10.6.4, but this combination (with
+     a flex-column, overflow-y:auto box) was observed growing to fit its
+     content instead of being clipped — leaving nothing for overflow-y to
+     scroll, which only became visible as "dead scroll" once background
+     scroll got locked (tweaks5 §6) and could no longer paper over it. An
+     explicit height sidesteps that resolution entirely. */
+  height: calc(100dvh - var(--header-h, 56px));
   z-index: 70;
   transform: translateX(-100%);
   transition: transform 0.22s ease;
