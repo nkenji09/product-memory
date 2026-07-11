@@ -3,7 +3,7 @@ import { Header } from './components/layout/Header';
 import { HomeView } from './components/home/HomeView';
 import { BrowseView } from './components/browse/BrowseView';
 import { TransitionDetailPanel } from './components/TransitionDetail';
-import { ConfigView } from './components/ConfigView';
+import { ConfigView } from './components/config/ConfigView';
 import { TraceabilityView } from './components/TraceabilityView';
 import { CompareView } from './components/CompareView';
 import { VocabView } from './components/VocabView';
