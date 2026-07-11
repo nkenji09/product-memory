@@ -3,13 +3,15 @@
 
 /* Header — matches the design's actual markup (pmem-viewer.dc.html's
    <header>): sticky, logo mark + wordmark, a segmented-pill nav with
-   icons, and a right-hand cluster of icon-only controls. Extended with
-   Vocab/Traceability/Compare nav slots the design didn't mock (§A-4) and
-   with visible density/accent controls the design left as editor-only
-   props (§G-5 — "デザイン通り全部" made them real user-facing switches,
-   so they needed a treatment the mock itself doesn't specify; styled to
-   match the icon-forward, label-light language of the rest of the header
-   rather than as a labeled form field). */
+   icons, and a right-hand cluster of icon-only controls (font-size ±,
+   theme toggle, comments, settings). Extended with a Vocab nav slot the
+   design didn't mock (§A-4; Traceability/Compare were also extrapolated
+   at one point but were later removed entirely — not in the design, git
+   has the prior version). The header used to also carry a fulltext search
+   box and density/accent switcher UI (§G-5's "デザイン通り全部"); both were
+   removed per user visual feedback (2026-07-11 tweaks2) since neither
+   exists in the design mock either — accent is now a fixed token
+   (tokens.css) and density stays at its default scale. */
 
 .topbar {
   display: flex;
@@ -117,14 +119,8 @@
   border-color: transparent;
 }
 
-.accent-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--r-full);
-  flex-shrink: 0;
-}
-
-/* Header switches (theme/density/accent/font-scale, §G-5 "デザイン通り全部") */
+/* Header switches (theme toggle + font-scale; density/accent switches were
+   removed per user feedback, 2026-07-11 tweaks2 — see git history) */
 
 .header-switches {
   display: flex;
@@ -165,25 +161,6 @@
   font-family: var(--lm-font-mono);
   font-size: var(--fs-2xs);
   color: var(--lm-text-muted);
-}
-
-.header-select {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--lm-border);
-  border-radius: var(--r-md);
-  background: var(--lm-bg);
-}
-
-.header-select select {
-  border: none;
-  background: transparent;
-  color: var(--lm-text);
-  font-size: var(--fs-2xs);
-  padding: 0;
 }
 
 /* .comment-header-btn composes with .topbar-icon-btn (Header.tsx) for its

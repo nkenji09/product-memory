@@ -32,7 +32,7 @@ export function App() {
 
   return (
     <>
-      <Header view={view} onSelectView={setView} onSelectTx={openTransition} />
+      <Header view={view} onSelectView={setView} />
       {view === 'home' && <HomeView onGoTags={() => setView('tags')} onSelectTag={openTagSpec} onSelectTx={openTransition} />}
       {view === 'browse' && (
         <BrowseView facet="specs" initialFocusTagId={route.tagId} initialFocusTxId={route.txId} onGoToSpec={openTransition} />

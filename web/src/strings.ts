@@ -10,7 +10,9 @@ export const strings = {
   // ここに含めない — router.ts の #/spec/<tag> は引き続き解決するが、
   // 'tags' タブと同一facetのため独立ボタンにはしない（重複ナビの解消）。
   // トレーサビリティ/比較はデザイン未対応のため2026-07-11にナビから削除
-  // （ユーザー指示、Header.tsx参照）。
+  // （ユーザー指示、Header.tsx参照）。表示順は 概要/語彙/タグ/仕様
+  // （2026-07-11 tweaks2 のユーザー視覚FBで語彙を概要の直後へ移動、
+  // Header.tsx の NAV 配列参照）。
   nav: {
     home: '概要',
     tags: 'タグ',
@@ -22,12 +24,6 @@ export const strings = {
     fontDec: '文字を小さく',
     fontInc: '文字を大きく',
     themeToggle: 'テーマ切替',
-    density: {
-      compact: 'コンパクト',
-      normal: '標準',
-      comfortable: 'ゆったり',
-    },
-    accent: 'アクセント色',
   },
   home: {
     tagline: '記録を、読みたくなる形で。',

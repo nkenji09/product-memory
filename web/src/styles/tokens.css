@@ -12,15 +12,22 @@
      - --lm-success-strong is a pmem-only addition (Compare's diff-added
        needs a darker-than-flat success color; the design's success token
        set only has a "weak" variant, not a "strong" one).
-   Dark theme, accent variants, and density are wired up here so later
-   phases (Header switches) only need to toggle attributes on <html>/root —
-   no new token plumbing. --lm-fs / --lm-dens default to 1, so this phase
-   renders pixel-identical to before. */
+   Dark theme is wired up here via [data-theme='dark'] on <html>/root — see
+   settings.ts. Accent is a fixed terracotta constant and density stays at
+   its --lm-dens: 1 default (both were switchable in an earlier phase; the
+   switcher UI was removed per user feedback, 2026-07-11 tweaks2 — see git
+   history for the [data-accent='...']/[data-density='...'] variant blocks
+   this file used to carry). --lm-fs still scales live via the header's
+   font-size ± control. */
 
 :root {
   color-scheme: light;
 
-  --lm-accent: #4f46e5;
+  /* Fixed accent = terracotta (user visual feedback, 2026-07-11 tweaks2):
+     the design mock never showed an accent switcher, so the value is a
+     plain constant here rather than resolved through a [data-accent]
+     attribute — see settings.ts for the removed switching state. */
+  --lm-accent: #c2410c;
   --lm-primary: var(--lm-accent);
   --lm-primary-strong: color-mix(in srgb, var(--lm-accent) 82%, #000);
   --lm-primary-weak: color-mix(in srgb, var(--lm-accent) 12%, transparent);
@@ -109,6 +116,12 @@
 [data-theme='dark'] {
   color-scheme: dark;
   --lm-accent: #f9814f;
+  /* Dark backgrounds need --lm-primary-strong mixed toward white instead of
+     black (:root's formula below is light-theme-only) — this used to be
+     conditional on [data-accent] being present (always true, since the
+     switcher always set the attribute); now that the switcher is gone,
+     it's unconditional here instead. */
+  --lm-primary-strong: color-mix(in srgb, var(--lm-accent) 80%, #fff);
   --lm-on-primary: #2a0f06;
   --lm-bg: #0a0a0d;
   --lm-s1: #141418;
@@ -143,26 +156,3 @@
   --sh-pop: 0 24px 60px rgba(0, 0, 0, 0.72);
 }
 
-[data-accent='indigo'] { --lm-accent: #4f46e5; }
-[data-accent='violet'] { --lm-accent: #7c3aed; }
-[data-accent='blue'] { --lm-accent: #2563eb; }
-[data-accent='terracotta'] { --lm-accent: #c2410c; }
-[data-accent='teal'] { --lm-accent: #0d9488; }
-[data-theme='dark'][data-accent='indigo'] { --lm-accent: #8b83ff; }
-[data-theme='dark'][data-accent='violet'] { --lm-accent: #a78bfa; }
-[data-theme='dark'][data-accent='blue'] { --lm-accent: #60a5fa; }
-[data-theme='dark'][data-accent='terracotta'] { --lm-accent: #f9814f; }
-[data-theme='dark'][data-accent='teal'] { --lm-accent: #2dd4bf; }
-[data-accent] {
-  --lm-primary: var(--lm-accent);
-  --lm-primary-strong: color-mix(in srgb, var(--lm-accent) 82%, #000);
-  --lm-primary-weak: color-mix(in srgb, var(--lm-accent) 12%, transparent);
-  --lm-primary-ring: color-mix(in srgb, var(--lm-accent) 42%, transparent);
-  --focus: 0 0 0 3px color-mix(in srgb, var(--lm-accent) 42%, transparent);
-}
-[data-theme='dark'][data-accent] {
-  --lm-primary-strong: color-mix(in srgb, var(--lm-accent) 80%, #fff);
-}
-
-[data-density='compact'] { --lm-dens: 0.8; }
-[data-density='comfortable'] { --lm-dens: 1.28; }
