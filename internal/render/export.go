@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/nkenji09/product-memory/internal/diff"
 	"github.com/nkenji09/product-memory/internal/index"
 	"github.com/nkenji09/product-memory/internal/lint"
 	"github.com/nkenji09/product-memory/internal/model"
@@ -90,6 +91,10 @@ func collectStaticData(s *store.Store) (staticData, error) {
 	if err != nil {
 		return staticData{}, err
 	}
+	// Branch is live/derived (model.Config's doc comment), not part of
+	// config.json — LoadAll() won't have set it, so it's baked in here from
+	// whatever branch is checked out at export time (2026-07-11 tweaks5 §2).
+	snap.Config.Branch = diff.CurrentBranch(filepath.Dir(s.Dir))
 	ix := index.Build(&snap)
 
 	facets := facetsPayload{FacetKinds: snap.Config.FacetKinds, Trees: map[string][]index.FacetTreeNode{}}

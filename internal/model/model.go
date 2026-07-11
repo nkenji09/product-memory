@@ -88,6 +88,19 @@ type ViewerConfig struct {
 	Port int `json:"port"`
 }
 
+// DisplayConfig is additive cosmetic text the viewer shows (2026-07-11
+// tweaks5 §1/§2) — HOME's tagline/intro and the header's product name.
+// None of this affects record semantics; it's pure display customization
+// (e.g. white-labeling pmem for a different project). Empty string means
+// "use the built-in default" — the frontend resolves the fallback (see
+// web/src/lookups.tsx), not this struct, so an older config.json (nil/
+// zero-value fields) degrades gracefully without any Go-side migration.
+type DisplayConfig struct {
+	ProductName string `json:"productName,omitempty"`
+	Tagline     string `json:"tagline,omitempty"`
+	Intro       string `json:"intro,omitempty"`
+}
+
 // Config はプロジェクト設定（singleton・§3.6）。
 type Config struct {
 	PmemVersion       int          `json:"pmemVersion"`
@@ -107,6 +120,16 @@ type Config struct {
 	// callers must resolve through that fallback rather than reading this
 	// map directly (see web/src/lookups.tsx's tagKindLabel()).
 	TagKindLabels map[string]string `json:"tagKindLabels"`
+	Display       DisplayConfig     `json:"display"`
+	// Branch is the current git branch name (2026-07-11 tweaks5 §2) — a
+	// live derived value, NOT a stored preference. It's populated by the
+	// viewer (GET /api/config) and by `pmem export --html` right before
+	// each response/bake, never by DefaultConfig()/SaveConfig, so it never
+	// ends up written into config.json. Empty when the project isn't a
+	// git repo, HEAD is detached, or git itself isn't available — callers
+	// fall back to a default display value (see
+	// web/src/components/layout/Header.tsx) rather than showing nothing.
+	Branch string `json:"branch,omitempty"`
 }
 
 // DefaultConfig は `pmem init` が書き出す既定値（§3.6 の例そのまま）。
@@ -132,6 +155,11 @@ func DefaultConfig() Config {
 			"requirement": "要件",
 			"concern":     "関心事",
 			"subject":     "主題",
+		},
+		Display: DisplayConfig{
+			ProductName: "pmem",
+			Tagline:     "記録を、読みたくなる形で。",
+			Intro:       "product-memory は、プロダクトの意思決定・要件・振る舞いを原子（遷移）として記録し、構造は派生（query）で見るためのツールです。",
 		},
 	}
 }
