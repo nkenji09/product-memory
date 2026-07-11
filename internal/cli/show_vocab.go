@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,9 @@ func newShowVocabCmd() *cobra.Command {
 			}
 			if v.Owner != "" {
 				fmt.Fprintf(out, "owner: %s\n", v.Owner)
+			}
+			if len(v.Tags) > 0 {
+				fmt.Fprintf(out, "tags: %s\n", strings.Join(v.Tags, ", "))
 			}
 			if v.Description != "" {
 				fmt.Fprintf(out, "description:\n%s\n", v.Description)
