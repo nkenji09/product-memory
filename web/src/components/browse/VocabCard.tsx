@@ -33,7 +33,7 @@ export function VocabCard({ entry, uses, cardRef, onFilterTag, onSelectTx }: Pro
   const tags = entry.tags || [];
 
   return (
-    <article ref={cardRef} data-card-id={entry.id} class="card">
+    <article ref={cardRef} data-card-id={entry.id} class="card" title={entry.id}>
       <div class="tag-card-head">
         <div class="tag-card-badges">
           <Chip color={kindColor(entry.category)}>
@@ -51,7 +51,6 @@ export function VocabCard({ entry, uses, cardRef, onFilterTag, onSelectTx }: Pro
             mark is reserved for clicks that actually narrow something
             (the tag chips below). */}
         <span class="tag-card-name vocab-card-name">{entry.label}</span>
-        <span class="tag-card-id dim">{entry.id}</span>
         {entry.owner && (
           <span class="vocab-card-owner">
             {strings.vocab.owner}: {entry.owner}
@@ -98,12 +97,11 @@ export function VocabCard({ entry, uses, cardRef, onFilterTag, onSelectTx }: Pro
             {uses.map((t) => {
               const label = transitionLabel(t.id);
               return (
-                <button key={t.id} type="button" class="tag-card-spec-row" onClick={() => onSelectTx(t.id)}>
+                <button key={t.id} type="button" class="tag-card-spec-row" onClick={() => onSelectTx(t.id)} title={t.id}>
                   <span class="tag-card-spec-label">
                     {label.primary}
                     {label.secondary && <span class="dim"> {label.secondary}</span>}
                   </span>
-                  <span class="tag-card-spec-id dim">{t.id}</span>
                 </button>
               );
             })}

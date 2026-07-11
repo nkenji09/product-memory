@@ -36,7 +36,7 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
   const tagDecisions = dedupeDecisions(entries.flatMap((e) => (e.decisions || []).filter((d) => d.target.type === 'tag')));
 
   return (
-    <article ref={cardRef} data-card-id={tag.id} class="card">
+    <article ref={cardRef} data-card-id={tag.id} class="card" title={tag.id}>
       <div class="tag-card-head">
         <div class="tag-card-badges">
           <Chip color={kindColor(tag.kind)} onClick={onFilterSelf}>
@@ -69,7 +69,6 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
           {tag.name || tag.id}
           <Icon name="plus" size={13} class="filter-plus-icon" />
         </button>
-        <span class="tag-card-id dim">{tag.id}</span>
       </div>
 
       {tag.description && (
@@ -91,9 +90,8 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
           </div>
           <div class="tag-card-spec-list">
             {entries.map((e) => (
-              <button key={e.transition.id} type="button" class="tag-card-spec-row" onClick={() => onSelectSpec(e.transition.id)}>
+              <button key={e.transition.id} type="button" class="tag-card-spec-row" onClick={() => onSelectSpec(e.transition.id)} title={e.transition.id}>
                 <span class="tag-card-spec-label">{e.actionLabel}</span>
-                <span class="tag-card-spec-id dim">{e.transition.id}</span>
               </button>
             ))}
           </div>
