@@ -1,0 +1,130 @@
+import { useLookups } from '../../lookups';
+import { strings } from '../../strings';
+import type { TransitionDetail } from '../../types';
+import { Chip, kindColor } from '../shared/Chip';
+
+interface Props {
+  detail: TransitionDetail;
+  isOpen: boolean;
+  cardRef: (el: HTMLElement | null) => void;
+  onToggleOpen: () => void;
+  onFilterVocab: (id: string) => void;
+  onFilterTag: (id: string) => void;
+}
+
+export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab, onFilterTag }: Props) {
+  const { tagById, vocabById } = useLookups();
+
+  const declared = detail.tags || [];
+  const effective = detail.effectiveTags || [];
+  const derived = effective.filter((id) => !declared.includes(id));
+  const hasTags = declared.length > 0 || derived.length > 0;
+  const hasDetail = (detail.tests && detail.tests.length > 0) || (detail.rules && detail.rules.length > 0);
+
+  return (
+    <article ref={cardRef} data-card-id={detail.id} class="card">
+      <div class="spec-card-slot">
+        <span class="spec-card-slot-label" style={{ color: 'var(--t-act)' }}>
+          ▸ {strings.flow.trigger}
+        </span>
+        <button type="button" class="spec-card-action" onClick={() => onFilterVocab(detail.action)} title={strings.browse.clickToFilter}>
+          {detail.actionLabel || detail.action}
+        </button>
+      </div>
+
+      <div class="spec-card-slot">
+        <span class="spec-card-slot-label" style={{ color: 'var(--t-giv)' }}>
+          ▾ {strings.flow.given}
+        </span>
+        {(detail.given || []).length === 0 && <span class="dim spec-card-empty-given">無条件（前提なし）</span>}
+        <div class="spec-card-given-list">
+          {(detail.given || []).map((id, i) => (
+            <button key={id} type="button" class="spec-card-cond-row" onClick={() => onFilterVocab(id)} title={strings.browse.clickToFilter}>
+              {(detail.givenLabels || [])[i] || id}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div class="spec-card-slot">
+        <span class="spec-card-slot-label" style={{ color: 'var(--t-then)' }}>
+          → {strings.flow.result}
+        </span>
+        <div class="spec-card-then-list">
+          {(detail.then || []).map((id, i) => (
+            <button key={id} type="button" class="spec-card-cond-row" onClick={() => onFilterVocab(id)} title={strings.browse.clickToFilter}>
+              <span class="spec-card-then-n dim">{i + 1}</span>
+              <span>
+                {(detail.thenLabels || [])[i] || id}
+                {vocabById.get(id)?.owner && <span class="spec-card-owner dim"> owner: {vocabById.get(id)?.owner}</span>}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {hasTags && (
+        <div class="card-section">
+          <span class="card-section-heading">
+            {strings.browse.tagsHeading} <span class="spec-card-hint dim">{strings.browse.clickToFilter}</span>
+          </span>
+          <div class="spec-card-chip-row">
+            {declared.map((id) => (
+              <Chip key={id} color={kindColor(tagById.get(id)?.kind)} onClick={() => onFilterTag(id)}>
+                {tagById.get(id)?.name || id}
+              </Chip>
+            ))}
+          </div>
+          {derived.length > 0 && (
+            <div class="spec-card-derived">
+              <span class="dim spec-card-derived-label">{strings.browse.derivedHeading}</span>
+              <div class="spec-card-chip-row">
+                {derived.map((id) => (
+                  <Chip key={id} color={kindColor(tagById.get(id)?.kind)} onClick={() => onFilterTag(id)}>
+                    {tagById.get(id)?.name || id}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasDetail && (
+        <button type="button" class="spec-card-detail-toggle" onClick={onToggleOpen}>
+          {isOpen ? '▲' : '▼'} {isOpen ? strings.browse.hideDetail : strings.browse.showDetail}
+        </button>
+      )}
+
+      {isOpen && hasDetail && (
+        <div class="card-section spec-card-detail">
+          {detail.tests && detail.tests.length > 0 && (
+            <div>
+              <span class="card-section-heading">{strings.browse.tests}</span>
+              <div class="spec-card-chip-row">
+                {detail.tests.map((t) => (
+                  <span key={t} class="spec-card-test">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {detail.rules && detail.rules.length > 0 && (
+            <div>
+              <span class="card-section-heading">{strings.browse.rulesHeading}</span>
+              {detail.rules.map((d) => (
+                <div key={d.id} class="tag-card-decision">
+                  <p>{d.why}</p>
+                  <span class="dim">
+                    {d.at.slice(0, 10)} {d.ref && `· ${d.ref}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}

@@ -1,0 +1,109 @@
+import { strings } from '../../strings';
+import type { Decision, SpecReport, Tag } from '../../types';
+import { Markdown } from '../Markdown';
+import { Chip, kindColor } from '../shared/Chip';
+
+interface Props {
+  tag: Tag;
+  report: SpecReport | undefined;
+  isGap: boolean | undefined; // undefined = this tag's kind isn't traceability-tracked
+  parents: Tag[];
+  children: Tag[];
+  cardRef: (el: HTMLElement | null) => void;
+  onFilterSelf: () => void;
+  onSelectParent: (tagId: string) => void;
+  onSelectChild: (tagId: string) => void;
+  onSelectSpec: (txId: string) => void;
+}
+
+function dedupeDecisions(decisions: Decision[]): Decision[] {
+  const seen = new Set<string>();
+  const out: Decision[] = [];
+  for (const d of decisions) {
+    if (seen.has(d.id)) continue;
+    seen.add(d.id);
+    out.push(d);
+  }
+  return out;
+}
+
+export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilterSelf, onSelectParent, onSelectChild, onSelectSpec }: Props) {
+  const entries = report?.entries || [];
+  const tagDecisions = dedupeDecisions(entries.flatMap((e) => (e.decisions || []).filter((d) => d.target.type === 'tag')));
+
+  return (
+    <article ref={cardRef} data-card-id={tag.id} class="card">
+      <div class="tag-card-head">
+        <div class="tag-card-badges">
+          <Chip color={kindColor(tag.kind)} onClick={onFilterSelf}>
+            {tag.kind || '?'}
+          </Chip>
+          {parents.length > 0 && (
+            <span class="tag-card-parents dim">
+              ↳
+              {parents.map((p) => (
+                <button key={p.id} type="button" class="tag-card-parent-link" onClick={() => onSelectParent(p.id)} title="親タグのカードへ移動">
+                  {p.name || p.id}
+                </button>
+              ))}
+            </span>
+          )}
+          <span class="tag-card-spacer" />
+          {isGap && <span class="tag-card-gap-badge">⚠ {strings.browse.gapBadge}</span>}
+          {!isGap && entries.length > 0 && <span class="tag-card-sat-badge">✓ {strings.browse.satBadge(entries.length)}</span>}
+        </div>
+        <button type="button" class="tag-card-name" onClick={onFilterSelf} title={strings.browse.clickToFilter}>
+          {tag.name || tag.id}
+        </button>
+        <span class="tag-card-id dim">{tag.id}</span>
+      </div>
+
+      {tag.description && (
+        <div class="tag-card-body">
+          <Markdown text={tag.description} />
+        </div>
+      )}
+
+      {entries.length > 0 && (
+        <div class="card-section">
+          <span class="card-section-heading">{strings.browse.satisfiedSpecs}</span>
+          <div class="tag-card-spec-list">
+            {entries.map((e) => (
+              <button key={e.transition.id} type="button" class="tag-card-spec-row" onClick={() => onSelectSpec(e.transition.id)}>
+                <span class="tag-card-spec-label">{e.actionLabel}</span>
+                <span class="tag-card-spec-id dim">{e.transition.id}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tagDecisions.length > 0 && (
+        <div class="card-section">
+          <span class="card-section-heading">{strings.browse.relatedDecisions}</span>
+          {tagDecisions.map((d) => (
+            <div key={d.id} class="tag-card-decision">
+              <p>{d.why}</p>
+              <span class="dim">
+                {d.at.slice(0, 10)} {d.ref && `· ${d.ref}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {children.length > 0 && (
+        <div class="card-section">
+          <span class="card-section-heading">{strings.browse.childTags}</span>
+          <div class="tag-card-children">
+            {children.map((c) => (
+              <button key={c.id} type="button" class="tag-card-child-chip" onClick={() => onSelectChild(c.id)} title="このカードへ移動">
+                ↳ {c.name || c.id}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}

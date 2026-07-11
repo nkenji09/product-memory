@@ -11,6 +11,7 @@
 
 @import './styles/components/list-item.css';
 @import './styles/components/chip.css';
+@import './styles/components/card.css';
 @import './styles/components/tx-flow.css';
 
 @import './styles/views/home.css';
@@ -19,8 +20,6 @@
 @import './styles/views/traceability.css';
 @import './styles/views/compare.css';
 @import './styles/views/vocab.css';
-@import './styles/views/spec.css';
-@import './styles/views/tags.css';
 @import './styles/views/config.css';
 
 @import './styles/markdown.css';

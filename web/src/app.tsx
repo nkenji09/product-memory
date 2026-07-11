@@ -1,15 +1,12 @@
 import { isStaticMode } from './api';
 import { Header } from './components/layout/Header';
 import { HomeView } from './components/home/HomeView';
-import { Sidebar } from './components/Sidebar';
-import { TransitionList } from './components/TransitionList';
+import { BrowseView } from './components/browse/BrowseView';
 import { TransitionDetailPanel } from './components/TransitionDetail';
 import { ConfigView } from './components/ConfigView';
 import { TraceabilityView } from './components/TraceabilityView';
 import { CompareView } from './components/CompareView';
 import { VocabView } from './components/VocabView';
-import { SpecView } from './components/SpecView';
-import { TagsView } from './components/TagsView';
 import { useHashRoute } from './router';
 import type { ViewName } from './router';
 
@@ -17,13 +14,15 @@ export function App() {
   const [route, navigate] = useHashRoute();
   const view = route.view;
 
-  // Cross-view links (Vocab/Traceability/Tags → Browse or Spec, etc.) all
-  // funnel through navigate() so each hop lands in browser history and
-  // Back/Forward step through them one at a time (v2 調整2).
+  // Cross-view links (Vocab/Traceability/Home → BrowseView, etc.) all funnel
+  // through navigate() so each hop lands in browser history and
+  // Back/Forward step through them one at a time (v2 調整2). 'browse'/
+  // 'tags'/'spec' are three distinct hash shapes kept for backward
+  // compatibility with pre-BROWSE-unification bookmarks (.concierge/
+  // decision.md's hash-compat minor decision) — all three now render the
+  // same BrowseView, just with a different initial facet/focus.
   const openTransition = (txId: string) => navigate({ view: 'browse', txId });
-  const openTagBrowse = (tagId: string) => navigate({ view: 'browse', tagId });
   const openTagSpec = (tagId: string) => navigate({ view: 'spec', tagId });
-  const openTagTraceability = (_tagId: string, kind: string) => navigate({ view: 'traceability', kind });
   const setView = (next: ViewName) => navigate({ view: next });
 
   return (
@@ -38,30 +37,11 @@ export function App() {
         />
       )}
       {view === 'browse' && (
-        <div class="layout">
-          <Sidebar
-            selectedTagId={route.tagId}
-            onSelectTag={(id) => navigate({ view: 'browse', tagId: id })}
-          />
-          <TransitionList
-            tagId={route.tagId}
-            selectedTxId={route.txId}
-            onSelectTx={(id) => navigate({ view: 'browse', tagId: route.tagId, txId: id })}
-          />
-          <TransitionDetailPanel txId={route.txId} />
-        </div>
+        <BrowseView facet="specs" initialFocusTagId={route.tagId} initialFocusTxId={route.txId} onGoToSpec={openTransition} />
       )}
       {view === 'vocab' && <VocabView onSelectTx={openTransition} />}
-      {view === 'spec' && (
-        <SpecView
-          selectedTagId={route.tagId}
-          onSelectTag={(id) => navigate({ view: 'spec', tagId: id })}
-          onSelectTx={openTransition}
-        />
-      )}
-      {view === 'tags' && (
-        <TagsView onBrowse={openTagBrowse} onSpec={openTagSpec} onTraceability={openTagTraceability} />
-      )}
+      {view === 'spec' && <BrowseView facet="tags" initialFocusTagId={route.tagId} onGoToSpec={openTransition} />}
+      {view === 'tags' && <BrowseView facet="tags" onGoToSpec={openTransition} />}
       {view === 'traceability' && (
         <div class="layout layout-two">
           <TraceabilityView onSelectTx={openTransition} initialKind={route.kind} />

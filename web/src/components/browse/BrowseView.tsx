@@ -1,0 +1,325 @@
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { api } from '../../api';
+import { strings } from '../../strings';
+import { useLookups } from '../../lookups';
+import type { Config, FacetsResponse, SpecReport, Tag, TraceabilityResponse, Transition, TransitionDetail } from '../../types';
+import { BrowseRail } from './BrowseRail';
+import type { ConditionChip, IndexItem, KindOption } from './BrowseRail';
+import { TagCard } from './TagCard';
+import { SpecCard } from './SpecCard';
+import { parentsOf, childrenOf, tagMatchesFilters, specMatchesFilters } from './filters';
+import type { FilterCondition } from './filters';
+import { kindColor } from '../shared/Chip';
+
+interface Props {
+  facet: 'tags' | 'specs';
+  initialFocusTagId?: string;
+  initialFocusTxId?: string;
+  onGoToSpec: (txId: string) => void;
+}
+
+function buildTagOrder(facetsData: FacetsResponse, allTags: Tag[], kindFacet: string): Array<{ id: string; depth: number }> {
+  const order: Array<{ id: string; depth: number }> = [];
+  const seen = new Set<string>();
+  const kinds = kindFacet === 'all' ? facetsData.facetKinds : facetsData.facetKinds.filter((k) => k === kindFacet);
+  const walk = (nodes: FacetsResponse['trees'][string], depth: number) => {
+    for (const n of nodes) {
+      if (!seen.has(n.tag.id)) {
+        order.push({ id: n.tag.id, depth });
+        seen.add(n.tag.id);
+      }
+      if (n.children) walk(n.children, depth + 1);
+    }
+  };
+  for (const k of kinds) walk(facetsData.trees[k] || [], 0);
+  // Tags whose kind isn't a declared facet kind never appear in any tree
+  // above — still show them, flat, rather than silently dropping them.
+  for (const t of allTags) {
+    if (seen.has(t.id)) continue;
+    if (kindFacet !== 'all' && t.kind !== kindFacet) continue;
+    order.push({ id: t.id, depth: 0 });
+    seen.add(t.id);
+  }
+  return order;
+}
+
+export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToSpec }: Props) {
+  const { tagById: lookupTagById, vocabById } = useLookups();
+
+  const [config, setConfig] = useState<Config | null>(null);
+  const [facetsData, setFacetsData] = useState<FacetsResponse | null>(null);
+  const [tags, setTags] = useState<Tag[] | null>(null);
+  const [traceability, setTraceability] = useState<TraceabilityResponse | null>(null);
+  const [specReports, setSpecReports] = useState<Record<string, SpecReport>>({});
+  const [txList, setTxList] = useState<Transition[] | null>(null);
+  const [txDetails, setTxDetails] = useState<Record<string, TransitionDetail>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  const [query, setQuery] = useState('');
+  const [kindFacet, setKindFacet] = useState('all');
+  const [filters, setFilters] = useState<FilterCondition[]>(() => (initialFocusTagId ? [{ type: 'tag', id: initialFocusTagId }] : []));
+  const [openTx, setOpenTx] = useState<Record<string, boolean>>(() => (initialFocusTxId ? { [initialFocusTxId]: true } : {}));
+
+  const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const scrollTarget = useRef<string | null>(initialFocusTagId || initialFocusTxId || null);
+
+  // Per-facet reset (design's `filters: { tags: [], specs: [] }` — each
+  // facet keeps its own independent filter/search/open state). This only
+  // fires when the *facet itself* changes (app.tsx mounts a fresh BrowseView
+  // per route anyway; this additionally covers initialFocus* changing while
+  // the same facet instance is reused for a same-facet legacy-route jump).
+  useEffect(() => {
+    setQuery('');
+    setKindFacet('all');
+    setFilters(initialFocusTagId ? [{ type: 'tag', id: initialFocusTagId }] : []);
+    setOpenTx(initialFocusTxId ? { [initialFocusTxId]: true } : {});
+    scrollTarget.current = initialFocusTagId || initialFocusTxId || null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facet, initialFocusTagId, initialFocusTxId]);
+
+  useEffect(() => {
+    Promise.all([api.getConfig(), api.getFacets(), api.getTags(), api.getTraceability()])
+      .then(([cfg, f, t, trace]) => {
+        setConfig(cfg);
+        setFacetsData(f);
+        setTags(t);
+        setTraceability(trace);
+      })
+      .catch((err) => setError(String(err)));
+  }, []);
+
+  useEffect(() => {
+    if (facet !== 'tags' || !tags) return;
+    let cancelled = false;
+    Promise.all(
+      tags.map((t) =>
+        api
+          .getSpec(t.id)
+          .then((r) => [t.id, r] as const)
+          .catch(() => [t.id, undefined] as const),
+      ),
+    ).then((pairs) => {
+      if (cancelled) return;
+      const next: Record<string, SpecReport> = {};
+      for (const [id, r] of pairs) if (r) next[id] = r;
+      setSpecReports(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [facet, tags]);
+
+  useEffect(() => {
+    if (facet !== 'specs') return;
+    let cancelled = false;
+    api
+      .getTransitions({})
+      .then((res) => {
+        if (cancelled) return undefined;
+        const list = res.transitions || [];
+        setTxList(list);
+        return Promise.all(list.map((t) => api.getTransition(t.id).catch(() => undefined)));
+      })
+      .then((details) => {
+        if (cancelled || !details) return;
+        const next: Record<string, TransitionDetail> = {};
+        for (const d of details) if (d) next[d.id] = d;
+        setTxDetails(next);
+      })
+      .catch((err) => setError(String(err)));
+    return () => {
+      cancelled = true;
+    };
+  }, [facet]);
+
+  const tagsReady = facet === 'tags' && !!tags && Object.keys(specReports).length === tags.length;
+  const specsReady = facet === 'specs' && !!txList && Object.keys(txDetails).length === txList.length;
+
+  useEffect(() => {
+    const id = scrollTarget.current;
+    if (!id || (!tagsReady && !specsReady)) return;
+    const el = cardRefs.current.get(id);
+    if (el) {
+      el.scrollIntoView({ block: 'start' });
+      scrollTarget.current = null;
+    }
+  });
+
+  const addFilter = (f: FilterCondition) =>
+    setFilters((prev) => (prev.some((p) => p.type === f.type && p.id === f.id) ? prev : [...prev, f]));
+  const removeFilter = (i: number) => setFilters((prev) => prev.filter((_, idx) => idx !== i));
+
+  const tagById = useMemo(() => new Map((tags || []).map((t) => [t.id, t])), [tags]);
+  const gapByTagId = useMemo(() => new Map((traceability?.entries || []).map((e) => [e.tag.id, e])), [traceability]);
+
+  if (error) return <div class="browse-view error">{error}</div>;
+  if (!config || !facetsData || !tags || !traceability) return <div class="browse-view dim">{strings.browse.loading}</div>;
+
+  const q = query.trim().toLowerCase();
+
+  let title = '';
+  let subtitle = '';
+  let indexItems: IndexItem[] = [];
+  let kindOptions: KindOption[] = [];
+  let body: preact.JSX.Element;
+
+  if (facet === 'tags') {
+    kindOptions = config.tagKinds.map((k) => ({ key: k, label: k, count: tags.filter((t) => t.kind === k).length }));
+    const order = buildTagOrder(facetsData, tags, kindFacet);
+    const visible = order.filter(({ id }) => {
+      const t = tagById.get(id);
+      if (!t) return false;
+      if (q && !(t.id + ' ' + (t.name || '') + ' ' + (t.description || '')).toLowerCase().includes(q)) return false;
+      return tagMatchesFilters(t, filters, facetsData.trees);
+    });
+
+    title = strings.browse.tagsTitle;
+    subtitle = strings.browse.tagsSubtitle;
+    indexItems = visible.map(({ id, depth }) => {
+      const t = tagById.get(id)!;
+      const entry = gapByTagId.get(id);
+      return {
+        id,
+        label: t.name || t.id,
+        color: kindColor(t.kind),
+        indent: depth,
+        isGap: entry?.gap,
+        onClick: () => {
+          scrollTarget.current = id;
+          cardRefs.current.get(id)?.scrollIntoView({ block: 'start' });
+        },
+      };
+    });
+
+    body = !tagsReady ? (
+      <div class="dim">{strings.browse.loading}</div>
+    ) : visible.length === 0 ? (
+      <div class="card-empty">{strings.browse.empty}</div>
+    ) : (
+      <>
+        {visible.map(({ id }) => {
+          const t = tagById.get(id)!;
+          const entry = gapByTagId.get(id);
+          return (
+            <TagCard
+              key={id}
+              tag={t}
+              report={specReports[id]}
+              isGap={entry?.gap}
+              parents={parentsOf(facetsData.trees, id, tagById)}
+              children={childrenOf(facetsData.trees, id, tagById)}
+              cardRef={(el) => {
+                if (el) cardRefs.current.set(id, el);
+                else cardRefs.current.delete(id);
+              }}
+              onFilterSelf={() => addFilter({ type: 'tag', id })}
+              onSelectParent={(pid) => {
+                scrollTarget.current = pid;
+                cardRefs.current.get(pid)?.scrollIntoView({ block: 'start' });
+              }}
+              onSelectChild={(cid) => {
+                scrollTarget.current = cid;
+                cardRefs.current.get(cid)?.scrollIntoView({ block: 'start' });
+              }}
+              onSelectSpec={onGoToSpec}
+            />
+          );
+        })}
+      </>
+    );
+  } else {
+    const allKinds = Array.from(new Set(tags.map((t) => t.kind).filter((k): k is string => !!k)));
+    kindOptions = allKinds.map((k) => ({
+      key: k,
+      label: k,
+      count: Object.values(txDetails).filter((d) => (d.effectiveTags || []).some((id) => tagById.get(id)?.kind === k)).length,
+    }));
+
+    const list = txList || [];
+    const visible = list.filter((tx) => {
+      const detail = txDetails[tx.id];
+      if (!detail) return false;
+      if (kindFacet !== 'all' && !(detail.effectiveTags || []).some((id) => tagById.get(id)?.kind === kindFacet)) return false;
+      if (q) {
+        const hay = (
+          tx.id +
+          ' ' +
+          (detail.actionLabel || '') +
+          ' ' +
+          (detail.givenLabels || []).join(' ') +
+          ' ' +
+          (detail.thenLabels || []).join(' ')
+        ).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return specMatchesFilters(detail, filters);
+    });
+
+    title = strings.browse.specsTitle;
+    subtitle = strings.browse.specsSubtitle;
+    indexItems = visible.map((tx) => ({
+      id: tx.id,
+      label: txDetails[tx.id]?.actionLabel || tx.id,
+      color: 'var(--t-act)',
+      indent: 0,
+      onClick: () => {
+        scrollTarget.current = tx.id;
+        cardRefs.current.get(tx.id)?.scrollIntoView({ block: 'start' });
+      },
+    }));
+
+    body = !specsReady ? (
+      <div class="dim">{strings.browse.loading}</div>
+    ) : visible.length === 0 ? (
+      <div class="card-empty">{strings.browse.empty}</div>
+    ) : (
+      <>
+        {visible.map((tx) => (
+          <SpecCard
+            key={tx.id}
+            detail={txDetails[tx.id]}
+            isOpen={!!openTx[tx.id]}
+            cardRef={(el) => {
+              if (el) cardRefs.current.set(tx.id, el);
+              else cardRefs.current.delete(tx.id);
+            }}
+            onToggleOpen={() => setOpenTx((prev) => ({ ...prev, [tx.id]: !prev[tx.id] }))}
+            onFilterVocab={(id) => addFilter({ type: 'vocab', id })}
+            onFilterTag={(id) => addFilter({ type: 'tag', id })}
+          />
+        ))}
+      </>
+    );
+  }
+
+  const conditions: ConditionChip[] = filters.map((f, i) => {
+    if (f.type === 'tag') {
+      const t = tagById.get(f.id) || lookupTagById.get(f.id);
+      return { label: t?.name || f.id, color: kindColor(t?.kind), onRemove: () => removeFilter(i) };
+    }
+    const v = vocabById.get(f.id);
+    return { label: v?.label || f.id, color: kindColor(v?.category), onRemove: () => removeFilter(i) };
+  });
+
+  return (
+    <div class="browse-view">
+      <BrowseRail
+        query={query}
+        onQueryChange={setQuery}
+        kindFacet={kindFacet}
+        kindOptions={kindOptions}
+        onKindFacetChange={setKindFacet}
+        conditions={conditions}
+        onClearConditions={() => setFilters([])}
+        indexItems={indexItems}
+      />
+      <main class="browse-main">
+        <div class="browse-main-head">
+          <h1>{title}</h1>
+          <span class="dim">{subtitle}</span>
+        </div>
+        <div class="browse-card-list">{body}</div>
+      </main>
+    </div>
+  );
+}
