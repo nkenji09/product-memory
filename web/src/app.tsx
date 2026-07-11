@@ -7,12 +7,16 @@ import { ConfigView } from './components/config/ConfigView';
 import { TraceabilityView } from './components/TraceabilityView';
 import { CompareView } from './components/CompareView';
 import { VocabView } from './components/VocabView';
+import { CommentPanel } from './components/comments/CommentPanel';
+import { useComments } from './components/comments/useComments';
+import type { CommentRecord } from './components/comments/useComments';
 import { useHashRoute } from './router';
 import type { ViewName } from './router';
 
 export function App() {
   const [route, navigate] = useHashRoute();
   const view = route.view;
+  const { closePanel } = useComments();
 
   // Cross-view links (Vocab/Traceability/Home → BrowseView, etc.) all funnel
   // through navigate() so each hop lands in browser history and
@@ -24,6 +28,11 @@ export function App() {
   const openTransition = (txId: string) => navigate({ view: 'browse', txId });
   const openTagSpec = (tagId: string) => navigate({ view: 'spec', tagId });
   const setView = (next: ViewName) => navigate({ view: next });
+  const gotoComment = (c: CommentRecord) => {
+    if (c.recordType === 'tag') openTagSpec(c.recordId);
+    else openTransition(c.recordId);
+    closePanel();
+  };
 
   return (
     <>
@@ -50,6 +59,7 @@ export function App() {
       )}
       {view === 'compare' && !isStaticMode && <CompareView />}
       {view === 'config' && <ConfigView />}
+      <CommentPanel onGoto={gotoComment} />
     </>
   );
 }

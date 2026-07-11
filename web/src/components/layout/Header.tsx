@@ -4,6 +4,7 @@ import type { ViewName } from '../../router';
 import { ACCENTS, useViewerSettings } from '../../settings';
 import { SearchBox } from '../SearchBox';
 import { Icon } from '../shared/Icon';
+import { useComments } from '../comments/useComments';
 
 interface Props {
   view: ViewName;
@@ -24,6 +25,7 @@ const NAV: Array<[ViewName, string]> = [
 
 export function Header({ view, onSelectView, onSelectTx }: Props) {
   const { settings, toggleTheme, setDensity, setAccent, incFont, decFont } = useViewerSettings();
+  const { comments, panelOpen, openPanel } = useComments();
 
   return (
     <header class="topbar">
@@ -67,6 +69,12 @@ export function Header({ view, onSelectView, onSelectTx }: Props) {
         <button type="button" class="theme-toggle" aria-label={strings.header.themeToggle} onClick={toggleTheme}>
           <Icon name={settings.theme === 'dark' ? 'moon' : 'sun'} size={16} />
         </button>
+        {comments.length > 0 && (
+          <button type="button" class={'comment-header-btn' + (panelOpen ? ' active' : '')} aria-label="コメント一覧" onClick={openPanel}>
+            <Icon name="message-filled" size={17} />
+            <span class="comment-header-badge">{comments.length}</span>
+          </button>
+        )}
       </div>
     </header>
   );

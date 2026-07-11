@@ -2,6 +2,7 @@ import { strings } from '../../strings';
 import type { Decision, SpecReport, Tag } from '../../types';
 import { Markdown } from '../Markdown';
 import { Chip, kindColor } from '../shared/Chip';
+import { CommentButton } from '../comments/CommentButton';
 
 interface Props {
   tag: Tag;
@@ -51,6 +52,7 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
           <span class="tag-card-spacer" />
           {isGap && <span class="tag-card-gap-badge">⚠ {strings.browse.gapBadge}</span>}
           {!isGap && entries.length > 0 && <span class="tag-card-sat-badge">✓ {strings.browse.satBadge(entries.length)}</span>}
+          <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="card" anchorLabel="カード全体" />
         </div>
         <button type="button" class="tag-card-name" onClick={onFilterSelf} title={strings.browse.clickToFilter}>
           {tag.name || tag.id}
@@ -60,13 +62,19 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
 
       {tag.description && (
         <div class="tag-card-body">
+          <div class="card-section-heading-row">
+            <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="body" anchorLabel="説明" />
+          </div>
           <Markdown text={tag.description} />
         </div>
       )}
 
       {entries.length > 0 && (
         <div class="card-section">
-          <span class="card-section-heading">{strings.browse.satisfiedSpecs}</span>
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">{strings.browse.satisfiedSpecs}</span>
+            <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="specs" anchorLabel={strings.browse.satisfiedSpecs} />
+          </div>
           <div class="tag-card-spec-list">
             {entries.map((e) => (
               <button key={e.transition.id} type="button" class="tag-card-spec-row" onClick={() => onSelectSpec(e.transition.id)}>
@@ -80,7 +88,10 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
 
       {tagDecisions.length > 0 && (
         <div class="card-section">
-          <span class="card-section-heading">{strings.browse.relatedDecisions}</span>
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">{strings.browse.relatedDecisions}</span>
+            <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="decisions" anchorLabel={strings.browse.relatedDecisions} />
+          </div>
           {tagDecisions.map((d) => (
             <div key={d.id} class="tag-card-decision">
               <p>{d.why}</p>
@@ -94,7 +105,10 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
 
       {children.length > 0 && (
         <div class="card-section">
-          <span class="card-section-heading">{strings.browse.childTags}</span>
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">{strings.browse.childTags}</span>
+            <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="children" anchorLabel={strings.browse.childTags} />
+          </div>
           <div class="tag-card-children">
             {children.map((c) => (
               <button key={c.id} type="button" class="tag-card-child-chip" onClick={() => onSelectChild(c.id)} title="このカードへ移動">

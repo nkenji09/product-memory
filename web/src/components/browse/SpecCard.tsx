@@ -2,6 +2,7 @@ import { useLookups } from '../../lookups';
 import { strings } from '../../strings';
 import type { TransitionDetail } from '../../types';
 import { Chip, kindColor } from '../shared/Chip';
+import { CommentButton } from '../comments/CommentButton';
 
 interface Props {
   detail: TransitionDetail;
@@ -24,18 +25,24 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
   return (
     <article ref={cardRef} data-card-id={detail.id} class="card">
       <div class="spec-card-slot">
-        <span class="spec-card-slot-label" style={{ color: 'var(--t-act)' }}>
-          ▸ {strings.flow.trigger}
-        </span>
+        <div class="card-section-heading-row">
+          <span class="spec-card-slot-label" style={{ color: 'var(--t-act)' }}>
+            ▸ {strings.flow.trigger}
+          </span>
+          <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="action" anchorLabel={strings.flow.trigger} />
+        </div>
         <button type="button" class="spec-card-action" onClick={() => onFilterVocab(detail.action)} title={strings.browse.clickToFilter}>
           {detail.actionLabel || detail.action}
         </button>
       </div>
 
       <div class="spec-card-slot">
-        <span class="spec-card-slot-label" style={{ color: 'var(--t-giv)' }}>
-          ▾ {strings.flow.given}
-        </span>
+        <div class="card-section-heading-row">
+          <span class="spec-card-slot-label" style={{ color: 'var(--t-giv)' }}>
+            ▾ {strings.flow.given}
+          </span>
+          <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="given" anchorLabel={strings.flow.given} />
+        </div>
         {(detail.given || []).length === 0 && <span class="dim spec-card-empty-given">無条件（前提なし）</span>}
         <div class="spec-card-given-list">
           {(detail.given || []).map((id, i) => (
@@ -47,9 +54,12 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
       </div>
 
       <div class="spec-card-slot">
-        <span class="spec-card-slot-label" style={{ color: 'var(--t-then)' }}>
-          → {strings.flow.result}
-        </span>
+        <div class="card-section-heading-row">
+          <span class="spec-card-slot-label" style={{ color: 'var(--t-then)' }}>
+            → {strings.flow.result}
+          </span>
+          <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="then" anchorLabel={strings.flow.result} />
+        </div>
         <div class="spec-card-then-list">
           {(detail.then || []).map((id, i) => (
             <button key={id} type="button" class="spec-card-cond-row" onClick={() => onFilterVocab(id)} title={strings.browse.clickToFilter}>
@@ -65,9 +75,12 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
 
       {hasTags && (
         <div class="card-section">
-          <span class="card-section-heading">
-            {strings.browse.tagsHeading} <span class="spec-card-hint dim">{strings.browse.clickToFilter}</span>
-          </span>
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">
+              {strings.browse.tagsHeading} <span class="spec-card-hint dim">{strings.browse.clickToFilter}</span>
+            </span>
+            <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="tags" anchorLabel={strings.browse.tagsHeading} />
+          </div>
           <div class="spec-card-chip-row">
             {declared.map((id) => (
               <Chip key={id} color={kindColor(tagById.get(id)?.kind)} onClick={() => onFilterTag(id)}>

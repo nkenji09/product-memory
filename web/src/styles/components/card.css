@@ -38,3 +38,35 @@
   color: var(--lm-text-dim);
   font-size: var(--fs-sm);
 }
+
+/* Section heading + its CommentButton (#18) on the same line. */
+.card-section-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.comment-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--lm-text-dim);
+  opacity: 0.55;
+}
+
+.comment-button:hover {
+  opacity: 1;
+  background: var(--lm-s2);
+}
+
+.comment-button.has-comment {
+  opacity: 1;
+  background: var(--lm-primary-weak);
+  color: var(--lm-primary-strong);
+}

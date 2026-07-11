@@ -113,6 +113,43 @@
   background: var(--lm-s2);
 }
 
+.comment-header-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--lm-border);
+  background: var(--lm-bg);
+  color: var(--lm-text-muted);
+  border-radius: var(--r-md);
+}
+
+.comment-header-btn:hover,
+.comment-header-btn.active {
+  background: var(--lm-primary-weak);
+  color: var(--lm-primary-strong);
+  border-color: transparent;
+}
+
+.comment-header-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-full);
+  background: var(--lm-primary);
+  color: var(--lm-on-primary);
+  font-size: 9px;
+  line-height: 16px;
+  font-weight: 700;
+  font-family: var(--lm-font-mono);
+  border: 2px solid var(--lm-s1);
+}
+
 /* Only Traceability's 2-pane (list + TransitionDetailPanel) layout uses this
    now — BrowseView's タグ/仕様 cards replaced the old 3-pane Browse
    (sidebar+list+detail), so there is no bare (non layout-two) consumer of
