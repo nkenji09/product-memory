@@ -1,0 +1,94 @@
+/* Selectable-row / pill patterns shared across 2+ views: facet tabs
+   (Sidebar, TagsView), tag nodes (Sidebar/TagTree, SpecView's tag picker),
+   transition rows (TransitionList, VocabView's usage list, TraceabilityView's
+   satisfied-tx list). */
+
+.facet-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-2);
+}
+
+.facet-tab {
+  background: none;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--r-sm);
+  padding: var(--sp-1) var(--sp-2);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.facet-tab:hover {
+  background: var(--lm-s1);
+}
+
+.facet-tab.active {
+  background: var(--lm-primary);
+  color: var(--lm-on-primary);
+  border-color: var(--lm-primary);
+}
+
+.clear-filter {
+  display: block;
+  background: none;
+  border: none;
+  padding: var(--sp-1) 0;
+  text-align: left;
+  border-radius: var(--r-sm);
+  transition: background-color 120ms ease;
+}
+
+.clear-filter:hover {
+  background: var(--lm-s1);
+}
+
+.tag-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tag-node {
+  background: none;
+  border: none;
+  padding: var(--sp-1);
+  text-align: left;
+  width: 100%;
+  border-radius: var(--r-sm);
+  transition: background-color 120ms ease;
+}
+
+.tag-node:hover {
+  background: var(--lm-s1);
+}
+
+.tag-node.selected {
+  background: var(--lm-primary);
+  color: var(--lm-on-primary);
+}
+
+.transition-list ul,
+.detail ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tx-row {
+  background: none;
+  border: none;
+  padding: var(--sp-2);
+  text-align: left;
+  width: 100%;
+  border-radius: var(--r-sm);
+  transition: background-color 120ms ease;
+}
+
+.tx-row:hover {
+  background: var(--lm-s1);
+}
+
+.tx-row.selected {
+  background: var(--lm-primary);
+  color: var(--lm-on-primary);
+}

@@ -1,0 +1,65 @@
+/* Page chrome: header/nav and the pane grids views sit in. View-internal
+   content styling lives in styles/views/*.css instead. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--lm-border);
+  background: var(--lm-s1);
+}
+
+.topbar h1 {
+  font-size: 1.1em;
+  color: var(--lm-text-strong);
+  margin: 0;
+}
+
+.topbar nav button {
+  background: none;
+  border: 1px solid var(--lm-border);
+  padding: var(--sp-1) var(--sp-3);
+  margin-left: var(--sp-2);
+  border-radius: var(--r-sm);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.topbar nav button:hover {
+  background: var(--lm-s2);
+}
+
+.topbar nav button.active {
+  background: var(--lm-primary);
+  color: var(--lm-on-primary);
+  border-color: var(--lm-primary);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 320px;
+  flex: 1;
+  min-height: 0;
+}
+
+.layout-two {
+  grid-template-columns: 1fr 320px;
+}
+
+.sidebar,
+.transition-list,
+.detail,
+.config-view {
+  padding: var(--sp-4);
+  overflow-y: auto;
+}
+
+.sidebar {
+  border-right: 1px solid var(--lm-border);
+  background: var(--lm-s2);
+}
+
+.detail {
+  border-left: 1px solid var(--lm-border);
+  background: var(--lm-s2);
+}

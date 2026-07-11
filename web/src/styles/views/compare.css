@@ -1,0 +1,93 @@
+.compare {
+  padding: var(--sp-4);
+  overflow-y: auto;
+  max-width: 720px;
+}
+
+.compare-form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.compare-form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  flex: 1;
+}
+
+.compare-form input {
+  padding: var(--sp-1);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--r-sm);
+}
+
+.compare-form button {
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--lm-primary);
+  background: var(--lm-primary);
+  color: var(--lm-on-primary);
+  border-radius: var(--r-sm);
+}
+
+.diff-section {
+  margin-bottom: var(--sp-4);
+}
+
+.diff-section h3 {
+  color: var(--lm-text-strong);
+  margin-bottom: var(--sp-1);
+}
+
+.diff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--lm-font-mono);
+}
+
+.diff-list > li {
+  padding: var(--sp-1) 0;
+}
+
+.diff-added {
+  color: var(--lm-success-strong);
+}
+
+.diff-removed {
+  color: var(--lm-error);
+}
+
+.diff-changed {
+  color: var(--lm-warning);
+}
+
+.diff-violation {
+  font-weight: bold;
+}
+
+.diff-sublist {
+  list-style: none;
+  margin: var(--sp-1) 0 var(--sp-2) var(--sp-4);
+  padding: 0;
+  font-family: var(--lm-font-sans);
+  font-size: 0.9em;
+  color: var(--lm-text-dim);
+}
+
+.diff-badge {
+  display: inline-block;
+  margin-left: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-sm);
+  font-family: var(--lm-font-sans);
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.diff-badge-reorder {
+  background: var(--lm-warning-weak);
+  color: var(--lm-warning);
+}

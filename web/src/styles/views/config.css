@@ -1,0 +1,27 @@
+.config-view form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 480px;
+}
+
+.config-view label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.config-view input {
+  padding: var(--sp-1);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--r-sm);
+}
+
+.config-view button[type='submit'] {
+  align-self: flex-start;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--lm-primary);
+  background: var(--lm-primary);
+  color: var(--lm-on-primary);
+  border-radius: var(--r-sm);
+}

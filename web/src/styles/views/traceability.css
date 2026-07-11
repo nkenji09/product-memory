@@ -1,0 +1,44 @@
+.traceability {
+  padding: var(--sp-4);
+  overflow-y: auto;
+}
+
+.traceability-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.traceability-entry {
+  padding: var(--sp-2);
+  border-bottom: 1px solid var(--lm-border);
+}
+
+.traceability-entry.gap {
+  background: var(--lm-error-weak);
+}
+
+.traceability-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.gap-badge {
+  color: var(--lm-error);
+  font-weight: bold;
+}
+
+.satisfied-tx-list {
+  list-style: none;
+  margin: var(--sp-1) 0 0;
+  padding: 0 0 0 var(--sp-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.satisfied-tx-list .tx-row {
+  width: auto;
+  border: 1px solid var(--lm-border);
+}
