@@ -244,6 +244,12 @@ func (s *Store) SaveDecision(d model.Decision) error {
 	return writeJSONAtomic(s.decisionPath(d.ID), d)
 }
 
+func (s *Store) LoadDecision(id string) (model.Decision, error) {
+	var d model.Decision
+	err := readJSON(s.decisionPath(id), &d)
+	return d, err
+}
+
 // --- snapshot (LoadAll) ---
 
 // IDMismatch はファイル名と内部 id フィールドが一致しないレコードを表す（id-unique lint 用）。
