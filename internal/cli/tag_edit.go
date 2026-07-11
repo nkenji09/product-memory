@@ -10,7 +10,8 @@ import (
 )
 
 func newTagEditCmd() *cobra.Command {
-	var name, kind, desc, color, ref string
+	var name, kind, desc, descFile, color, ref string
+	var editDesc bool
 	var parents []string
 	var asJSON bool
 	cmd := &cobra.Command{
@@ -66,8 +67,17 @@ func newTagEditCmd() *cobra.Command {
 				}
 				t.ParentIDs = parents
 			}
-			if cmd.Flags().Changed("desc") {
-				t.Description = desc
+			descValue, descChanged, err := descSource{
+				direct:    desc,
+				directSet: cmd.Flags().Changed("desc"),
+				file:      descFile,
+				edit:      editDesc,
+			}.resolve()
+			if err != nil {
+				return err
+			}
+			if descChanged {
+				t.Description = descValue
 			}
 			if cmd.Flags().Changed("color") {
 				t.Color = color
@@ -96,7 +106,9 @@ func newTagEditCmd() *cobra.Command {
 	cmd.Flags().StringVar(&name, "name", "", "表示名")
 	cmd.Flags().StringVar(&kind, "kind", "", "kind（config.tagKinds の宣言集合に含まれる必要がある。空指定で解除）")
 	cmd.Flags().StringArrayVar(&parents, "parent", nil, "親タグ id（複数指定可・完全置換・循環拒否）")
-	cmd.Flags().StringVar(&desc, "desc", "", "説明（空指定で解除）")
+	cmd.Flags().StringVar(&desc, "desc", "", "説明（空指定で解除・--desc-file/--edit と排他）")
+	cmd.Flags().StringVar(&descFile, "desc-file", "", "説明をファイルから読み込む（--desc/--edit と排他）")
+	cmd.Flags().BoolVar(&editDesc, "edit", false, "$EDITOR で説明を入力する（--desc/--desc-file と排他）")
 	cmd.Flags().StringVar(&color, "color", "", "表示色（空指定で解除）")
 	cmd.Flags().StringVar(&ref, "ref", "", "参照 URL（空指定で解除）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "更新後のレコードを JSON で出力する")

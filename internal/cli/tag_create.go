@@ -11,7 +11,8 @@ import (
 )
 
 func newTagCreateCmd() *cobra.Command {
-	var name, kind, desc, color, ref string
+	var name, kind, desc, descFile, color, ref string
+	var editDesc bool
 	var parents []string
 	var asJSON bool
 	cmd := &cobra.Command{
@@ -58,12 +59,22 @@ func newTagCreateCmd() *cobra.Command {
 				}
 			}
 
+			descValue, _, err := descSource{
+				direct:    desc,
+				directSet: cmd.Flags().Changed("desc"),
+				file:      descFile,
+				edit:      editDesc,
+			}.resolve()
+			if err != nil {
+				return err
+			}
+
 			t := model.Tag{
 				ID:          id,
 				Name:        name,
 				Kind:        kind,
 				ParentIDs:   parents,
-				Description: desc,
+				Description: descValue,
 				Color:       color,
 				Ref:         ref,
 			}
@@ -83,7 +94,9 @@ func newTagCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&name, "name", "", "表示名（必須）")
 	cmd.Flags().StringVar(&kind, "kind", "", "kind（config.tagKinds の宣言集合に含まれる必要がある）")
 	cmd.Flags().StringArrayVar(&parents, "parent", nil, "親タグ id（複数指定可）")
-	cmd.Flags().StringVar(&desc, "desc", "", "説明")
+	cmd.Flags().StringVar(&desc, "desc", "", "説明（--desc-file/--edit と排他）")
+	cmd.Flags().StringVar(&descFile, "desc-file", "", "説明をファイルから読み込む（--desc/--edit と排他）")
+	cmd.Flags().BoolVar(&editDesc, "edit", false, "$EDITOR で説明を入力する（--desc/--desc-file と排他）")
 	cmd.Flags().StringVar(&color, "color", "", "表示色")
 	cmd.Flags().StringVar(&ref, "ref", "", "参照 URL")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "作成したレコードを JSON で出力する")

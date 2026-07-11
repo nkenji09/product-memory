@@ -10,7 +10,8 @@ import (
 )
 
 func newVocabAddCmd() *cobra.Command {
-	var label, kind, owner, description string
+	var label, kind, owner, description, descFile string
+	var editDesc bool
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "add <condition|action|effect> <id>",
@@ -44,7 +45,17 @@ func newVocabAddCmd() *cobra.Command {
 				return fmt.Errorf("kind %q は config.kinds.%s に未宣言です", kind, category)
 			}
 
-			v := model.VocabEntry{ID: id, Category: category, Label: label, Kind: kind, Owner: owner, Description: description}
+			descValue, _, err := descSource{
+				direct:    description,
+				directSet: cmd.Flags().Changed("description"),
+				file:      descFile,
+				edit:      editDesc,
+			}.resolve()
+			if err != nil {
+				return err
+			}
+
+			v := model.VocabEntry{ID: id, Category: category, Label: label, Kind: kind, Owner: owner, Description: descValue}
 			if err := s.SaveVocab(v); err != nil {
 				return err
 			}
@@ -61,7 +72,9 @@ func newVocabAddCmd() *cobra.Command {
 	cmd.Flags().StringVar(&label, "label", "", "表示ラベル（必須）")
 	cmd.Flags().StringVar(&kind, "kind", "", "kind（config.kinds の宣言集合に含まれる必要がある）")
 	cmd.Flags().StringVar(&owner, "owner", "", "効果を起こす主体（effect のみ）")
-	cmd.Flags().StringVar(&description, "description", "", "説明（markdown・任意）")
+	cmd.Flags().StringVar(&description, "description", "", "説明（markdown・任意・--desc-file/--edit と排他）")
+	cmd.Flags().StringVar(&descFile, "desc-file", "", "説明をファイルから読み込む（--description/--edit と排他）")
+	cmd.Flags().BoolVar(&editDesc, "edit", false, "$EDITOR で説明を入力する（--description/--desc-file と排他）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "作成したレコードを JSON で出力する")
 	return cmd
 }
