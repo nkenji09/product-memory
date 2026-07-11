@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api';
 import { useLookups } from '../lookups';
 import type { TraceabilityResponse } from '../types';
+import { Icon } from './shared/Icon';
 
 interface Props {
   onSelectTx: (id: string) => void;
@@ -60,9 +61,13 @@ export function TraceabilityView({ onSelectTx, initialKind }: Props) {
               <span class="tag-id dim">{e.tag.id}</span>
               <span class="traceability-spacer" />
               {e.gap ? (
-                <span class="tag-card-gap-badge">⚠ gap（0 充足）</span>
+                <span class="tag-card-gap-badge">
+                  <Icon name="triangle-alert" size={12} /> gap（0 充足）
+                </span>
               ) : (
-                <span class="tag-card-sat-badge">✓ {e.satisfiedBy.length} 件充足</span>
+                <span class="tag-card-sat-badge">
+                  <Icon name="check" size={12} /> {e.satisfiedBy.length} 件充足
+                </span>
               )}
             </div>
             {!e.gap && (

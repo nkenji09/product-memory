@@ -4,6 +4,7 @@ import type { ViewName } from '../../router';
 import { ACCENTS, useViewerSettings } from '../../settings';
 import { SearchBox } from '../SearchBox';
 import { Icon } from '../shared/Icon';
+import type { IconName } from '../shared/Icon';
 import { useComments } from '../comments/useComments';
 
 interface Props {
@@ -12,15 +13,22 @@ interface Props {
   onSelectTx: (id: string) => void;
 }
 
-const NAV: Array<[ViewName, string]> = [
-  ['home', strings.nav.home],
-  ['browse', 'Browse'],
-  ['vocab', strings.nav.vocab],
-  ['spec', strings.nav.spec],
-  ['tags', strings.nav.tags],
-  ['traceability', 'Traceability'],
-  ['compare', 'Compare'],
-  ['config', 'Config'],
+// Nav mirrors the design's segmented-pill control (概要/タグ/仕様 + icons),
+// extended with Vocab/Traceability/Compare — screens the design didn't
+// mock but which still need a reachable nav slot (.concierge/decision.md
+// §A-4). 'spec' (the legacy per-tag-report hash) is deliberately NOT a nav
+// entry: it renders the same BrowseView as 'tags' with a different initial
+// focus, so having both as separate buttons would just be two nav items
+// doing the same thing. Config is not here either — the design treats
+// settings as a standalone icon button, not a nav tab (see the header
+// switches cluster below).
+const NAV: Array<[ViewName, string, IconName]> = [
+  ['home', strings.nav.home, 'layout-dashboard'],
+  ['tags', strings.nav.tags, 'tags'],
+  ['browse', strings.nav.specs, 'scroll-text'],
+  ['vocab', strings.nav.vocab, 'book-open'],
+  ['traceability', strings.nav.traceability, 'radar'],
+  ['compare', strings.nav.compare, 'git-compare'],
 ];
 
 export function Header({ view, onSelectView, onSelectTx }: Props) {
@@ -29,15 +37,33 @@ export function Header({ view, onSelectView, onSelectTx }: Props) {
 
   return (
     <header class="topbar">
-      <h1>pmem view</h1>
-      <SearchBox onSelectTx={onSelectTx} />
-      <nav>
-        {NAV.filter(([key]) => key !== 'compare' || !isStaticMode).map(([key, label]) => (
-          <button key={key} type="button" class={view === key ? 'active' : ''} onClick={() => onSelectView(key)}>
-            {label}
-          </button>
-        ))}
+      <div class="topbar-logo">
+        <span class="topbar-logo-mark">
+          <Icon name="box" size={19} />
+        </span>
+        <div class="topbar-logo-text">
+          <span class="topbar-logo-title">pmem</span>
+          <span class="topbar-logo-subtitle">product-memory</span>
+        </div>
+      </div>
+
+      <nav class="topbar-nav">
+        {NAV.filter(([key]) => key !== 'compare' || !isStaticMode).map(([key, label, icon]) => {
+          // 'spec' (legacy per-tag hash, kept for bookmark compat) renders
+          // the same BrowseView 'tags' facet does — highlight タグ for it
+          // too rather than leaving no tab active.
+          const active = view === key || (key === 'tags' && view === 'spec');
+          return (
+            <button key={key} type="button" class={'topbar-nav-btn' + (active ? ' active' : '')} onClick={() => onSelectView(key)}>
+              <Icon name={icon} size={16} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </nav>
+
+      <SearchBox onSelectTx={onSelectTx} />
+
       <div class="header-switches">
         <div class="font-scale" role="group" aria-label="文字サイズ">
           <button type="button" aria-label={strings.header.fontDec} onClick={decFont}>
@@ -48,8 +74,8 @@ export function Header({ view, onSelectView, onSelectTx }: Props) {
             <Icon name="plus" size={14} />
           </button>
         </div>
-        <label class="header-select">
-          <span class="dim">{strings.header.accent}</span>
+        <label class="header-select" title={strings.header.accent}>
+          <span class="accent-dot" style={{ background: 'var(--lm-accent)' }} />
           <select value={settings.accent} onChange={(e) => setAccent((e.target as HTMLSelectElement).value as typeof settings.accent)}>
             {ACCENTS.map((a) => (
               <option key={a} value={a}>
@@ -58,23 +84,32 @@ export function Header({ view, onSelectView, onSelectTx }: Props) {
             ))}
           </select>
         </label>
-        <label class="header-select">
-          <span class="dim">密度</span>
+        <label class="header-select" title="密度">
+          <Icon name="sliders-horizontal" size={13} class="dim" />
           <select value={settings.density} onChange={(e) => setDensity((e.target as HTMLSelectElement).value as typeof settings.density)}>
             <option value="compact">{strings.header.density.compact}</option>
             <option value="normal">{strings.header.density.normal}</option>
             <option value="comfortable">{strings.header.density.comfortable}</option>
           </select>
         </label>
-        <button type="button" class="theme-toggle" aria-label={strings.header.themeToggle} onClick={toggleTheme}>
-          <Icon name={settings.theme === 'dark' ? 'moon' : 'sun'} size={16} />
+        <button type="button" class="topbar-icon-btn" aria-label={strings.header.themeToggle} onClick={toggleTheme}>
+          <Icon name={settings.theme === 'dark' ? 'moon' : 'sun'} size={17} />
         </button>
         {comments.length > 0 && (
-          <button type="button" class={'comment-header-btn' + (panelOpen ? ' active' : '')} aria-label="コメント一覧" onClick={openPanel}>
+          <button type="button" class={'topbar-icon-btn comment-header-btn' + (panelOpen ? ' active' : '')} aria-label="コメント一覧" onClick={openPanel}>
             <Icon name="message-filled" size={17} />
             <span class="comment-header-badge">{comments.length}</span>
           </button>
         )}
+        <button
+          type="button"
+          class={'topbar-icon-btn' + (view === 'config' ? ' active' : '')}
+          aria-label={strings.nav.config}
+          title={strings.nav.config}
+          onClick={() => onSelectView('config')}
+        >
+          <Icon name="settings" size={17} />
+        </button>
       </div>
     </header>
   );

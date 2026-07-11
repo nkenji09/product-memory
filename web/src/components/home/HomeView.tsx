@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { strings } from '../../strings';
 import { useLookups } from '../../lookups';
 import type { Config, Decision, Tag, TraceabilityResponse } from '../../types';
+import { Icon } from '../shared/Icon';
 
 interface Props {
   onGoTags: () => void;
@@ -76,9 +77,11 @@ export function HomeView({ onGoTags, onGoTraceability, onSelectTag, onSelectTx }
       <section class="home-grid">
         <div class="home-card">
           <div class="home-card-header">
-            <span class="home-card-title">{strings.home.traceabilityHeading}</span>
+            <span class="home-card-title">
+              <Icon name="radar" size={15} /> {strings.home.traceabilityHeading}
+            </span>
             <button type="button" onClick={onGoTraceability}>
-              {strings.home.goTraceability}
+              {strings.home.goTraceability} <Icon name="arrow-right" size={14} />
             </button>
           </div>
           <div class="home-traceability-stat">
@@ -90,7 +93,9 @@ export function HomeView({ onGoTags, onGoTraceability, onSelectTag, onSelectTx }
           </div>
           {gapEntries.length > 0 ? (
             <div class="home-gap">
-              <span class="home-gap-heading">{strings.home.gapHeading(gapEntries.length)}</span>
+              <span class="home-gap-heading">
+                <Icon name="triangle-alert" size={14} /> {strings.home.gapHeading(gapEntries.length)}
+              </span>
               <div class="home-gap-chips">
                 {gapEntries.map((e) => (
                   <button key={e.tag.id} type="button" class="home-gap-chip" onClick={() => onSelectTag(e.tag.id)}>
@@ -106,7 +111,9 @@ export function HomeView({ onGoTags, onGoTraceability, onSelectTag, onSelectTx }
 
         <div class="home-card">
           <div class="home-card-header">
-            <span class="home-card-title">{strings.home.recentDecisionsHeading}</span>
+            <span class="home-card-title">
+              <Icon name="gavel" size={15} /> {strings.home.recentDecisionsHeading}
+            </span>
           </div>
           {recentDecisions.length === 0 ? (
             <p class="dim">{strings.home.noDecisions}</p>

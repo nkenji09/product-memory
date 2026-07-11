@@ -3,6 +3,7 @@ import type { Decision, SpecReport, Tag } from '../../types';
 import { Markdown } from '../Markdown';
 import { Chip, kindColor } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
+import { Icon } from '../shared/Icon';
 
 interface Props {
   tag: Tag;
@@ -41,7 +42,7 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
           </Chip>
           {parents.length > 0 && (
             <span class="tag-card-parents dim">
-              ↳
+              <Icon name="corner-down-right" size={13} />
               {parents.map((p) => (
                 <button key={p.id} type="button" class="tag-card-parent-link" onClick={() => onSelectParent(p.id)} title="親タグのカードへ移動">
                   {p.name || p.id}
@@ -50,8 +51,16 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
             </span>
           )}
           <span class="tag-card-spacer" />
-          {isGap && <span class="tag-card-gap-badge">⚠ {strings.browse.gapBadge}</span>}
-          {!isGap && entries.length > 0 && <span class="tag-card-sat-badge">✓ {strings.browse.satBadge(entries.length)}</span>}
+          {isGap && (
+            <span class="tag-card-gap-badge">
+              <Icon name="triangle-alert" size={12} /> {strings.browse.gapBadge}
+            </span>
+          )}
+          {!isGap && entries.length > 0 && (
+            <span class="tag-card-sat-badge">
+              <Icon name="check" size={12} /> {strings.browse.satBadge(entries.length)}
+            </span>
+          )}
           <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="card" anchorLabel="カード全体" />
         </div>
         <button type="button" class="tag-card-name" onClick={onFilterSelf} title={strings.browse.clickToFilter}>
@@ -72,7 +81,9 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
       {entries.length > 0 && (
         <div class="card-section">
           <div class="card-section-heading-row">
-            <span class="card-section-heading">{strings.browse.satisfiedSpecs}</span>
+            <span class="card-section-heading">
+              <Icon name="scroll-text" size={14} /> {strings.browse.satisfiedSpecs}
+            </span>
             <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="specs" anchorLabel={strings.browse.satisfiedSpecs} />
           </div>
           <div class="tag-card-spec-list">
@@ -89,7 +100,9 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
       {tagDecisions.length > 0 && (
         <div class="card-section">
           <div class="card-section-heading-row">
-            <span class="card-section-heading">{strings.browse.relatedDecisions}</span>
+            <span class="card-section-heading">
+              <Icon name="gavel" size={14} /> {strings.browse.relatedDecisions}
+            </span>
             <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="decisions" anchorLabel={strings.browse.relatedDecisions} />
           </div>
           {tagDecisions.map((d) => (
@@ -106,13 +119,15 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
       {children.length > 0 && (
         <div class="card-section">
           <div class="card-section-heading-row">
-            <span class="card-section-heading">{strings.browse.childTags}</span>
+            <span class="card-section-heading">
+              <Icon name="list-tree" size={14} /> {strings.browse.childTags}
+            </span>
             <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="children" anchorLabel={strings.browse.childTags} />
           </div>
           <div class="tag-card-children">
             {children.map((c) => (
               <button key={c.id} type="button" class="tag-card-child-chip" onClick={() => onSelectChild(c.id)} title="このカードへ移動">
-                ↳ {c.name || c.id}
+                <Icon name="corner-down-right" size={12} /> {c.name || c.id}
               </button>
             ))}
           </div>

@@ -3,6 +3,7 @@ import { strings } from '../../strings';
 import type { TransitionDetail } from '../../types';
 import { Chip, kindColor } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
+import { Icon } from '../shared/Icon';
 
 interface Props {
   detail: TransitionDetail;
@@ -27,7 +28,7 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
       <div class="spec-card-slot">
         <div class="card-section-heading-row">
           <span class="spec-card-slot-label" style={{ color: 'var(--t-act)' }}>
-            ▸ {strings.flow.trigger}
+            <Icon name="circle-play" size={13} /> {strings.flow.trigger}
           </span>
           <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="action" anchorLabel={strings.flow.trigger} />
         </div>
@@ -39,7 +40,7 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
       <div class="spec-card-slot">
         <div class="card-section-heading-row">
           <span class="spec-card-slot-label" style={{ color: 'var(--t-giv)' }}>
-            ▾ {strings.flow.given}
+            <Icon name="funnel" size={12} /> {strings.flow.given}
           </span>
           <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="given" anchorLabel={strings.flow.given} />
         </div>
@@ -56,7 +57,7 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
       <div class="spec-card-slot">
         <div class="card-section-heading-row">
           <span class="spec-card-slot-label" style={{ color: 'var(--t-then)' }}>
-            → {strings.flow.result}
+            <Icon name="arrow-right-to-line" size={12} /> {strings.flow.result}
           </span>
           <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="then" anchorLabel={strings.flow.result} />
         </div>
@@ -77,7 +78,8 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
         <div class="card-section">
           <div class="card-section-heading-row">
             <span class="card-section-heading">
-              {strings.browse.tagsHeading} <span class="spec-card-hint dim">{strings.browse.clickToFilter}</span>
+              <Icon name="tags" size={14} /> {strings.browse.tagsHeading}{' '}
+              <span class="spec-card-hint dim">{strings.browse.clickToFilter}</span>
             </span>
             <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="tags" anchorLabel={strings.browse.tagsHeading} />
           </div>
@@ -105,7 +107,7 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
 
       {hasDetail && (
         <button type="button" class="spec-card-detail-toggle" onClick={onToggleOpen}>
-          {isOpen ? '▲' : '▼'} {isOpen ? strings.browse.hideDetail : strings.browse.showDetail}
+          <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={15} /> {isOpen ? strings.browse.hideDetail : strings.browse.showDetail}
         </button>
       )}
 
@@ -113,7 +115,9 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
         <div class="card-section spec-card-detail">
           {detail.tests && detail.tests.length > 0 && (
             <div>
-              <span class="card-section-heading">{strings.browse.tests}</span>
+              <span class="card-section-heading">
+                <Icon name="flask-conical" size={14} /> {strings.browse.tests}
+              </span>
               <div class="spec-card-chip-row">
                 {detail.tests.map((t) => (
                   <span key={t} class="spec-card-test">
@@ -125,7 +129,9 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
           )}
           {detail.rules && detail.rules.length > 0 && (
             <div>
-              <span class="card-section-heading">{strings.browse.rulesHeading}</span>
+              <span class="card-section-heading">
+                <Icon name="gavel" size={14} /> {strings.browse.rulesHeading}
+              </span>
               {detail.rules.map((d) => (
                 <div key={d.id} class="tag-card-decision">
                   <p>{d.why}</p>

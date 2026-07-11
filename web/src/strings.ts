@@ -5,11 +5,19 @@
 // values such as tag names / vocab labels / decision text stay untouched:
 // only chrome copy — headings, buttons, empty states — lives here).
 export const strings = {
+  // レビュー差し戻し MAJOR-1: ナビは概要/タグ/仕様(デザイン正本 navItems)＋
+  // 外挿3画面(語彙/トレーサビリティ/比較)＋設定、全て日本語ラベルに統一。
+  // 'spec'（旧・独立タブ）はここに含めない — router.ts の #/spec/<tag> は
+  // 引き続き解決するが、'tags' タブと同一facetのため独立ボタンにはしない
+  // （重複ナビの解消）。
   nav: {
     home: '概要',
-    vocab: 'Vocab',
-    spec: 'Spec',
-    tags: 'Tags',
+    tags: 'タグ',
+    specs: '仕様',
+    vocab: '語彙',
+    traceability: 'トレーサビリティ',
+    compare: '比較',
+    config: '設定',
   },
   header: {
     fontDec: '文字を小さく',

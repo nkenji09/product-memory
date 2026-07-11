@@ -51,12 +51,16 @@
   align-items: center;
   gap: 8px;
   font-size: var(--fs-xs);
+  color: var(--lm-text-muted);
 }
 
-.config-status-ok::before {
-  content: '●';
+.config-status-ok svg {
   color: var(--lm-success);
-  font-size: 0.7em;
+  flex-shrink: 0;
+}
+
+.config-status-ok code {
+  color: var(--lm-text);
 }
 
 .config-dirty-badge {
@@ -77,6 +81,9 @@
 
 .config-btn-primary,
 .config-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 34px;
   padding: 0 var(--sp-4);
   border-radius: var(--r-md);
@@ -105,6 +112,12 @@
   border: 1px solid var(--lm-border);
   background: var(--lm-s2);
   border-radius: var(--r-lg);
+}
+
+.config-readonly-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .config-readonly-title {
@@ -168,6 +181,8 @@
 }
 
 .config-section-icon {
+  display: inline-flex;
+  align-items: center;
   color: var(--lm-primary-strong);
 }
 
@@ -211,6 +226,8 @@
 }
 
 .config-field-icon {
+  display: inline-flex;
+  align-items: center;
   color: var(--lm-text-dim);
 }
 

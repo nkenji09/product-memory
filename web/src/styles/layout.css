@@ -1,40 +1,127 @@
 /* Page chrome: header/nav and the pane grids views sit in. View-internal
    content styling lives in styles/views/*.css instead. */
 
+/* Header — matches the design's actual markup (pmem-viewer.dc.html's
+   <header>): sticky, logo mark + wordmark, a segmented-pill nav with
+   icons, and a right-hand cluster of icon-only controls. Extended with
+   Vocab/Traceability/Compare nav slots the design didn't mock (§A-4) and
+   with visible density/accent controls the design left as editor-only
+   props (§G-5 — "デザイン通り全部" made them real user-facing switches,
+   so they needed a treatment the mock itself doesn't specify; styled to
+   match the icon-forward, label-light language of the rest of the header
+   rather than as a labeled form field). */
+
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4);
+  gap: var(--sp-3);
+  padding: 10px var(--sp-5);
   border-bottom: 1px solid var(--lm-border);
   background: var(--lm-s1);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-wrap: wrap;
 }
 
-.topbar h1 {
-  font-size: 1.1em;
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.topbar-logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-md);
+  background: var(--lm-primary-weak);
+  color: var(--lm-primary-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.topbar-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.topbar-logo-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--lm-text-strong);
-  margin: 0;
 }
 
-.topbar nav button {
-  background: none;
-  border: 1px solid var(--lm-border);
-  padding: var(--sp-1) var(--sp-3);
-  margin-left: var(--sp-2);
-  border-radius: var(--r-sm);
-  transition: background-color 120ms ease, border-color 120ms ease;
+.topbar-logo-subtitle {
+  font-family: var(--lm-font-mono);
+  font-size: var(--fs-3xs);
+  color: var(--lm-text-dim);
 }
 
-.topbar nav button:hover {
+.topbar-nav {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
   background: var(--lm-s2);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--r-md);
+  flex-wrap: wrap;
 }
 
-.topbar nav button.active {
-  background: var(--lm-primary);
-  color: var(--lm-on-primary);
-  border-color: var(--lm-primary);
+.topbar-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--lm-text-muted);
+  border-radius: 6px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.topbar-nav-btn:hover:not(.active) {
+  color: var(--lm-text);
+}
+
+.topbar-nav-btn.active {
+  background: var(--lm-s1);
+  color: var(--lm-text-strong);
+  box-shadow: var(--sh-sm);
+}
+
+.topbar-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--lm-border);
+  background: var(--lm-bg);
+  color: var(--lm-text-muted);
+  border-radius: var(--r-md);
+}
+
+.topbar-icon-btn:hover,
+.topbar-icon-btn.active {
+  background: var(--lm-primary-weak);
+  color: var(--lm-primary-strong);
+  border-color: transparent;
+}
+
+.accent-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
 }
 
 /* Header switches (theme/density/accent/font-scale, §G-5 "デザイン通り全部") */
@@ -83,56 +170,24 @@
 .header-select {
   display: flex;
   align-items: center;
-  gap: var(--sp-1);
-  font-size: var(--fs-2xs);
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--r-md);
+  background: var(--lm-bg);
 }
 
 .header-select select {
-  height: 28px;
-  padding: 0 var(--sp-1);
-  border: 1px solid var(--lm-border);
-  border-radius: var(--r-sm);
-  background: var(--lm-bg);
+  border: none;
+  background: transparent;
   color: var(--lm-text);
   font-size: var(--fs-2xs);
+  padding: 0;
 }
 
-.theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--lm-border);
-  background: var(--lm-bg);
-  color: var(--lm-text-muted);
-  border-radius: var(--r-md);
-}
-
-.theme-toggle:hover {
-  background: var(--lm-s2);
-}
-
-.comment-header-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--lm-border);
-  background: var(--lm-bg);
-  color: var(--lm-text-muted);
-  border-radius: var(--r-md);
-}
-
-.comment-header-btn:hover,
-.comment-header-btn.active {
-  background: var(--lm-primary-weak);
-  color: var(--lm-primary-strong);
-  border-color: transparent;
-}
-
+/* .comment-header-btn composes with .topbar-icon-btn (Header.tsx) for its
+   box/hover/active styling; only the count badge is specific to it. */
 .comment-header-badge {
   position: absolute;
   top: -6px;

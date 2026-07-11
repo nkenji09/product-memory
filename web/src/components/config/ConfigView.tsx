@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, isStaticMode } from '../../api';
 import type { Config } from '../../types';
 import { TokenSetField } from './TokenSetField';
+import { Icon } from '../shared/Icon';
 
 interface EditableConfig {
   tagKinds: string[];
@@ -100,7 +101,10 @@ export function ConfigView() {
 
       {editable ? (
         <div class="config-status-bar">
-          <span class="config-status-ok">サーバモード — 変更は <code>config.json</code> に書き込まれます</span>
+          <span class="config-status-ok">
+            <Icon name="server" size={14} />
+            サーバモード — 変更は <code>config.json</code> に書き込まれます
+          </span>
           {dirty && <span class="config-dirty-badge">未保存の変更</span>}
           <span class="config-status-spacer" />
           {dirty && (
@@ -109,30 +113,41 @@ export function ConfigView() {
             </button>
           )}
           <button type="button" class="config-btn-primary" onClick={onSave}>
+            <Icon name="save" size={14} />
             保存
           </button>
         </div>
       ) : (
         <div class="config-readonly-banner">
-          <span class="config-readonly-title">閲覧専用（静的版）</span>
+          <div class="config-readonly-banner-head">
+            <Icon name="eye" size={15} class="dim" />
+            <span class="config-readonly-title">閲覧専用（静的版）</span>
+          </div>
           <span class="dim">
             <code>pmem export --html</code> で書き出した1ファイル版です。編集・保存するには <code>pmem view</code> でサーバを起動してください。
           </span>
         </div>
       )}
 
-      {message && <div class={message.kind === 'ok' ? 'config-message-ok' : 'config-message-error'}>{message.text}</div>}
+      {message && (
+        <div class={message.kind === 'ok' ? 'config-message-ok' : 'config-message-error'}>
+          <Icon name={message.kind === 'ok' ? 'check' : 'triangle-alert'} size={15} />
+          {message.text}
+        </div>
+      )}
 
       <section class="config-section">
         <div class="config-section-head">
-          <span class="config-section-icon">⑂</span>
+          <span class="config-section-icon">
+            <Icon name="git-fork" size={16} />
+          </span>
           <span class="config-section-title">分類軸</span>
           <span class="dim">タグをどう分類し、どの軸で見せるか</span>
         </div>
         <TokenSetField
           label="タグ種別"
           mono="tagKinds"
-          icon="#"
+          icon="tags"
           description="タグに付けられる分類の種類。タグの「役割」を定義します。"
           values={draft.tagKinds}
           editable={editable}
@@ -142,7 +157,7 @@ export function ConfigView() {
         <TokenSetField
           label="facet 軸"
           mono="facetKinds"
-          icon="▤"
+          icon="panel-left"
           description="Browse 画面のサイドバー facet ナビに出す種類。通常 tagKinds の部分集合です。"
           values={draft.facetKinds}
           editable={editable}
@@ -154,7 +169,7 @@ export function ConfigView() {
         <TokenSetField
           label="ルートタグ"
           mono="roots"
-          icon="⌂"
+          icon="list-tree"
           description="タグ階層のルートに置くタグ。空でも構いません。"
           values={draft.roots}
           editable={editable}
@@ -165,14 +180,16 @@ export function ConfigView() {
 
       <section class="config-section">
         <div class="config-section-head">
-          <span class="config-section-icon">◎</span>
+          <span class="config-section-icon">
+            <Icon name="radar" size={16} />
+          </span>
           <span class="config-section-title">トレーサビリティ</span>
           <span class="dim">要件↔実装（仕様）の対応を追跡する対象</span>
         </div>
         <TokenSetField
           label="トレーサビリティ対象"
           mono="traceabilityKinds"
-          icon="◎"
+          icon="radar"
           description="要件トレーサビリティ（充足 gap 検出）の対象にする種類。通常 requirement のみ。"
           values={draft.traceabilityKinds}
           editable={editable}
@@ -185,13 +202,17 @@ export function ConfigView() {
 
       <section class="config-section">
         <div class="config-section-head">
-          <span class="config-section-icon">▣</span>
+          <span class="config-section-icon">
+            <Icon name="monitor" size={16} />
+          </span>
           <span class="config-section-title">ビューア</span>
           <span class="dim">ローカルサーバの設定</span>
         </div>
         <div class="config-field">
           <div class="config-field-head">
-            <span class="config-field-icon">⏻</span>
+            <span class="config-field-icon">
+              <Icon name="plug" size={14} />
+            </span>
             <span class="config-field-label">待受ポート</span>
             <span class="config-field-mono">viewer.port</span>
           </div>
@@ -213,7 +234,9 @@ export function ConfigView() {
 
       <section class="config-section config-section-readonly">
         <div class="config-section-head">
-          <span class="config-field-icon">🔒</span>
+          <span class="config-field-icon">
+            <Icon name="lock" size={14} />
+          </span>
           <span class="config-section-title">読み取り専用メタ</span>
           <span class="config-readonly-tag">read-only</span>
         </div>

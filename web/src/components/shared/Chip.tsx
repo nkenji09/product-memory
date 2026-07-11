@@ -1,4 +1,5 @@
 import type { ComponentChildren, JSX } from 'preact';
+import { Icon } from './Icon';
 
 // Kind color mapping (design tokens --k-req/--k-sub/--k-con for tag kinds,
 // --t-act/--t-giv/--t-then for vocab categories). Any kind/category not in
@@ -40,7 +41,7 @@ export function Chip({ color = 'var(--lm-text-dim)', onClick, onRemove, title, c
       {children}
       {onRemove && (
         <button type="button" class="chip-remove" aria-label="除去" onClick={onRemove}>
-          ×
+          <Icon name="x" size={11} />
         </button>
       )}
     </span>

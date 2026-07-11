@@ -1,9 +1,11 @@
 import { Chip } from '../shared/Chip';
+import { Icon } from '../shared/Icon';
+import type { IconName } from '../shared/Icon';
 
 interface Props {
   label: string;
   mono: string;
-  icon: string;
+  icon: IconName;
   description: string;
   values: string[];
   editable: boolean;
@@ -25,7 +27,9 @@ export function TokenSetField({ label, mono, icon, description, values, editable
   return (
     <div class="config-field">
       <div class="config-field-head">
-        <span class="config-field-icon">{icon}</span>
+        <span class="config-field-icon">
+          <Icon name={icon} size={14} />
+        </span>
         <span class="config-field-label">{label}</span>
         <span class="config-field-mono">{mono}</span>
         {subsetOf && <span class="config-field-subset dim">⊆ {subsetOf}</span>}

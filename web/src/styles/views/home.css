@@ -89,6 +89,9 @@
 }
 
 .home-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -97,6 +100,9 @@
 }
 
 .home-card-header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   border: none;
   background: transparent;
   color: var(--lm-primary-strong);
@@ -136,6 +142,9 @@
 }
 
 .home-gap-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--lm-warning-ic);
