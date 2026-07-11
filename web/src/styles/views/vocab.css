@@ -1,109 +1,30 @@
-/* Vocab — design-language extrapolation (.concierge/decision.md §A-3): no
-   dedicated mock exists for this screen, so it adopts BrowseView's card/chip
-   patterns (.card, shared/Chip) rather than staying in the pre-refactor
-   loom-era look. Information structure is unchanged. */
+/* Vocab — rebuilt (2026-07-11 tweaks2) to follow BrowseView's rail+card
+   pattern (.browse-view/.browse-rail/.browse-main/.card, shared/Chip)
+   rather than its own bespoke list layout, per user visual feedback ("他の
+   タグ画面の構成を踏襲して"). VocabCard reuses most of TagCard/SpecCard's
+   CSS classes directly (tag-card-head/-badges/-name/-id/-spec-list, etc.)
+   — only the handful of fields unique to a vocab entry (sub-kind, owner)
+   get rules of their own here. */
 
-.vocab-view {
-  padding: var(--sp-6) var(--sp-4) var(--sp-8);
-  overflow-y: auto;
-  max-width: 820px;
-  margin: 0 auto;
-  width: 100%;
+/* Overrides .tag-card-name's button hover for the non-interactive heading
+   VocabCard uses it as (see VocabCard.tsx for why it isn't a filter
+   button). */
+.vocab-card-name:hover {
+  background: transparent;
 }
 
-.vocab-view h2 {
-  margin: 0 0 8px;
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--lm-text-strong);
-}
-
-.vocab-kind-group {
-  margin-top: var(--sp-6);
-}
-
-.vocab-kind-group h3 {
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--lm-text-dim);
-  margin: 0 0 var(--sp-3);
-}
-
-.vocab-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.vocab-row {
-  gap: var(--sp-2);
-}
-
-.vocab-row-main {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
-
-.vocab-row-heading {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
-
-.vocab-label {
-  color: var(--lm-text-strong);
-  font-weight: 700;
-  font-size: var(--fs-md);
-}
-
-.vocab-id {
+.vocab-card-kind {
   font-family: var(--lm-font-mono);
   font-size: var(--fs-2xs);
 }
 
-.vocab-owner {
+.vocab-card-owner {
+  font-family: var(--lm-font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--lm-text-dim);
+}
+
+.vocab-card-no-usage {
   font-size: var(--fs-xs);
-}
-
-.vocab-description {
-  font-size: var(--fs-sm);
-}
-
-.vocab-usage-toggle {
-  margin-left: auto;
-  background: none;
-  border: 1px solid var(--lm-border);
-  border-radius: var(--r-sm);
-  padding: var(--sp-1) var(--sp-2);
-  font-size: var(--fs-xs);
-  color: var(--lm-text-muted);
-  transition: background-color 120ms ease;
-}
-
-.vocab-usage-toggle:hover {
-  background: var(--lm-s2);
-}
-
-.vocab-usage-list {
-  list-style: none;
-  margin: 0;
-  padding: var(--sp-2) 0 0;
-  border-top: 1px solid var(--lm-border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-1);
-}
-
-.vocab-usage-list .tx-row {
-  width: auto;
-  border: 1px solid var(--lm-border);
+  font-style: italic;
 }

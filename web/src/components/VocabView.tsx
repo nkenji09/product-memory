@@ -1,76 +1,44 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { api } from '../api';
 import { useLookups } from '../lookups';
 import { strings } from '../strings';
 import type { Transition, VocabEntry } from '../types';
-import { Markdown } from './Markdown';
-import { Chip, kindColor } from './shared/Chip';
+import { BrowseRail } from './browse/BrowseRail';
+import type { ConditionChip, IndexItem, KindOption } from './browse/BrowseRail';
+import { VocabCard } from './browse/VocabCard';
+import { kindColor } from './shared/Chip';
 
 interface Props {
   onSelectTx: (id: string) => void;
 }
 
-const CATEGORIES: Array<{ key: VocabEntry['category']; label: string }> = [
-  { key: 'condition', label: 'condition' },
-  { key: 'action', label: 'action' },
-  { key: 'effect', label: 'effect' },
-];
+const CATEGORIES: VocabEntry['category'][] = ['condition', 'action', 'effect'];
 
 function usedBy(v: VocabEntry, transitions: Transition[]): Transition[] {
   return transitions.filter((t) => t.action === v.id || t.given.includes(v.id) || t.then.includes(v.id));
 }
 
-function VocabRow({ v, transitions, onSelectTx }: { v: VocabEntry; transitions: Transition[]; onSelectTx: (id: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const uses = useMemo(() => usedBy(v, transitions), [v, transitions]);
-  const { transitionLabel } = useLookups();
-
-  return (
-    <li class="card vocab-row">
-      <div class="vocab-row-main">
-        <div class="vocab-row-heading">
-          <span class="vocab-label">{v.label}</span>
-          {v.kind && <Chip color={kindColor(v.category)}>{v.kind}</Chip>}
-          <span class="vocab-id dim" title="内部 id（リンクのキー。参照時のみ使用）">
-            {v.id}
-          </span>
-        </div>
-        {v.owner && (
-          <span class="vocab-owner dim">
-            {strings.vocab.owner}: {v.owner}
-          </span>
-        )}
-        <button type="button" class="vocab-usage-toggle" onClick={() => setOpen((o) => !o)}>
-          {uses.length > 0
-            ? `${open ? strings.vocab.hideTransitions : strings.vocab.showTransitions} (${uses.length})`
-            : strings.vocab.noUsage}
-        </button>
-      </div>
-      <Markdown text={v.description} class="vocab-description" />
-      {open && uses.length > 0 && (
-        <ul class="vocab-usage-list">
-          {uses.map((t) => {
-            const label = transitionLabel(t.id);
-            return (
-              <li key={t.id}>
-                <button type="button" class="tx-row" title={t.id} onClick={() => onSelectTx(t.id)}>
-                  {label.primary}
-                  {label.secondary && <span class="dim"> {label.secondary}</span>}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </li>
-  );
-}
-
+// Rebuilt (2026-07-11 tweaks2) to follow BrowseView's rail+card pattern —
+// same BrowseRail component, same .card-based VocabCard — instead of its
+// own bespoke category-tabs list (.concierge/decision.md's tweaks2 handoff
+// §4, "他のタグ画面の構成を踏襲して"). Filtering/search/scroll-to-card all
+// stay local state here rather than living in BrowseView/filters.ts: Vocab
+// isn't a third BrowseView facet (its match rules — category instead of
+// facet-tree kind, membership in v.tags instead of tagMatchesFilters'
+// descendant-tree walk — don't fit that shared machinery), it just borrows
+// the same rail/card *presentation*.
 export function VocabView({ onSelectTx }: Props) {
+  const { tagById } = useLookups();
   const [vocab, setVocab] = useState<VocabEntry[] | null>(null);
   const [transitions, setTransitions] = useState<Transition[]>([]);
-  const [activeCategory, setActiveCategory] = useState<VocabEntry['category']>('action');
   const [error, setError] = useState<string | null>(null);
+
+  const [query, setQuery] = useState('');
+  const [categoryFacet, setCategoryFacet] = useState('all');
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
+
+  const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const scrollTarget = useRef<string | null>(null);
 
   useEffect(() => {
     Promise.all([api.getVocab(), api.getTransitions({})])
@@ -81,48 +49,84 @@ export function VocabView({ onSelectTx }: Props) {
       .catch((err) => setError(String(err)));
   }, []);
 
-  if (error) return <main class="vocab-view error">{error}</main>;
-  if (!vocab) return <main class="vocab-view dim">{strings.vocab.loading}</main>;
+  useEffect(() => {
+    const id = scrollTarget.current;
+    if (!id || !vocab) return;
+    const el = cardRefs.current.get(id);
+    if (el) {
+      el.scrollIntoView({ block: 'start' });
+      scrollTarget.current = null;
+    }
+  });
 
-  const inCategory = vocab.filter((v) => v.category === activeCategory);
-  const byKind = new Map<string, VocabEntry[]>();
-  for (const v of inCategory) {
-    const key = v.kind || '';
-    if (!byKind.has(key)) byKind.set(key, []);
-    byKind.get(key)!.push(v);
-  }
-  const kindGroups = Array.from(byKind.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const addTagFilter = (id: string) => setTagFilters((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  const removeTagFilter = (i: number) => setTagFilters((prev) => prev.filter((_, idx) => idx !== i));
+
+  if (error) return <div class="browse-view error">{error}</div>;
+  if (!vocab) return <div class="browse-view dim">{strings.vocab.loading}</div>;
+
+  const q = query.trim().toLowerCase();
+  const kindOptions: KindOption[] = CATEGORIES.map((c) => ({ key: c, label: c, count: vocab.filter((v) => v.category === c).length }));
+
+  const visible = vocab
+    .filter((v) => categoryFacet === 'all' || v.category === categoryFacet)
+    .filter((v) => !q || (v.id + ' ' + v.label + ' ' + (v.description || '')).toLowerCase().includes(q))
+    .filter((v) => tagFilters.every((id) => (v.tags || []).includes(id)))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const indexItems: IndexItem[] = visible.map((v) => ({
+    id: v.id,
+    label: v.label,
+    color: kindColor(v.category),
+    indent: 0,
+    onClick: () => {
+      scrollTarget.current = v.id;
+      cardRefs.current.get(v.id)?.scrollIntoView({ block: 'start' });
+    },
+  }));
+
+  const conditions: ConditionChip[] = tagFilters.map((id, i) => {
+    const t = tagById.get(id);
+    return { label: t?.name || id, color: kindColor(t?.kind), onRemove: () => removeTagFilter(i) };
+  });
 
   return (
-    <main class="vocab-view">
-      <h2>{strings.vocab.heading}</h2>
-      <p class="dim">{strings.vocab.intro}</p>
-      <div class="facet-tabs">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            class={'facet-tab' + (c.key === activeCategory ? ' active' : '')}
-            onClick={() => setActiveCategory(c.key)}
-          >
-            {c.label} ({vocab.filter((v) => v.category === c.key).length})
-          </button>
-        ))}
-      </div>
-      {inCategory.length === 0 && <p class="dim">{strings.vocab.empty}</p>}
-      {kindGroups.map(([kind, entries]) => (
-        <section key={kind || '(none)'} class="vocab-kind-group">
-          <h3>{kind || strings.vocab.kindUnset}</h3>
-          <ul class="vocab-list">
-            {entries
-              .slice()
-              .sort((a, b) => a.id.localeCompare(b.id))
-              .map((v) => (
-                <VocabRow key={v.id} v={v} transitions={transitions} onSelectTx={onSelectTx} />
-              ))}
-          </ul>
-        </section>
-      ))}
-    </main>
+    <div class="browse-view">
+      <BrowseRail
+        query={query}
+        onQueryChange={setQuery}
+        kindFacet={categoryFacet}
+        kindOptions={kindOptions}
+        onKindFacetChange={setCategoryFacet}
+        conditions={conditions}
+        onClearConditions={() => setTagFilters([])}
+        indexItems={indexItems}
+      />
+      <main class="browse-main">
+        <div class="browse-main-head">
+          <h1>{strings.vocab.heading}</h1>
+          <span class="dim">{strings.vocab.intro}</span>
+        </div>
+        <div class="browse-card-list">
+          {visible.length === 0 ? (
+            <div class="card-empty">{strings.vocab.empty}</div>
+          ) : (
+            visible.map((v) => (
+              <VocabCard
+                key={v.id}
+                entry={v}
+                uses={usedBy(v, transitions)}
+                cardRef={(el) => {
+                  if (el) cardRefs.current.set(v.id, el);
+                  else cardRefs.current.delete(v.id);
+                }}
+                onFilterTag={addTagFilter}
+                onSelectTx={onSelectTx}
+              />
+            ))
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
