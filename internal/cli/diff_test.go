@@ -116,6 +116,78 @@ func TestDiff_DecisionRemovalIsErrorExit(t *testing.T) {
 	}
 }
 
+// gap G8: pmem diff はベースライン（.pmem）が無い初回でも詰まらない。
+
+func TestDiff_NoCommitsIsGracefulOnFirstRun(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+
+	if out, err := run(t, dir, "init"); err != nil {
+		t.Fatalf("pmem init: %v\n%s", err, out)
+	}
+	if out, err := run(t, dir, "vocab", "add", "condition", "cond.a", "--label", "a"); err != nil {
+		t.Fatalf("vocab add: %v\n%s", err, out)
+	}
+
+	out, err := run(t, dir, "diff")
+	if err != nil {
+		t.Fatalf("expected diff to succeed (exit 0) on first run with zero commits: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "ベースライン") {
+		t.Fatalf("expected a baseline-missing notice, got:\n%s", out)
+	}
+	if !strings.Contains(out, "cond.a") {
+		t.Fatalf("expected current records to show up as added, got:\n%s", out)
+	}
+}
+
+func TestDiff_PmemUncommittedIsGracefulOnFirstRun(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+
+	if out, err := run(t, dir, "init"); err != nil {
+		t.Fatalf("pmem init: %v\n%s", err, out)
+	}
+	// .pmem は git add せず、README だけ commit して HEAD を作る。
+	writeRawJSON(t, filepath.Join(dir, "README.md"), "hello")
+	cmd := exec.Command("git", "add", "README.md")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git add README.md: %v\n%s", err, out)
+	}
+	cmd = exec.Command("git", "commit", "-q", "-m", "no pmem yet")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git commit: %v\n%s", err, out)
+	}
+	if out, err := run(t, dir, "vocab", "add", "condition", "cond.a", "--label", "a"); err != nil {
+		t.Fatalf("vocab add: %v\n%s", err, out)
+	}
+
+	out, err := run(t, dir, "diff")
+	if err != nil {
+		t.Fatalf("expected diff to succeed (exit 0) when .pmem/ isn't committed yet: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "ベースライン") {
+		t.Fatalf("expected a baseline-missing notice, got:\n%s", out)
+	}
+	if !strings.Contains(out, "cond.a") {
+		t.Fatalf("expected current records to show up as added, got:\n%s", out)
+	}
+}
+
+func TestDiff_ExplicitInvalidRefStillErrors(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+	seedListFixture(t, dir)
+	gitCommitAllT(t, dir, "seed")
+
+	out, err := run(t, dir, "diff", "no-such-ref")
+	if err == nil {
+		t.Fatalf("expected diff --ref no-such-ref to fail (exit non-zero), output:\n%s", out)
+	}
+}
+
 func TestDiff_DefaultsToHEADAndAcceptsExplicitRef(t *testing.T) {
 	dir := t.TempDir()
 	gitInitT(t, dir)

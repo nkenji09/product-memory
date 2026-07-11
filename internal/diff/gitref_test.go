@@ -164,3 +164,75 @@ func TestDiff_RefWithoutPmemDirIsClearError(t *testing.T) {
 		t.Fatalf("expected error when ref has no .pmem/ path")
 	}
 }
+
+// gap G8: ベースライン（HEAD のコミット or ref 上の .pmem）が単に存在しない初回は、
+// gitref を明示指定していない既定呼び出し（ref==""）に限り graceful に空ベースライン
+// へフォールバックする（§4 pmem diff・DESIGN 矛盾なし）。
+
+func TestDiff_NoCommitsFallsBackToEmptyBaselineOnDefaultRef(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	// git init 直後・commit 0（HEAD が解決できない）で作業ツリーにレコードがある状態。
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+
+	r, err := Diff(s, "")
+	if err != nil {
+		t.Fatalf("Diff: %v, want graceful fallback (no error) when HEAD has no commits yet", err)
+	}
+	if !r.BaselineMissing {
+		t.Fatalf("BaselineMissing = false, want true when HEAD has no commits")
+	}
+	if len(r.Vocab.Added) != 1 || r.Vocab.Added[0].ID != "cond.a" {
+		t.Fatalf("Vocab.Added = %+v, want [cond.a] (no baseline -> everything is added)", r.Vocab.Added)
+	}
+	if len(r.Vocab.Removed) != 0 || len(r.Vocab.Changed) != 0 {
+		t.Fatalf("expected no removed/changed against an empty baseline, got %+v", r.Vocab)
+	}
+}
+
+func TestDiff_PmemNotYetCommittedFallsBackToEmptyBaselineOnDefaultRef(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	// HEAD は存在するが .pmem/ をまだ git に含めていない（commit 済みなのは README のみ）。
+	writeFile(t, filepath.Join(dir, "README.md"), "hello\n")
+	runGitT(t, dir, "add", "README.md")
+	runGitT(t, dir, "commit", "-q", "-m", "no pmem yet")
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+
+	r, err := Diff(s, "")
+	if err != nil {
+		t.Fatalf("Diff: %v, want graceful fallback (no error) when ref has no .pmem/ yet", err)
+	}
+	if !r.BaselineMissing {
+		t.Fatalf("BaselineMissing = false, want true when ref has no .pmem/")
+	}
+	if len(r.Vocab.Added) != 1 || r.Vocab.Added[0].ID != "cond.a" {
+		t.Fatalf("Vocab.Added = %+v, want [cond.a] (no baseline -> everything is added)", r.Vocab.Added)
+	}
+}
+
+func TestDiff_ExplicitRefStillErrorsWhenNoCommits(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+
+	if _, err := Diff(s, "HEAD"); err == nil {
+		t.Fatalf("expected error for explicit HEAD ref even though it matches the default value — user explicitly asked for it")
+	}
+}
+
+func TestDiff_ValidBaselineOutputUnchangedByFallback(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+	commitAll(t, dir, "seed")
+
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.b.json"), `{"id":"cond.b","category":"condition","label":"b"}`+"\n")
+
+	r, err := Diff(s, "")
+	if err != nil {
+		t.Fatalf("Diff: %v", err)
+	}
+	if r.BaselineMissing {
+		t.Fatalf("BaselineMissing = true, want false when a valid baseline exists (no regression)")
+	}
+	if len(r.Vocab.Added) != 1 || r.Vocab.Added[0].ID != "cond.b" {
+		t.Fatalf("Vocab.Added = %+v, want [cond.b]", r.Vocab.Added)
+	}
+}

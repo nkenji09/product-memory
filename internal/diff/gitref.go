@@ -29,6 +29,18 @@ const (
 	decisionsDir   = "decisions"
 )
 
+// baselineMissingError は「ref 自体は妥当な操作対象だが、ベースライン（HEAD の
+// コミット or ref 上の .pmem）が単に存在しない」ことを表す。既定 ref（ユーザーが
+// gitref を明示指定していない）の場合、Diff はこれを空ベースラインへフォール
+// バックする（初回ユーザーが git init 直後 / .pmem 未コミットで詰まらないため）。
+// ユーザーが gitref を明示指定した場合は従来どおりエラーとして扱う（typo・実在
+// しない ref の握り潰しを避ける）。
+type baselineMissingError struct {
+	msg string
+}
+
+func (e *baselineMissingError) Error() string { return e.msg }
+
 func requireGit() error {
 	if _, err := exec.LookPath("git"); err != nil {
 		return fmt.Errorf("git コマンドが見つかりません（PATH を確認してください）: %w", err)
@@ -63,7 +75,7 @@ func gitRepoRoot(dir string) (string, error) {
 
 func verifyRef(repoRoot, ref string) error {
 	if _, err := runGit(repoRoot, "rev-parse", "--verify", ref+"^{commit}"); err != nil {
-		return fmt.Errorf("gitref %q が解決できません（存在するコミット／ブランチ／タグですか？）: %w", ref, err)
+		return &baselineMissingError{msg: fmt.Sprintf("gitref %q が解決できません（存在するコミット／ブランチ／タグですか？）: %v", ref, err)}
 	}
 	return nil
 }
@@ -88,7 +100,7 @@ func loadRefSnapshot(repoRoot, relDir, ref string) (refSnapshot, error) {
 		}
 	}
 	if len(paths) == 0 {
-		return refSnapshot{}, fmt.Errorf("%s に %s が見つかりません（gitref・パスを確認してください）", ref, relDir)
+		return refSnapshot{}, &baselineMissingError{msg: fmt.Sprintf("%s に %s が見つかりません（gitref・パスを確認してください）", ref, relDir)}
 	}
 
 	var snap refSnapshot
