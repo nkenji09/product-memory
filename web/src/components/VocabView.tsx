@@ -6,9 +6,10 @@ import { useT } from '../i18n';
 import type { Transition, VocabEntry } from '../types';
 import { BrowseRail } from './browse/BrowseRail';
 import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './browse/BrowseRail';
+import type { FilterCondition } from './browse/filters';
 import { VocabCard } from './browse/VocabCard';
 import { CommentButton } from './comments/CommentButton';
-import { kindColor } from './shared/Chip';
+import { kindColor, OWNER_COLOR } from './shared/Chip';
 
 interface Props {
   onSelectTx: (id: string) => void;
@@ -44,7 +45,12 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
 
   const [query, setQuery] = useState('');
   const [categoryFacet, setCategoryFacet] = useState('all');
-  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  // Generalized from a bare tag-id array (vocab-owner-tag) so owner can join
+  // tag as a second, AND-composed condition kind — same FilterCondition
+  // shape BrowseView.tsx uses for its own facets, but this page still keeps
+  // its own local filter state/matching (see the class comment below for
+  // why Vocab doesn't just become a third BrowseView facet).
+  const [filters, setFilters] = useState<FilterCondition[]>([]);
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
   const scrollTarget = useRef<string | null>(initialFocusId || null);
@@ -78,14 +84,24 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
 
   // Same close-on-select rule as BrowseView.tsx: addFilter/scroll-to close
   // the narrow-viewport drawer, kindFacet/removeFilter/query don't.
-  const addTagFilter = (id: string) => {
-    setTagFilters((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  const addFilter = (f: FilterCondition) => {
+    setFilters((prev) => (prev.some((p) => p.type === f.type && p.id === f.id) ? prev : [...prev, f]));
     closeDrawer();
   };
-  const removeTagFilter = (i: number) => setTagFilters((prev) => prev.filter((_, idx) => idx !== i));
+  const removeFilter = (i: number) => setFilters((prev) => prev.filter((_, idx) => idx !== i));
 
   if (error) return <div class="browse-view error">{error}</div>;
   if (!vocab) return <div class="browse-view dim">{t.vocab.loading}</div>;
+
+  // Single predicate for "does this vocab entry satisfy this one condition"
+  // — shared by `visible` (the actual list filter) and `wouldMatchAny`
+  // below (the combobox's "would this candidate leave ≥1 result" check).
+  // Deliberately the ONLY place this membership rule is written: a second,
+  // simplified copy for candidate-narrowing was the root cause of a prior
+  // bug (vocab-owner-tag rework) — "shows as a candidate" and "actually
+  // narrows something" must always agree.
+  const matchesFilter = (v: VocabEntry, f: FilterCondition): boolean =>
+    f.type === 'tag' ? (v.tags || []).includes(f.id) : v.owner === f.id;
 
   const q = query.trim().toLowerCase();
   const kindOptions: KindOption[] = CATEGORIES.map((c) => ({
@@ -97,7 +113,7 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   const visible = vocab
     .filter((v) => categoryFacet === 'all' || v.category === categoryFacet)
     .filter((v) => !q || (v.id + ' ' + v.label + ' ' + (v.description || '')).toLowerCase().includes(q))
-    .filter((v) => tagFilters.every((id) => (v.tags || []).includes(id)))
+    .filter((v) => filters.every((f) => matchesFilter(v, f)))
     .sort((a, b) => a.id.localeCompare(b.id));
 
   const indexItems: IndexItem[] = visible.map((v) => ({
@@ -112,27 +128,44 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
     },
   }));
 
-  const conditions: ConditionChip[] = tagFilters.map((id, i) => {
-    const tag = tagById.get(id);
-    return { label: tag?.name || id, color: kindColor(tag?.kind), onRemove: () => removeTagFilter(i) };
+  const conditions: ConditionChip[] = filters.map((f, i) => {
+    if (f.type === 'tag') {
+      const tag = tagById.get(f.id);
+      return { label: tag?.name || f.id, color: kindColor(tag?.kind), onRemove: () => removeFilter(i) };
+    }
+    return { label: f.id, color: OWNER_COLOR, onRemove: () => removeFilter(i) };
   });
 
-  // Combobox candidates (2026-07-11 tweaks3 §3): tags only, not other vocab
-  // entries — Vocab's own entries have no self-filter affordance (see
-  // VocabCard.tsx's onFilterSelf comment), so there's nothing meaningful a
-  // vocab suggestion would do here that clicking the card itself doesn't
-  // already do. Narrowed further (2026-07-11 tweaks4 §1) to only tags that
-  // would leave ≥1 entry visible if added — reusing the same category-facet
-  // + tagFilters membership test `visible` above already runs, just with
-  // one more candidate tag appended (no new relationship logic, §7/§9).
-  const categoryPool = vocab.filter((v) => categoryFacet === 'all' || v.category === categoryFacet);
-  const tagWouldMatchAny = (tagId: string): boolean => {
-    const testFilters = [...tagFilters, tagId];
-    return categoryPool.some((v) => testFilters.every((id) => (v.tags || []).includes(id)));
+  // Combobox candidates (2026-07-11 tweaks3 §3): every known tag, plus
+  // (vocab-owner-tag) every distinct owner value, narrowed to whichever
+  // would actually leave ≥1 result if added — same "AND-narrow, only offer
+  // what helps" UX as BrowseView.tsx's facet combobox (tags/specs).
+  //
+  // History (vocab-owner-tag → rework): this box originally (tweaks4,
+  // 2026-07-11) narrowed candidates with a *shortcut* predicate —
+  // `(v.tags || []).includes(tagId)` computed only over vocab.tags — which
+  // is almost always empty in practice (tagging normally happens at the
+  // transition/spec level, not per vocab word), so nearly every real tag
+  // failed the check and the box looked broken. The first fix over-
+  // corrected by dropping narrowing entirely. The actual defect wasn't
+  // "narrowing is wrong" — it was "the predicate used for narrowing didn't
+  // match the predicate used for filtering". `wouldMatchAny` below reuses
+  // `matchesFilter` (the exact same rule `visible` above filters with), so
+  // "shown as a candidate" and "actually narrows the list" can never
+  // diverge again.
+  const wouldMatchAny = (candidate: FilterCondition): boolean => {
+    const testFilters = [...filters, candidate];
+    return vocab.some((v) => testFilters.every((f) => matchesFilter(v, f)));
   };
-  const suggestions: SuggestionItem[] = Array.from(tagById.values())
-    .filter((tag) => !tagFilters.includes(tag.id) && tagWouldMatchAny(tag.id))
-    .map((tag) => ({ id: tag.id, label: tag.name || tag.id, color: kindColor(tag.kind), kindLabel: t.nav.tags, onSelect: () => addTagFilter(tag.id) }));
+  const ownerValues = Array.from(new Set(vocab.map((v) => v.owner).filter((o): o is string => !!o)));
+  const suggestions: SuggestionItem[] = [
+    ...Array.from(tagById.values())
+      .filter((tag) => !filters.some((f) => f.type === 'tag' && f.id === tag.id) && wouldMatchAny({ type: 'tag', id: tag.id }))
+      .map((tag) => ({ id: tag.id, label: tag.name || tag.id, color: kindColor(tag.kind), kindLabel: t.nav.tags, onSelect: () => addFilter({ type: 'tag', id: tag.id }) })),
+    ...ownerValues
+      .filter((o) => !filters.some((f) => f.type === 'owner' && f.id === o) && wouldMatchAny({ type: 'owner', id: o }))
+      .map((o) => ({ id: o, label: o, color: OWNER_COLOR, kindLabel: t.vocab.owner, onSelect: () => addFilter({ type: 'owner', id: o }) })),
+  ];
 
   return (
     <div class="browse-view">
@@ -143,7 +176,7 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
         kindOptions={kindOptions}
         onKindFacetChange={setCategoryFacet}
         conditions={conditions}
-        onClearConditions={() => setTagFilters([])}
+        onClearConditions={() => setFilters([])}
         indexItems={indexItems}
         suggestions={suggestions}
       />
@@ -168,7 +201,8 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
                   if (el) cardRefs.current.set(v.id, el);
                   else cardRefs.current.delete(v.id);
                 }}
-                onFilterTag={addTagFilter}
+                onFilterTag={(id) => addFilter({ type: 'tag', id })}
+                onFilterOwner={(owner) => addFilter({ type: 'owner', id: owner })}
                 onSelectTx={onSelectTx}
               />
             ))

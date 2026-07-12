@@ -20,6 +20,10 @@ export function kindColor(kind: string | undefined): string {
   return (kind && KIND_COLOR[kind]) || 'var(--lm-text-dim)';
 }
 
+/** VocabEntry.owner pill color — not a tag kind, so it lives outside
+    KIND_COLOR's kind→color map, on its own reserved token (tokens.css). */
+export const OWNER_COLOR = 'var(--k-owner)';
+
 interface Props {
   color?: string;
   onClick?: () => void;

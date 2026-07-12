@@ -277,6 +277,12 @@ const ICONS = {
     { tag: 'path', d: 'M7 3v4a1 1 0 0 0 1 1h7' },
   ],
 
+  // Vocab owner pill (vocab-owner-tag).
+  user: [
+    { tag: 'path', d: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2' },
+    { tag: 'circle', cx: 12, cy: 7, r: 4 },
+  ],
+
   // Header language toggle (i18n, #16).
   languages: [
     { tag: 'path', d: 'm5 8 6 6' },

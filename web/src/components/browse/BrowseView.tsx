@@ -10,7 +10,7 @@ import { TagCard } from './TagCard';
 import { SpecCard } from './SpecCard';
 import { parentsOf, childrenOf, tagMatchesFilters, specMatchesFilters } from './filters';
 import type { FilterCondition } from './filters';
-import { kindColor } from '../shared/Chip';
+import { kindColor, OWNER_COLOR } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
 
 interface Props {
@@ -286,7 +286,7 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
         ).toLowerCase();
         if (!hay.includes(q)) return false;
       }
-      return specMatchesFilters(detail, filters);
+      return specMatchesFilters(detail, filters, vocabById);
     });
 
     title = t.browse.specsTitle;
@@ -317,6 +317,7 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
             onToggleOpen={() => setOpenTx((prev) => ({ ...prev, [tx.id]: !prev[tx.id] }))}
             onFilterVocab={(id) => addFilter({ type: 'vocab', id })}
             onFilterTag={(id) => addFilter({ type: 'tag', id })}
+            onFilterOwner={(owner) => addFilter({ type: 'owner', id: owner })}
           />
         ))}
       </>
@@ -327,6 +328,9 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
     if (f.type === 'tag') {
       const tag = tagById.get(f.id) || lookupTagById.get(f.id);
       return { label: tag?.name || f.id, color: kindColor(tag?.kind), onRemove: () => removeFilter(i) };
+    }
+    if (f.type === 'owner') {
+      return { label: f.id, color: OWNER_COLOR, onRemove: () => removeFilter(i) };
     }
     const v = vocabById.get(f.id);
     return { label: v?.label || f.id, color: kindColor(v?.category), onRemove: () => removeFilter(i) };
@@ -348,8 +352,13 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
     if (facet === 'tags') {
       return tags.some((t) => tagMatchesFilters(t, testFilters, facetsData.trees));
     }
-    return Object.values(txDetails).some((d) => specMatchesFilters(d, testFilters));
+    return Object.values(txDetails).some((d) => specMatchesFilters(d, testFilters, vocabById));
   };
+  // Owner candidates only make sense on the specs facet (facet='tags' cards
+  // have no owner field to match against — tagMatchesFilters treats 'owner'
+  // conditions as a pass-through, so they'd never actually narrow there).
+  const ownerValues =
+    facet === 'specs' ? Array.from(new Set(Array.from(vocabById.values()).map((v) => v.owner).filter((o): o is string => !!o))) : [];
   const suggestions: SuggestionItem[] = [
     ...tags
       .filter((tag) => !activeFilterKeys.has(`tag:${tag.id}`) && wouldMatchAny({ type: 'tag', id: tag.id }))
@@ -363,6 +372,9 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
         kindLabel: t.nav.vocab,
         onSelect: () => addFilter({ type: 'vocab', id: v.id }),
       })),
+    ...ownerValues
+      .filter((o) => !activeFilterKeys.has(`owner:${o}`) && wouldMatchAny({ type: 'owner', id: o }))
+      .map((o) => ({ id: o, label: o, color: OWNER_COLOR, kindLabel: t.vocab.owner, onSelect: () => addFilter({ type: 'owner', id: o }) })),
   ];
 
   return (
