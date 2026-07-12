@@ -1,7 +1,7 @@
 import { useLookups } from '../../lookups';
 import { useT } from '../../i18n';
 import type { EffectiveTag, TransitionDetail } from '../../types';
-import { Chip, kindColor } from '../shared/Chip';
+import { Chip, kindColor, OWNER_COLOR } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
 import { Icon } from '../shared/Icon';
 
@@ -12,9 +12,10 @@ interface Props {
   onToggleOpen: () => void;
   onFilterVocab: (id: string) => void;
   onFilterTag: (id: string) => void;
+  onFilterOwner: (owner: string) => void;
 }
 
-export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab, onFilterTag }: Props) {
+export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab, onFilterTag, onFilterOwner }: Props) {
   const t = useT();
   const { tagById, vocabById } = useLookups();
 
@@ -73,18 +74,23 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
           <CommentButton recordType="transition" recordId={detail.id} recordTitle={detail.actionLabel || detail.action} anchor="then" anchorLabel={t.flow.result} />
         </div>
         <div class="spec-card-then-list">
-          {(detail.then || []).map((id, i) => (
-            <button key={id} type="button" class="spec-card-cond-row" onClick={() => onFilterVocab(id)} title={t.browse.clickToFilter}>
-              <span class="spec-card-then-n dim">{i + 1}</span>
-              <span class="spec-card-cond-label">
-                {(detail.thenLabels || [])[i] || id}
-                {vocabById.get(id)?.owner && (
-                  <span class="spec-card-owner dim"> {t.vocab.owner}: {vocabById.get(id)?.owner}</span>
+          {(detail.then || []).map((id, i) => {
+            const owner = vocabById.get(id)?.owner;
+            return (
+              <div key={id} class="spec-card-cond-row">
+                <span class="spec-card-then-n dim">{i + 1}</span>
+                <button type="button" class="spec-card-cond-label-btn" onClick={() => onFilterVocab(id)} title={t.browse.clickToFilter}>
+                  <span class="spec-card-cond-label">{(detail.thenLabels || [])[i] || id}</span>
+                  <Icon name="plus" size={13} class="filter-plus-icon" />
+                </button>
+                {owner && (
+                  <Chip color={OWNER_COLOR} onClick={() => onFilterOwner(owner)} filterable title={t.browse.clickToFilter}>
+                    {owner}
+                  </Chip>
                 )}
-              </span>
-              <Icon name="plus" size={13} class="filter-plus-icon" />
-            </button>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
 

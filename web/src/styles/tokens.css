@@ -72,6 +72,9 @@
   --t-act: var(--tag-violet);
   --t-giv: var(--lm-warning-ic);
   --t-then: var(--lm-success);
+  /* vocab-owner-tag: owner pill — distinct from every tag-kind/category
+     color above, --tag-green was reserved-but-unused until now. */
+  --k-owner: var(--tag-green);
 
   --lm-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', sans-serif;
   --lm-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

@@ -2,7 +2,7 @@ import { useLookups } from '../../lookups';
 import { useT } from '../../i18n';
 import type { Transition, VocabEntry } from '../../types';
 import { Markdown } from '../Markdown';
-import { Chip, kindColor } from '../shared/Chip';
+import { Chip, kindColor, OWNER_COLOR } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
 import { Icon } from '../shared/Icon';
 import type { IconName } from '../shared/Icon';
@@ -12,6 +12,7 @@ interface Props {
   uses: Transition[];
   cardRef: (el: HTMLElement | null) => void;
   onFilterTag: (id: string) => void;
+  onFilterOwner: (owner: string) => void;
   onSelectTx: (txId: string) => void;
 }
 
@@ -28,7 +29,7 @@ const CATEGORY_ICON: Record<VocabEntry['category'], IconName> = {
 // tag-card-spec-list/-row/-label/-id) are reused as-is from TagCard's CSS;
 // they're generic "card head" / "row of records" patterns, not actually
 // tag-specific.
-export function VocabCard({ entry, uses, cardRef, onFilterTag, onSelectTx }: Props) {
+export function VocabCard({ entry, uses, cardRef, onFilterTag, onFilterOwner, onSelectTx }: Props) {
   const t = useT();
   const { tagById, transitionLabel } = useLookups();
   const tags = entry.tags || [];
@@ -52,16 +53,29 @@ export function VocabCard({ entry, uses, cardRef, onFilterTag, onSelectTx }: Pro
             mark is reserved for clicks that actually narrow something
             (the tag chips below). */}
         <span class="tag-card-name vocab-card-name">{entry.label}</span>
-        {entry.owner && (
-          <span class="vocab-card-owner">
-            {t.vocab.owner}: {entry.owner}
-          </span>
-        )}
       </div>
 
       {entry.description && (
         <div class="tag-card-body">
           <Markdown text={entry.description} />
+        </div>
+      )}
+
+      {entry.owner && (
+        <div class="card-section">
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">
+              <Icon name="user" size={14} /> {t.vocab.owner}{' '}
+              <span class="spec-card-hint dim">
+                <Icon name="plus" size={11} class="filter-plus-icon" /> {t.browse.clickToFilter}
+              </span>
+            </span>
+          </div>
+          <div class="spec-card-chip-row">
+            <Chip color={OWNER_COLOR} onClick={() => onFilterOwner(entry.owner!)} filterable>
+              {entry.owner}
+            </Chip>
+          </div>
         </div>
       )}
 

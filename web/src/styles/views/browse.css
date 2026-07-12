@@ -601,17 +601,31 @@
   min-width: 0;
 }
 
+/* Then-row's vocab label + owner pill are separate clickable elements
+   (vocab-filter vs owner-filter) living inside one .spec-card-cond-row —
+   this is the vocab-label part, laid out like the row itself used to be
+   as a whole button (see SpecCard.tsx's then-list for why it split). */
+.spec-card-cond-label-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .spec-card-then-n {
   font-family: var(--lm-font-mono);
   font-size: var(--fs-3xs);
   font-weight: 600;
   flex-shrink: 0;
-}
-
-.spec-card-owner {
-  font-family: var(--lm-font-mono);
-  font-size: var(--fs-3xs);
-  margin-left: 6px;
 }
 
 .spec-card-hint {

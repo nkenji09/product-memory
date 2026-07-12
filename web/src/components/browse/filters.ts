@@ -1,4 +1,4 @@
-import type { FacetTreeNode, Tag, TransitionDetail } from '../../types';
+import type { FacetTreeNode, Tag, TransitionDetail, VocabEntry } from '../../types';
 
 // Pure, presentation-only helpers for BrowseView's AND-filter chips (design
 // §A-2 "検索レール＋タグ/仕様カード"). Every membership test here runs
@@ -11,7 +11,10 @@ import type { FacetTreeNode, Tag, TransitionDetail } from '../../types';
 // not a new derivation — the same pattern the pre-refactor
 // TagsView.tsx/TagHierarchyTree.tsx already used.
 
-export type FilterCondition = { type: 'tag' | 'vocab'; id: string };
+// 'owner' (vocab-owner-tag): VocabEntry.owner is a plain string field, not a
+// tag record, so it carries its own condition shape rather than being
+// shoehorned into 'tag'/'vocab' — `id` holds the raw owner string itself.
+export type FilterCondition = { type: 'tag' | 'vocab'; id: string } | { type: 'owner'; id: string };
 
 /** All tag ids in the subtree rooted at `rootId` (inclusive of rootId itself). */
 export function descendantIds(trees: Record<string, FacetTreeNode[]>, rootId: string): Set<string> {
@@ -90,9 +93,15 @@ export function tagMatchesFilters(tag: Tag, filters: FilterCondition[], trees: R
   });
 }
 
-export function specMatchesFilters(detail: TransitionDetail, filters: FilterCondition[]): boolean {
+export function specMatchesFilters(
+  detail: TransitionDetail,
+  filters: FilterCondition[],
+  vocabById: Map<string, VocabEntry>,
+): boolean {
   const vocabIds = [detail.action, ...(detail.given || []), ...(detail.then || [])];
-  return filters.every((f) =>
-    f.type === 'tag' ? (detail.effectiveTags || []).some((et) => et.id === f.id) : vocabIds.includes(f.id),
-  );
+  return filters.every((f) => {
+    if (f.type === 'tag') return (detail.effectiveTags || []).some((et) => et.id === f.id);
+    if (f.type === 'vocab') return vocabIds.includes(f.id);
+    return vocabIds.some((vid) => vocabById.get(vid)?.owner === f.id);
+  });
 }
