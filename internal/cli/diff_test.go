@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -185,6 +186,101 @@ func TestDiff_ExplicitInvalidRefStillErrors(t *testing.T) {
 	out, err := run(t, dir, "diff", "no-such-ref")
 	if err == nil {
 		t.Fatalf("expected diff --ref no-such-ref to fail (exit non-zero), output:\n%s", out)
+	}
+}
+
+// R-2: `pmem diff A B`（ref 対 ref・2引数）。
+
+func TestDiff_TwoRefsShowsCommitDiff(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+	seedListFixture(t, dir)
+	gitCommitAllT(t, dir, "seed")
+
+	if out, err := run(t, dir, "vocab", "add", "condition", "cond.new", "--label", "新しい条件"); err != nil {
+		t.Fatalf("vocab add: %v\n%s", out, err)
+	}
+	gitCommitAllT(t, dir, "add cond.new")
+
+	out, err := run(t, dir, "diff", "HEAD^", "HEAD")
+	if err != nil {
+		t.Fatalf("diff HEAD^ HEAD: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "cond.new") {
+		t.Fatalf("expected diff to report cond.new added in the last commit:\n%s", out)
+	}
+	if !strings.Contains(out, "diff: HEAD^ vs HEAD") {
+		t.Fatalf("expected header to show both refs:\n%s", out)
+	}
+}
+
+func TestDiff_TwoRefsJSONValidAndSameSchema(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+	seedListFixture(t, dir)
+	gitCommitAllT(t, dir, "seed")
+
+	if out, err := run(t, dir, "vocab", "add", "condition", "cond.new", "--label", "新しい条件"); err != nil {
+		t.Fatalf("vocab add: %v\n%s", out, err)
+	}
+	gitCommitAllT(t, dir, "add cond.new")
+
+	out, err := run(t, dir, "diff", "HEAD^", "HEAD", "--json")
+	if err != nil {
+		t.Fatalf("diff HEAD^ HEAD --json: %v\n%s", err, out)
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(out), &parsed); err != nil {
+		t.Fatalf("expected valid JSON, got error %v:\n%s", err, out)
+	}
+	for _, key := range []string{"ref", "afterRef", "vocab", "tags", "transitions", "decisions"} {
+		if _, ok := parsed[key]; !ok {
+			t.Fatalf("expected JSON key %q (same schema as 0/1-arg path), got: %v", key, parsed)
+		}
+	}
+}
+
+func TestDiff_TwoRefsNoChanges(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+	seedListFixture(t, dir)
+	gitCommitAllT(t, dir, "seed")
+	cmd := exec.Command("git", "commit", "-q", "--allow-empty", "-m", "empty")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git commit --allow-empty: %v\n%s", err, out)
+	}
+
+	out, err := run(t, dir, "diff", "HEAD^", "HEAD")
+	if err != nil {
+		t.Fatalf("diff HEAD^ HEAD: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "差分なし") {
+		t.Fatalf("expected 差分なし, got:\n%s", out)
+	}
+}
+
+func TestDiff_TwoRefsUnknownRefIsError(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+	seedListFixture(t, dir)
+	gitCommitAllT(t, dir, "seed")
+
+	out, err := run(t, dir, "diff", "HEAD", "no-such-ref")
+	if err == nil {
+		t.Fatalf("expected diff HEAD no-such-ref to fail (exit non-zero), output:\n%s", out)
+	}
+}
+
+func TestDiff_ThreeArgsRejected(t *testing.T) {
+	dir := t.TempDir()
+	gitInitT(t, dir)
+	seedListFixture(t, dir)
+	gitCommitAllT(t, dir, "seed")
+
+	out, err := run(t, dir, "diff", "HEAD", "HEAD", "HEAD")
+	if err == nil {
+		t.Fatalf("expected diff with 3 args to fail (exit non-zero), output:\n%s", out)
 	}
 }
 

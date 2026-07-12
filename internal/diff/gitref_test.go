@@ -218,6 +218,108 @@ func TestDiff_ExplicitRefStillErrorsWhenNoCommits(t *testing.T) {
 	}
 }
 
+// R-2: `pmem diff A B`（ref 対 ref）— タスク粒度=commit を成立させるコア。
+
+func TestDiffRefs_VocabAddedBetweenTwoCommits(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+	commitAll(t, dir, "seed")
+
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.b.json"), `{"id":"cond.b","category":"condition","label":"b"}`+"\n")
+	commitAll(t, dir, "add cond.b")
+
+	r, err := DiffRefs(s, "HEAD^", "HEAD")
+	if err != nil {
+		t.Fatalf("DiffRefs: %v", err)
+	}
+	if len(r.Vocab.Added) != 1 || r.Vocab.Added[0].ID != "cond.b" {
+		t.Fatalf("Vocab.Added = %+v, want [cond.b]", r.Vocab.Added)
+	}
+	if r.Ref != "HEAD^" || r.AfterRef != "HEAD" {
+		t.Fatalf("Ref/AfterRef = %q/%q, want HEAD^/HEAD", r.Ref, r.AfterRef)
+	}
+}
+
+// このテストが受け入れ条件1「実データで `pmem diff <commit>^ <commit>` が
+// 『その commit の変更』を出せる」の実証（複数フィールドにまたがる変更を1コミットに
+// 含めても正しく検出できることまで確認する）。
+func TestDiffRefs_SingleCommitChangeAcrossFields(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	txPath := filepath.Join(dir, ".pmem", "transitions", "T-1.json")
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "act.a.json"), `{"id":"act.a","category":"action","label":"a"}`+"\n")
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "eff.a.json"), `{"id":"eff.a","category":"effect","label":"a"}`+"\n")
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "eff.b.json"), `{"id":"eff.b","category":"effect","label":"b"}`+"\n")
+	writeFile(t, txPath, `{"id":"T-1","action":"act.a","given":[],"then":["eff.a","eff.b"]}`+"\n")
+	commitAll(t, dir, "seed")
+
+	// 1コミットに: 語彙追加 + 遷移の then 変更（順序変更のみ）をまとめて含める。
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.new.json"), `{"id":"cond.new","category":"condition","label":"new"}`+"\n")
+	writeFile(t, txPath, `{"id":"T-1","action":"act.a","given":[],"then":["eff.b","eff.a"]}`+"\n")
+	commitAll(t, dir, "add cond.new + reorder T-1.then")
+
+	r, err := DiffRefs(s, "HEAD^", "HEAD")
+	if err != nil {
+		t.Fatalf("DiffRefs: %v", err)
+	}
+	if len(r.Vocab.Added) != 1 || r.Vocab.Added[0].ID != "cond.new" {
+		t.Fatalf("Vocab.Added = %+v, want [cond.new]", r.Vocab.Added)
+	}
+	if len(r.Transitions.Changed) != 1 || !r.Transitions.Changed[0].ThenReordered {
+		t.Fatalf("Transitions.Changed = %+v, want 1 entry with ThenReordered=true", r.Transitions.Changed)
+	}
+}
+
+func TestDiffRefs_NoChangesReportsEmpty(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+	commitAll(t, dir, "seed")
+	runGitT(t, dir, "commit", "-q", "--allow-empty", "-m", "empty")
+
+	r, err := DiffRefs(s, "HEAD^", "HEAD")
+	if err != nil {
+		t.Fatalf("DiffRefs: %v", err)
+	}
+	if !r.Empty() {
+		t.Fatalf("expected no diff between identical snapshots, got %+v", r)
+	}
+}
+
+func TestDiffRefs_UnknownBeforeRefIsError(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+	commitAll(t, dir, "seed")
+
+	if _, err := DiffRefs(s, "does-not-exist", "HEAD"); err == nil {
+		t.Fatalf("expected error for unresolvable before-ref")
+	}
+}
+
+func TestDiffRefs_UnknownAfterRefIsError(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+	commitAll(t, dir, "seed")
+
+	if _, err := DiffRefs(s, "HEAD", "does-not-exist"); err == nil {
+		t.Fatalf("expected error for unresolvable after-ref")
+	}
+}
+
+// 両側とも明示 ref なので、Diff の「既定 ref フォールバック」は適用されず、
+// ベースライン欠落（.pmem を含まない ref）は常にエラーになる。
+func TestDiffRefs_RefWithoutPmemDirIsError(t *testing.T) {
+	dir, s := gitTestRepo(t)
+	writeFile(t, filepath.Join(dir, "README.md"), "hello\n")
+	runGitT(t, dir, "add", "README.md")
+	runGitT(t, dir, "commit", "-q", "-m", "no pmem yet")
+
+	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
+	commitAll(t, dir, "add pmem")
+
+	if _, err := DiffRefs(s, "HEAD^", "HEAD"); err == nil {
+		t.Fatalf("expected error when before-ref has no .pmem/ (no fallback for explicit ref-vs-ref)")
+	}
+}
+
 func TestDiff_ValidBaselineOutputUnchangedByFallback(t *testing.T) {
 	dir, s := gitTestRepo(t)
 	writeFile(t, filepath.Join(dir, ".pmem", "vocab", "cond.a.json"), `{"id":"cond.a","category":"condition","label":"a"}`+"\n")
