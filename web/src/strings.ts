@@ -176,7 +176,6 @@ const ja = {
     proposalHeading: '提案',
     proposalUncommitted: '未コミット',
     proposalUnavailableError: '提案の差分を取得できませんでした',
-    proposalReordered: '順序が変わりました',
     // #27 P2′-rework（change-cockpit-design-v3.md §8）: 提案＝変更を持つ
     // レコードのコメント（別 why 欄は無い）。SpecCard のこのフラグは
     // 「変更はあるがまだコメントが無い」状態だけに出る控えめな pending 表示。
@@ -447,7 +446,6 @@ const en: Strings = {
     proposalHeading: 'Proposal',
     proposalUncommitted: 'Uncommitted',
     proposalUnavailableError: 'Could not load the proposal diff',
-    proposalReordered: 'Order changed',
     proposalCleanFlag: 'Change pending (no comment yet → drawer)',
     proposalWhatLabel: 'the proposal diff view',
     aiBadge: 'AI',
