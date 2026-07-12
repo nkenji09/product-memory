@@ -27,7 +27,7 @@ export function Header({ view, onSelectView }: Props) {
   const t = useT();
   const { lang, toggleLang } = useLang();
   const { settings, toggleTheme, incFont, decFont } = useViewerSettings();
-  const { comments, panelOpen, openPanel } = useComments();
+  const { comments, panelOpen, openPanel, proposals, proposalExists } = useComments();
   const { isNarrow, toggleDrawer } = useDrawer();
   const { productName, headerSubtitle } = useLookups();
   const headerRef = useRef<HTMLElement>(null);
@@ -71,6 +71,7 @@ export function Header({ view, onSelectView }: Props) {
   }, []);
 
   const showFilterToggle = isNarrow && usesRail(view);
+  const badgeCount = comments.length + proposals.filter(proposalExists).length;
 
   return (
     <header class="topbar" ref={headerRef}>
@@ -123,7 +124,12 @@ export function Header({ view, onSelectView }: Props) {
         <button type="button" class="topbar-icon-btn" aria-label={t.header.themeToggle} onClick={toggleTheme}>
           <Icon name={settings.theme === 'dark' ? 'moon' : 'sun'} size={17} />
         </button>
-        {comments.length > 0 && (
+        {/* #27 P2′ (change-cockpit-design-v3.md §7.5): badge = comments +
+            proposals, both scoped to the active task — proposals only count
+            while their underlying change still exists in the pending diff
+            (reverted/merged-away changes drop out, static export is
+            always 0), so the badge doubles as "something changed" alert. */}
+        {badgeCount > 0 && (
           <button
             type="button"
             class={'topbar-icon-btn comment-header-btn' + (panelOpen ? ' active' : '')}
@@ -131,7 +137,7 @@ export function Header({ view, onSelectView }: Props) {
             onClick={openPanel}
           >
             <Icon name="message-filled" size={18} />
-            <span class="comment-header-badge">{comments.length}</span>
+            <span class="comment-header-badge">{badgeCount}</span>
           </button>
         )}
         <button
