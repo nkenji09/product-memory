@@ -254,9 +254,6 @@ export interface TransitionChange {
   givenAdded?: string[];
   givenRemoved?: string[];
   thenChanged?: boolean;
-  /** Given/tags are set comparisons; then is an ordered list — this
-      flags a then whose *set* is unchanged but whose order differs (§3.2). */
-  thenReordered?: boolean;
   tagsAdded?: string[];
   tagsRemoved?: string[];
 }
