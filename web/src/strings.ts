@@ -179,6 +179,11 @@ const ja = {
     proposalWhatLabel: '提案の差分表示',
     proposalUnavailableError: '提案の差分を取得できませんでした',
     proposalReordered: '順序が変わりました',
+    // #27 P2′: 提案メタ層（task 束ね＋why 下書き・localStorage）。
+    proposalsSectionHeading: 'このタスクの提案',
+    proposalGone: '本体消失（変更が取り消されました）',
+    proposalWhyLabel: 'なぜ必要か（下書き）',
+    proposalWhyPlaceholder: 'この提案が必要な理由を書く…',
   },
   // lookups.tsx の describeMatch()（検索結果の一致理由テキスト）。
   lookups: {
@@ -387,6 +392,10 @@ const en: Strings = {
     proposalWhatLabel: 'the proposal diff view',
     proposalUnavailableError: 'Could not load the proposal diff',
     proposalReordered: 'Order changed',
+    proposalsSectionHeading: 'Proposals in this task',
+    proposalGone: 'Change reverted (proposal body gone)',
+    proposalWhyLabel: 'Why (draft)',
+    proposalWhyPlaceholder: 'Explain why this proposal is needed…',
   },
   lookups: {
     searchById: 'transition id',

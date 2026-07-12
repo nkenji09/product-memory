@@ -1,9 +1,10 @@
 import { useComments, recordTypeMeta } from './useComments';
-import type { CommentRecord } from './useComments';
+import type { CommentRecord, Proposal } from './useComments';
 import { ProposalCard } from './ProposalCard';
 import { useT } from '../../i18n';
 import type { Strings } from '../../i18n';
 import { Icon } from '../shared/Icon';
+import { useLookups } from '../../lookups';
 import { useBodyScrollLock } from '../../scrollLock';
 
 interface Props {
@@ -65,7 +66,11 @@ export function CommentPanel({ onGoto }: Props) {
     startCreateTask,
     cancelCreateTask,
     saveNewTask,
+    proposals,
+    proposalExists,
+    updateProposalWhy,
   } = useComments();
+  const { transitionLabel } = useLookups();
 
   // Locks background scroll while the panel is open — unlike BrowseRail's
   // drawer, CommentPanel is a fixed slide-over at every viewport width (not
@@ -75,6 +80,14 @@ export function CommentPanel({ onGoto }: Props) {
   if (!panelOpen) return null;
 
   const sorted = comments.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+
+  // §7.8: focusedTx's proposal (if any) pins to the top instead of being the
+  // *only* card shown (landed P2 behavior) — the rest of the active task's
+  // proposals still list below it.
+  const isFocusedProposal = (p: Proposal) => !!focusedTx && p.recordRef.type === 'transition' && p.recordRef.id === focusedTx.id;
+  const sortedProposals = proposals
+    .slice()
+    .sort((a, b) => (isFocusedProposal(b) ? 1 : 0) - (isFocusedProposal(a) ? 1 : 0) || b.updatedAt - a.updatedAt);
 
   return (
     <>
@@ -148,7 +161,39 @@ export function CommentPanel({ onGoto }: Props) {
         )}
 
         <div class="comment-panel-body">
-          {focusedTx && <ProposalCard txId={focusedTx.id} />}
+          {sortedProposals.length > 0 && (
+            <div class="proposal-section">
+              <div class="proposal-section-head">
+                <Icon name="git-compare" size={13} /> {t.comments.proposalsSectionHeading}{' '}
+                <span class="comment-panel-count">{sortedProposals.length}</span>
+              </div>
+              {sortedProposals.map((p) => {
+                const exists = proposalExists(p);
+                const label = p.recordRef.type === 'transition' ? transitionLabel(p.recordRef.id) : { primary: p.recordRef.id };
+                return (
+                  <div key={p.id} class={'proposal-block' + (isFocusedProposal(p) ? ' proposal-block-focused' : '')}>
+                    <div class="proposal-block-head">
+                      <span class="proposal-block-title">{label.primary}</span>
+                      {label.secondary && <span class="dim">{label.secondary}</span>}
+                      {!exists && <span class="proposal-block-gone">{t.comments.proposalGone}</span>}
+                    </div>
+                    {exists && p.recordRef.type === 'transition' && <ProposalCard txId={p.recordRef.id} />}
+                    <label class="proposal-why-label" for={`proposal-why-${p.id}`}>
+                      {t.comments.proposalWhyLabel}
+                    </label>
+                    <textarea
+                      id={`proposal-why-${p.id}`}
+                      class="proposal-why-input"
+                      rows={2}
+                      placeholder={t.comments.proposalWhyPlaceholder}
+                      value={p.why}
+                      onInput={(e) => updateProposalWhy(p.id, (e.target as HTMLTextAreaElement).value)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {composer && (
             <div class="comment-composer">
