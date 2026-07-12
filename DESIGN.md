@@ -330,7 +330,8 @@ pmem tx rename <id> --to <newId>                          # decisions の target
 pmem tx rm <id> --why <理由> --force                      # 破壊的（decisions も道連れ）
 
 # 意思決定（transition か tag に付く）
-pmem decide --on <transition|tag>:<id> --why <t> [--changed <s>] [--ref <s>]
+pmem decide --on <transition|tag>:<id> --why <t> [--changed <s>] [--ref <s>] [--commit <hash>…]
+pmem decision add-commit <decisionId> <hash> [<hash>...] [--json]  # 既存 decision の commits[] に追記専用（§3.5）
 
 # 読み取り / 派生ビュー
 pmem show tx <id> [--resolve] [--json]                    # 遷移 1 件（語彙 label 解決）

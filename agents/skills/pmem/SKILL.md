@@ -65,6 +65,9 @@ pmem decide --on transition:<id> --why "評価: 取り込まない。<理由>" -
 decision は **append-only**（過去を消す提案＝取り込み拒否の最有力根拠）。「却下」を一言で済ませず、
 **なぜ取り込まないかを decision に根拠つきで残す**——それが次回同じ提案が来たときの既決になる。
 
+上記の判定材料をもとに、レビューコメントを受け取ってから decision に着地するまでの具体的な手順
+（波及検索・兄弟 transition との整合・`commits[]` の結線）は [pmem-change スキル](../pmem-change/SKILL.md) へ。
+
 ## 良い記録の書き方（DESIGN §8）— CLI の how より what で価値が決まる
 
 1. **アクションの網羅** — 対象の外部 IF（入口）から機械的に洗い出す。ここで漏らすと以降すべて漏れる。
