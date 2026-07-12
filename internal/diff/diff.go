@@ -73,6 +73,10 @@ type Result struct {
 	// ことを示す（初回ユーザー向け。ユーザーが gitref を明示指定した場合はこの
 	// フォールバックは起きず、ベースライン欠落は通常どおりエラーになる）。
 	BaselineMissing bool `json:"baselineMissing,omitempty"`
+	// AfterRef は DiffRefs（ref 対 ref・2引数の `pmem diff A B`）でのみ設定される。
+	// 空文字なら Diff（作業ツリー vs Ref）の従来経路であることを示す（後方互換の
+	// ための additive フィールド・0/1 引数の JSON 出力に影響しない）。
+	AfterRef string `json:"afterRef,omitempty"`
 }
 
 // Empty は現在の作業ツリーと ref との間に意味のある差分が無いことを返す。
@@ -99,17 +103,7 @@ func Diff(s *store.Store, ref string) (Result, error) {
 		ref = "HEAD"
 	}
 
-	projectRoot := filepath.Dir(s.Dir)
-	repoRoot, err := gitRepoRoot(projectRoot)
-	if err != nil {
-		return Result{}, err
-	}
-	// git rev-parse --show-toplevel はシンボリックリンクを解決した絶対パスを返す
-	// （macOS の /var -> /private/var 等）。s.Dir 側も解決してから相対化しないと
-	// filepath.Rel が ".." だらけの誤った相対パスを作ってしまう。
-	repoRootResolved := resolveSymlinks(repoRoot)
-	pmemDirResolved := resolveSymlinks(s.Dir)
-	relDir, err := relToRepoRoot(repoRootResolved, pmemDirResolved)
+	repoRootResolved, relDir, err := repoRootAndRelDir(s)
 	if err != nil {
 		return Result{}, err
 	}
@@ -139,6 +133,53 @@ func Diff(s *store.Store, ref string) (Result, error) {
 	result := compute(ref, before, after)
 	result.BaselineMissing = baselineMissing
 	return result, nil
+}
+
+// DiffRefs は2つの git ref 間（beforeRef vs afterRef）の semantic diff を計算する
+// （`pmem diff A B`・§4 R-2）。Diff と異なり両側とも明示的な ref であり作業ツリーを
+// 一切読まないため、「タスク粒度=commit」を成立させるコア（`pmem diff <commit>^ <commit>`
+// でチェックアウト無しに1コミット分の変更を出せる）。どちらかの ref が解決できない・
+// ref 上に .pmem/ が無い場合は Diff の「既定 ref フォールバック」は適用されず、常に
+// エラーを返す（ユーザーが両方とも明示指定しているため typo を握り潰さない）。
+func DiffRefs(s *store.Store, beforeRef, afterRef string) (Result, error) {
+	repoRootResolved, relDir, err := repoRootAndRelDir(s)
+	if err != nil {
+		return Result{}, err
+	}
+
+	before, err := loadRefSnapshot(repoRootResolved, relDir, beforeRef)
+	if err != nil {
+		return Result{}, err
+	}
+	after, err := loadRefSnapshot(repoRootResolved, relDir, afterRef)
+	if err != nil {
+		return Result{}, err
+	}
+
+	result := compute(beforeRef, before, after)
+	result.AfterRef = afterRef
+	return result, nil
+}
+
+// repoRootAndRelDir は s の .pmem/ を含む git リポジトリのルート（シンボリックリンク
+// 解決済み）と、そのルートから .pmem/ への相対パスを返す（Diff / DiffRefs 共通の
+// リポジトリ解決ロジック）。
+func repoRootAndRelDir(s *store.Store) (repoRootResolved, relDir string, err error) {
+	projectRoot := filepath.Dir(s.Dir)
+	repoRoot, err := gitRepoRoot(projectRoot)
+	if err != nil {
+		return "", "", err
+	}
+	// git rev-parse --show-toplevel はシンボリックリンクを解決した絶対パスを返す
+	// （macOS の /var -> /private/var 等）。s.Dir 側も解決してから相対化しないと
+	// filepath.Rel が ".." だらけの誤った相対パスを作ってしまう。
+	repoRootResolved = resolveSymlinks(repoRoot)
+	pmemDirResolved := resolveSymlinks(s.Dir)
+	relDir, err = relToRepoRoot(repoRootResolved, pmemDirResolved)
+	if err != nil {
+		return "", "", err
+	}
+	return repoRootResolved, relDir, nil
 }
 
 func compute(ref string, before, after refSnapshot) Result {

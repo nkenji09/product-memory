@@ -14,20 +14,24 @@ import (
 func newDiffCmd() *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
-		Use:   "diff [gitref]",
-		Short: "現在の作業ツリーと gitref（既定 HEAD）の semantic diff（§4）",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "diff [<ref1> [<ref2>]]",
+		Short: "作業ツリー vs gitref（既定 HEAD）、または gitref 対 gitref の semantic diff（§4）",
+		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var ref string
-			if len(args) == 1 {
-				ref = args[0]
-			}
-
 			s, err := openStore()
 			if err != nil {
 				return err
 			}
-			result, err := diff.Diff(s, ref)
+
+			var result diff.Result
+			switch len(args) {
+			case 2:
+				result, err = diff.DiffRefs(s, args[0], args[1])
+			case 1:
+				result, err = diff.Diff(s, args[0])
+			default:
+				result, err = diff.Diff(s, "")
+			}
 			if err != nil {
 				return err
 			}
@@ -58,7 +62,11 @@ func newDiffCmd() *cobra.Command {
 
 func printDiff(cmd *cobra.Command, r diff.Result) {
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "diff: 作業ツリー vs %s\n", r.Ref)
+	if r.AfterRef != "" {
+		fmt.Fprintf(out, "diff: %s vs %s\n", r.Ref, r.AfterRef)
+	} else {
+		fmt.Fprintf(out, "diff: 作業ツリー vs %s\n", r.Ref)
+	}
 	if r.Empty() {
 		fmt.Fprintln(out, "差分なし")
 		return
