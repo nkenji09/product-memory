@@ -212,6 +212,12 @@ pmem kind set action <残す kind の一覧>   # 未使用の action kind があ
 pmem kind set effect <残す kind の一覧>   # 未使用の effect kind があった場合のみ
 ```
 
+**注意**: `tagKinds`（`pmem config set tagKinds`）と `kind set`（vocab の action/effect）は、
+実タグ／実 vocab が残っている kind を外そうとすると CLI が使用中エラーで弾いてくれるが、
+`facetKinds`/`traceabilityKinds` にはこの使用中チェックが無い。実タグが残っている kind を
+`facetKinds` からだけ外す、といった操作もエラーなく通ってしまうので、**上のチェック方法で
+0 件と確認できた kind だけを慎重に外す**（tagKinds からも同時に外れて 0 件になった kind に限る）。
+
 （`pmem lint` の `unused-vocab` info は個々の vocab エントリ単位の警告で、この kind バケツ単位の
 チェックとは粒度が異なる。両方見るのが望ましい。）
 
