@@ -29,11 +29,13 @@ import css from 'highlight.js/lib/languages/css';
 import diff from 'highlight.js/lib/languages/diff';
 import dockerfile from 'highlight.js/lib/languages/dockerfile';
 import go from 'highlight.js/lib/languages/go';
+import ini from 'highlight.js/lib/languages/ini';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
 import markdownLang from 'highlight.js/lib/languages/markdown';
 import plaintext from 'highlight.js/lib/languages/plaintext';
 import python from 'highlight.js/lib/languages/python';
+import rust from 'highlight.js/lib/languages/rust';
 import sql from 'highlight.js/lib/languages/sql';
 import typescript from 'highlight.js/lib/languages/typescript';
 import xml from 'highlight.js/lib/languages/xml';
@@ -47,6 +49,11 @@ hljs.registerLanguage('diff', diff);
 hljs.registerLanguage('dockerfile', dockerfile);
 hljs.registerLanguage('go', go);
 hljs.registerLanguage('golang', go);
+// ini.js declares `aliases: ['toml']` itself (highlight.js ships no
+// dedicated TOML grammar; INI's key=value/[section] syntax is the closest
+// built-in match, so this is the grammar highlight.js's own docs point
+// `toml` at) — registerLanguage wires that alias up automatically.
+hljs.registerLanguage('ini', ini);
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('js', javascript);
 hljs.registerLanguage('json', json);
@@ -56,12 +63,26 @@ hljs.registerLanguage('plaintext', plaintext);
 hljs.registerLanguage('text', plaintext);
 hljs.registerLanguage('python', python);
 hljs.registerLanguage('py', python);
+// rust.js declares `aliases: ['rs']` itself, so `rs` fences resolve too.
+hljs.registerLanguage('rust', rust);
 hljs.registerLanguage('sql', sql);
+// typescript.js/javascript.js both declare aliases including 'jsx'/'tsx'
+// (js/jsx/mjs/cjs and jsx/tsx/mts/cts respectively), so those fence
+// languages already resolve via the two registrations below — no separate
+// import needed. `react` isn't a real fence-language id either grammar
+// declares, but authors write ```react for React/JSX snippets often enough
+// to alias it explicitly onto the TypeScript grammar (handles both .jsx and
+// .tsx-flavored React code, since TS is a superset).
 hljs.registerLanguage('typescript', typescript);
 hljs.registerLanguage('ts', typescript);
-hljs.registerLanguage('tsx', typescript);
+hljs.registerLanguage('react', typescript);
 hljs.registerLanguage('html', xml);
 hljs.registerLanguage('xml', xml);
+// highlight.js ships no Vue-SFC grammar; XML's own `<script>`/`<style>` tag
+// handling already sub-languages into javascript/css (see xml.js), so
+// aliasing `vue` to the XML grammar highlights the template markup plus
+// embedded script/style blocks reasonably without a dedicated dependency.
+hljs.registerLanguage('vue', xml);
 hljs.registerLanguage('yaml', yaml);
 hljs.registerLanguage('yml', yaml);
 
