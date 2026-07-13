@@ -190,6 +190,19 @@
   gap: 6px;
 }
 
+/* 種別/索引の見出しラベルを落とし、セクション境界はこの区切り線で示す
+   （依頼C-2）。rail 自体の gap(--sp-4) の中に置く 1px の hairline。 */
+.browse-rail-divider {
+  height: 1px;
+  background: var(--lm-border);
+  margin: 0;
+}
+
+/* 索引ヘッダは「索引」ラベルを落とし件数バッジだけ残す（依頼C-2）。 */
+.browse-rail-index-head {
+  gap: 4px;
+}
+
 .browse-rail-label {
   display: inline-flex;
   align-items: center;
