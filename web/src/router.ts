@@ -28,6 +28,16 @@ export interface Route {
       record within this view's route" pattern as spec's tagId, added for
       comment-panel "位置へ移動" on vocab comments (2026-07-11 コメント拡張4件). */
   vocabId?: string;
+  /** BrowseView's search state (query/kindFacet/filters), carried as a query
+      string appended to the hash path (e.g. #/browse/tag/<id>?q=..&f=..) so
+      it composes with the existing path-segment routes above instead of
+      replacing them (url-state-sync handoff #4/#5). router.ts treats
+      searchFilters as an opaque wire string — filters.ts's encodeFilters/
+      decodeFilters own its FilterCondition[] codec; router.ts only knows it
+      as one more query param. */
+  searchQuery?: string;
+  searchKindFacet?: string;
+  searchFilters?: string;
 }
 
 const VIEWS: ViewName[] = ['home', 'browse', 'vocab', 'spec', 'tags', 'config'];
@@ -44,7 +54,13 @@ function isViewName(s: string): s is ViewName {
 }
 
 export function parseRoute(hash: string): Route {
-  const raw = hash.replace(/^#\/?/, '');
+  const withoutPrefix = hash.replace(/^#\/?/, '');
+  // Search-state query string (?q=..&k=..&f=..) is a suffix of the whole
+  // hash, after the path segments parsed below — split it off first so it
+  // never gets swept into the '/'-separated path parsing.
+  const qsIdx = withoutPrefix.indexOf('?');
+  const raw = qsIdx === -1 ? withoutPrefix : withoutPrefix.slice(0, qsIdx);
+  const queryString = qsIdx === -1 ? '' : withoutPrefix.slice(qsIdx + 1);
   if (!raw) return DEFAULT_ROUTE;
   const parts = raw.split('/').filter((p) => p.length > 0).map(decodeURIComponent);
   const view = parts[0];
@@ -65,6 +81,22 @@ export function parseRoute(hash: string): Route {
       if (parts[1]) route.vocabId = parts[1];
       break;
   }
+  if (queryString) {
+    // URLSearchParams decodes each value on .get() — plain text (q/k) needs
+    // no extra decode step; searchFilters is handed to filters.ts's
+    // decodeFilters as-is, which owns its own inner ':'/',' unescaping.
+    const params = new URLSearchParams(queryString);
+    const q = params.get('q');
+    const k = params.get('k');
+    if (q) route.searchQuery = q;
+    if (k) route.searchKindFacet = k;
+    // `f` uses has()/empty-string, not truthy-check like q/k above: an
+    // explicit `f=` (user cleared every filter chip) must round-trip as ''
+    // and stay distinct from "no `f` param at all" (BrowseView's
+    // filter-on-focus-tag default applies only in the latter case) — see
+    // BrowseView.tsx's deriveFilters.
+    if (params.has('f')) route.searchFilters = params.get('f') || '';
+  }
   return route;
 }
 
@@ -82,7 +114,18 @@ export function routeHash(route: Route): string {
       if (route.vocabId) seg.push(encodeURIComponent(route.vocabId));
       break;
   }
-  return `#/${seg.join('/')}`;
+  let hash = `#/${seg.join('/')}`;
+  // 'all' is kindFacet's default (BrowseView) — omitting it here is what
+  // keeps a facet-less search state from dirtying the URL (handoff #6).
+  const params = new URLSearchParams();
+  if (route.searchQuery) params.set('q', route.searchQuery);
+  if (route.searchKindFacet && route.searchKindFacet !== 'all') params.set('k', route.searchKindFacet);
+  // Explicit '' must still emit `f=` (see parseRoute) — only a fully-absent
+  // searchFilters (undefined) omits the param.
+  if (route.searchFilters !== undefined) params.set('f', route.searchFilters);
+  const qs = params.toString();
+  if (qs) hash += `?${qs}`;
+  return hash;
 }
 
 function currentRoute(): Route {
@@ -100,10 +143,16 @@ export function useHashRoute(): [Route, (route: Route) => void] {
 
   const navigate = (next: Route) => {
     const hash = routeHash(next);
-    if (window.location.hash === hash) {
-      setRoute(next);
-      return;
-    }
+    // No-op when nothing observable changes: `hash` is a full serialization
+    // of `next` (routeHash/parseRoute round-trip), so an unchanged hash
+    // means unchanged route content. Skipping setRoute here — rather than
+    // calling it with a same-content-but-new-reference `next` — keeps
+    // `route.searchFilters` (and any other array/object field) reference-
+    // stable across renders that don't actually navigate; BrowseView's URL
+    // sync effect (search state → hash) depends on that stability to avoid
+    // re-triggering itself every time an unrelated re-render hands it a
+    // fresh-but-equal object.
+    if (window.location.hash === hash) return;
     // Triggers the 'hashchange' listener above, which updates `route`; a
     // new browser history entry is pushed as a side effect of the
     // assignment itself (see module comment).
