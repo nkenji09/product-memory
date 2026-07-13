@@ -125,7 +125,6 @@ const ja = {
     fetchWarning: (n: number) => `${n} 件の読み込みに失敗しました（表示されているカードは正常です。再読み込みで再試行できます）`,
     parentLinkTitle: '親タグのカードへ移動',
     childLinkTitle: 'このカードへ移動',
-    railHeading: '検索条件',
     kindHeading: '種別',
   },
   // 複数画面で同じ語を使う汎用ボタン/操作ラベル（保存・キャンセル等）。
@@ -403,7 +402,6 @@ const en: Strings = {
     fetchWarning: (n) => `${n} item(s) failed to load (the cards shown are fine — reload to retry)`,
     parentLinkTitle: 'Go to parent tag card',
     childLinkTitle: 'Go to this card',
-    railHeading: 'Search conditions',
     kindHeading: 'Kind',
   },
   common: {

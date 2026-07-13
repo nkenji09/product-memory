@@ -128,15 +128,13 @@ export function BrowseRail({
     <>
       {isNarrow && drawerOpen && <div class="browse-rail-backdrop" onClick={closeDrawer} />}
       <aside class={'browse-rail' + (isNarrow ? ' browse-rail-narrow' : '') + (isNarrow && drawerOpen ? ' browse-rail-open' : '')}>
-        <div class="browse-rail-head">
-          <Icon name="sliders-horizontal" size={14} class="dim" />
-          <span class="browse-rail-label dim">{t.browse.railHeading}</span>
-          {isNarrow && (
+        {isNarrow && (
+          <div class="browse-rail-head">
             <button type="button" class="browse-rail-close" aria-label={t.common.close} onClick={closeDrawer}>
               <Icon name="x" size={17} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <div class="browse-rail-search-wrap">
           <Icon name="search" size={15} class="browse-rail-search-icon dim" />
