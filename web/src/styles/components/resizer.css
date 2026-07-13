@@ -1,0 +1,57 @@
+/* drawer-resize (依頼C-3) — 左 rail / 右コメントパネル共通のドラッグ式
+   リサイズハンドル。掴み代は6px、実際の border 上に -3px の余白で重ねる
+   ことでレイアウト幅への影響をゼロに保つ（.pmem-resizer--rail 側）。 */
+
+.pmem-resizer {
+  width: 6px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  position: relative;
+  z-index: 6;
+  touch-action: none;
+}
+
+.pmem-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 2px;
+  border-radius: var(--r-full);
+  background: transparent;
+  transition: background 0.12s ease;
+}
+
+.pmem-resizer:hover::after,
+.pmem-resizer.pmem-resizer-active::after {
+  background: var(--lm-primary);
+}
+
+/* 左 rail 用 — .browse-rail と同じ sticky/height で追随させ、marginで
+   実レイアウト幅をゼロに保ちつつ .browse-rail の右端に重ねる。 */
+.pmem-resizer--rail {
+  margin-left: -3px;
+  margin-right: -3px;
+  position: sticky;
+  top: var(--header-h, 56px);
+  align-self: flex-start;
+  height: calc(100dvh - var(--header-h, 56px));
+}
+
+/* 右コメントパネル用 — position:fixed の .comment-panel 内の左端に重ねる。 */
+.pmem-resizer--panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  height: auto;
+}
+
+/* リサイズは PC 表示のみ対象（drawer.tsx の BREAKPOINT=860px と合わせる）。
+   narrow はハンドル非表示・従来のドロワー幅のまま。 */
+@media (max-width: 860px) {
+  .pmem-resizer {
+    display: none;
+  }
+}

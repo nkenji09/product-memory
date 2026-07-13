@@ -14,8 +14,7 @@
   top: 56px;
   bottom: 0;
   right: 0;
-  width: 92%;
-  max-width: 400px;
+  width: min(92%, var(--pmem-comment-width, 400px));
   /* Explicit, not implicit `auto` (#20 drawerscroll fix — same root cause
      as .browse-rail-narrow in browse.css): without this, the panel grows
      to fit its content instead of being clipped to the viewport, leaving
@@ -28,6 +27,16 @@
   flex-direction: column;
   min-height: 0;
   box-shadow: var(--sh-lg);
+}
+
+/* drawer-resize (依頼C-3): 幅リサイズは PC 表示のみ対象。narrow
+   (drawer.tsx の BREAKPOINT=860px と合わせる) では --pmem-comment-width を
+   無視し、従来通りの 92%/max400px 挙動に固定する。 */
+@media (max-width: 860px) {
+  .comment-panel {
+    width: 92%;
+    max-width: 400px;
+  }
 }
 
 .comment-panel-head {

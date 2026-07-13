@@ -9,6 +9,8 @@ import type { Strings } from '../../i18n';
 import { Icon } from '../shared/Icon';
 import { useBodyScrollLock } from '../../scrollLock';
 import { api, isStaticMode, ApiError } from '../../api';
+import { Resizer } from '../layout/Resizer';
+import { COMMENT_PANEL_WIDTH } from '../layout/resizableWidths';
 
 interface Props {
   onGoto: (c: CommentRecord) => void;
@@ -184,6 +186,7 @@ export function CommentPanel({ onGoto }: Props) {
     <>
       <div class="comment-backdrop" onClick={closePanel} />
       <aside class="comment-panel">
+        <Resizer config={COMMENT_PANEL_WIDTH} direction="panel" className="pmem-resizer--panel" />
         <div class="comment-panel-head">
           <span class="comment-panel-title">
             <Icon name="message-filled" size={14} /> {t.comments.panelTitle} <span class="comment-panel-count">{comments.length}</span>

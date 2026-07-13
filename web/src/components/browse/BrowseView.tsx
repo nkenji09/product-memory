@@ -7,6 +7,8 @@ import { usePendingDiff } from '../../pendingDiff';
 import type { Config, FacetsResponse, FacetTreeNode, SpecReport, Tag, TraceabilityResponse, Transition, TransitionDetail } from '../../types';
 import { BrowseRail } from './BrowseRail';
 import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './BrowseRail';
+import { Resizer } from '../layout/Resizer';
+import { RAIL_WIDTH } from '../layout/resizableWidths';
 import { TagCard } from './TagCard';
 import { SpecCard } from './SpecCard';
 import { TombstoneCard } from './TombstoneCard';
@@ -651,6 +653,7 @@ export function BrowseView({
         indexItems={indexItems}
         suggestions={suggestions}
       />
+      <Resizer config={RAIL_WIDTH} direction="rail" className="pmem-resizer--rail" />
       <main class="browse-main">
         <div class="browse-main-head">
           <h1>
