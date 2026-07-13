@@ -11,17 +11,37 @@ import { TagCard } from './TagCard';
 import { SpecCard } from './SpecCard';
 import { TombstoneCard } from './TombstoneCard';
 import { NewTransitionForm } from './NewTransitionForm';
-import { parentsOf, childrenOf, tagMatchesFilters, specMatchesFilters } from './filters';
+import { parentsOf, childrenOf, tagMatchesFilters, specMatchesFilters, encodeFilters, decodeFilters } from './filters';
 import type { FilterCondition } from './filters';
 import { kindColor, OWNER_COLOR } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
 import { Icon } from '../shared/Icon';
+
+export interface SearchStateChange {
+  query: string;
+  kindFacet: string;
+  filtersEncoded: string;
+}
 
 interface Props {
   facet: 'tags' | 'specs';
   initialFocusTagId?: string;
   initialFocusTxId?: string;
   onGoToSpec: (txId: string) => void;
+  /** Current search state as reflected in the URL (router.ts's Route.search*
+      fields) — '' / 'all' / '' when the URL carries none. Read once per
+      mount/reset and on external (Back/Forward) change; see the two sync
+      effects below for how this composes with the legacy
+      filter-on-focus-tag default. */
+  searchQuery: string;
+  searchKindFacet: string;
+  /** undefined = no `f` param at all (legacy focus-tag default applies); ''
+      = param present but empty (user explicitly cleared every filter). */
+  searchFiltersEncoded: string | undefined;
+  /** Fired (debounced) whenever local query/kindFacet/filters state changes,
+      so the caller can push it into the URL (deep-linking, url-state-sync
+      handoff). */
+  onSearchChange: (state: SearchStateChange) => void;
 }
 
 function buildTagOrder(facetsData: FacetsResponse, allTags: Tag[], kindFacet: string): Array<{ id: string; depth: number }> {
@@ -49,7 +69,26 @@ function buildTagOrder(facetsData: FacetsResponse, allTags: Tag[], kindFacet: st
   return order;
 }
 
-export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToSpec }: Props) {
+/** Filters for a (re)seed: URL's `f=` wins whenever the param is present at
+    all — including an explicit empty string (the user cleared every filter
+    chip, which must stick across reload) — otherwise falls back to the
+    legacy "focus tag narrows to itself" default (#/spec/<id> with no `f`
+    param still shows just that tag's subtree). */
+function deriveFilters(searchFiltersEncoded: string | undefined, initialFocusTagId?: string): FilterCondition[] {
+  if (searchFiltersEncoded !== undefined) return decodeFilters(searchFiltersEncoded);
+  return initialFocusTagId ? [{ type: 'tag', id: initialFocusTagId }] : [];
+}
+
+export function BrowseView({
+  facet,
+  initialFocusTagId,
+  initialFocusTxId,
+  onGoToSpec,
+  searchQuery,
+  searchKindFacet,
+  searchFiltersEncoded,
+  onSearchChange,
+}: Props) {
   const t = useT();
   const { tagById: lookupTagById, vocabById, tagKindLabel } = useLookups();
   const { closeDrawer } = useDrawer();
@@ -77,13 +116,31 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
   const [tagsFailedCount, setTagsFailedCount] = useState(0);
   const [specsFailedCount, setSpecsFailedCount] = useState(0);
 
-  const [query, setQuery] = useState('');
-  const [kindFacet, setKindFacet] = useState('all');
-  const [filters, setFilters] = useState<FilterCondition[]>(() => (initialFocusTagId ? [{ type: 'tag', id: initialFocusTagId }] : []));
+  const [query, setQuery] = useState(() => searchQuery || '');
+  const [kindFacet, setKindFacet] = useState(() => searchKindFacet || 'all');
+  const [filters, setFilters] = useState<FilterCondition[]>(() => deriveFilters(searchFiltersEncoded, initialFocusTagId));
   const [openTx, setOpenTx] = useState<Record<string, boolean>>(() => (initialFocusTxId ? { [initialFocusTxId]: true } : {}));
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
   const scrollTarget = useRef<string | null>(initialFocusTagId || initialFocusTxId || null);
+  // Set on mount and on every reset/adopt below; consumed (and cleared) by
+  // the URL-sync effect further down so that a (re)seed — which may pull in
+  // the legacy filter-on-focus default rather than the URL's actual (empty)
+  // search state — doesn't immediately push/rewrite the hash and spam
+  // browser history before the user has done anything (handoff #6).
+  const skipNextSearchPush = useRef(true);
+
+  // Content-aware setFilters: bails out (returns the *same* array reference)
+  // when the derived value is equivalent to what's already there. Both
+  // effects below run on every mount, and a plain `setFilters(deriveFilters(
+  // ...))` would hand back a freshly-allocated-but-equal array each time —
+  // React can't tell that's a no-op via Object.is, so it re-renders, which
+  // re-fires the URL-push effect past its one-shot skip guard and spams the
+  // hash with the seeded default on a plain page load. Comparing the
+  // encodeFilters() wire form (already the canonical string) is cheap and
+  // exact.
+  const setFiltersIfChanged = (next: FilterCondition[]) =>
+    setFilters((prev) => (encodeFilters(prev) === encodeFilters(next) ? prev : next));
 
   // Per-facet reset (design's `filters: { tags: [], specs: [] }` — each
   // facet keeps its own independent filter/search/open state). This only
@@ -91,17 +148,55 @@ export function BrowseView({ facet, initialFocusTagId, initialFocusTxId, onGoToS
   // per route anyway; this additionally covers initialFocus* changing while
   // the same facet instance is reused for a same-facet legacy-route jump).
   useEffect(() => {
-    setQuery('');
-    setKindFacet('all');
-    setFilters(initialFocusTagId ? [{ type: 'tag', id: initialFocusTagId }] : []);
+    // Re-derive from the URL rather than hardcoding blank defaults — this
+    // effect also runs on first mount (alongside the lazy useState
+    // initializers above), and a reload of e.g. `#/browse?q=foo` must not
+    // have this reset immediately clobber the just-restored query back to
+    // '' (handoff #2).
+    setQuery(searchQuery || '');
+    setKindFacet(searchKindFacet || 'all');
+    setFiltersIfChanged(deriveFilters(searchFiltersEncoded, initialFocusTagId));
     setOpenTx(initialFocusTxId ? { [initialFocusTxId]: true } : {});
     scrollTarget.current = initialFocusTagId || initialFocusTxId || null;
     setTagsSettled(false);
     setSpecsSettled(false);
     setTagsFailedCount(0);
     setSpecsFailedCount(0);
+    skipNextSearchPush.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facet, initialFocusTagId, initialFocusTxId]);
+
+  // Adopts search state pushed in from *outside* this component's own
+  // typing/filter-clicking — i.e. Back/Forward (hashchange → new route →
+  // new searchQuery/searchKindFacet/searchFiltersEncoded props) while the
+  // facet/focus stay the same (the effect above only fires when those
+  // change, so a pure search-state history step needs this separate one).
+  // Deliberately does NOT touch openTx/scrollTarget/settled flags — going
+  // back to an earlier search shouldn't refetch data or re-scroll.
+  useEffect(() => {
+    setQuery(searchQuery || '');
+    setKindFacet(searchKindFacet || 'all');
+    setFiltersIfChanged(deriveFilters(searchFiltersEncoded, initialFocusTagId));
+    skipNextSearchPush.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, searchKindFacet, searchFiltersEncoded]);
+
+  // Pushes local query/kindFacet/filters changes back out to the URL
+  // (debounced so free-text typing doesn't push a new hash — and browser
+  // history entry — on every keystroke; router.ts's navigate() is itself a
+  // no-op when the resulting hash is unchanged, e.g. after the two adopt
+  // effects above just mirrored the URL back into local state).
+  useEffect(() => {
+    if (skipNextSearchPush.current) {
+      skipNextSearchPush.current = false;
+      return;
+    }
+    const id = setTimeout(() => {
+      onSearchChange({ query, kindFacet, filtersEncoded: encodeFilters(filters) });
+    }, 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, kindFacet, filters]);
 
   useEffect(() => {
     Promise.all([api.getConfig(), api.getFacets(), api.getTags(), api.getTraceability()])
