@@ -11,12 +11,16 @@ import { useDrawer } from './drawer';
 import { useHashRoute } from './router';
 import type { ViewName } from './router';
 import type { SearchStateChange } from './components/browse/BrowseView';
+import { restoreResizableWidths } from './components/layout/resizableWidths';
 
 export function App() {
   const [route, navigate] = useHashRoute();
   const view = route.view;
   const { closePanel } = useComments();
   const { closeDrawer } = useDrawer();
+
+  // 左rail/右コメントパネルの保存済み幅を復元（drawer-resize 依頼C-3）。
+  useEffect(() => restoreResizableWidths(), []);
 
   // Design closes the off-canvas rail on every nav/view switch (its
   // setView() sets drawerOpen:false alongside view). Cross-view jumps

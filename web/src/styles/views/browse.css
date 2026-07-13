@@ -19,7 +19,7 @@
    actual measured height (its `56px` fallback matches the design's own
    hardcoded HEADER constant, used only before the first measurement). */
 .browse-rail {
-  width: 300px;
+  width: var(--pmem-rail-width, 300px);
   flex-shrink: 0;
   border-right: 1px solid var(--lm-border);
   background: var(--lm-bg);
