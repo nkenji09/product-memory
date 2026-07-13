@@ -3,6 +3,8 @@
 .markdown-body {
   line-height: 1.65;
   color: var(--lm-text);
+  width: 100%;
+  max-width: 100%;
 }
 
 .markdown-body > *:first-child {
