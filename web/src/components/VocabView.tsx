@@ -3,11 +3,11 @@ import { api } from '../api';
 import { useLookups } from '../lookups';
 import { useDrawer } from '../drawer';
 import { useT } from '../i18n';
-import type { FacetsResponse, Transition, VocabEntry } from '../types';
+import type { Config, Transition, VocabEntry } from '../types';
 import { BrowseRail } from './browse/BrowseRail';
 import type { ConditionChip, KindOption, SuggestionItem } from './browse/BrowseRail';
 import type { FilterCondition } from './browse/filters';
-import { buildFolderIndex, loadCollapsed, saveCollapsed } from './browse/indexTree';
+import { buildCategoryKindIndex, loadCollapsed, saveCollapsed } from './browse/indexTree';
 import { VocabCard } from './browse/VocabCard';
 import { CommentButton } from './comments/CommentButton';
 import { kindColor, OWNER_COLOR } from './shared/Chip';
@@ -42,10 +42,12 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   const { closeDrawer } = useDrawer();
   const [vocab, setVocab] = useState<VocabEntry[] | null>(null);
   const [transitions, setTransitions] = useState<Transition[]>([]);
-  const [facets, setFacets] = useState<FacetsResponse | null>(null);
+  // category→kind ツリーの kind 順（依頼H・vocab-view-p1）は config.kinds に
+  // 拠るので、facets（タグフォレスト）の代わりに config を取得する。
+  const [config, setConfig] = useState<Config | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 見出しフォルダの折りたたみ状態（依頼C-1）— vocab 専用の per-facet
-  // localStorage キーで復元（tags/specs とは独立）。
+  // 見出しフォルダ（category→kind ツリー）の折りたたみ状態 — vocab 専用の
+  // per-facet localStorage キーで復元（tags/specs とは独立）。
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => loadCollapsed('vocab'));
 
   const [query, setQuery] = useState('');
@@ -69,11 +71,11 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   }, [initialFocusId]);
 
   useEffect(() => {
-    Promise.all([api.getVocab(), api.getTransitions({}), api.getFacets()])
-      .then(([v, tx, f]) => {
+    Promise.all([api.getVocab(), api.getTransitions({}), api.getConfig()])
+      .then(([v, tx, c]) => {
         setVocab(v);
         setTransitions(tx.transitions || []);
-        setFacets(f);
+        setConfig(c);
       })
       .catch((err) => setError(String(err)));
   }, []);
@@ -138,18 +140,23 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
     cardRefs.current.get(id)?.scrollIntoView({ block: 'start' });
     closeDrawer();
   };
-  // 索引をタグ階層フォルダに（依頼C-1）: 各 vocab を own tags（VocabEntry.tags）
-  // のフォルダすべてに重複して出し、タグ無しは末尾の未分類フォルダへ。
-  const indexItems = buildFolderIndex({
-    roots: facets?.roots || [],
+  // 索引を category→kind ツリーに（依頼H・vocab-view-p1）: vocab が必ず持つ
+  // intrinsic な軸で分類するので、タグ未付与でも未分類にフラットに落ちない。
+  // タグは二次的な横断フィルタとして残る（filters/matchesFilter は無改修）。
+  const kindOrder = (category: string): string[] => (config?.kinds as Record<string, string[]> | undefined)?.[category] || [];
+  const indexItems = buildCategoryKindIndex({
     leaves: visible.map((v) => ({
       id: v.id,
       label: v.label,
       color: kindColor(v.category),
-      tags: v.tags || [],
+      category: v.category,
+      kind: v.kind,
     })),
-    untaggedLabel: t.browse.uncategorized,
-    folderColor: (tag) => kindColor(tag.kind),
+    categories: CATEGORIES,
+    categoryLabel: t.vocab.categoryLabel,
+    kindOrder,
+    otherKindLabel: t.vocab.otherKind,
+    folderColor: (category) => kindColor(category),
     collapsedIds,
     onToggle: toggleCollapse,
     onSelect: scrollToCard,
