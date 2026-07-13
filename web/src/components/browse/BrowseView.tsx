@@ -7,12 +7,15 @@ import { usePendingDiff } from '../../pendingDiff';
 import type { Config, FacetsResponse, FacetTreeNode, SpecReport, Tag, TraceabilityResponse, Transition, TransitionDetail } from '../../types';
 import { BrowseRail } from './BrowseRail';
 import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './BrowseRail';
+import { Resizer } from '../layout/Resizer';
+import { RAIL_WIDTH } from '../layout/resizableWidths';
 import { TagCard } from './TagCard';
 import { SpecCard } from './SpecCard';
 import { TombstoneCard } from './TombstoneCard';
 import { NewTransitionForm } from './NewTransitionForm';
 import { parentsOf, childrenOf, tagMatchesFilters, specMatchesFilters, encodeFilters, decodeFilters } from './filters';
 import type { FilterCondition } from './filters';
+import { buildFolderIndex, loadCollapsed, saveCollapsed } from './indexTree';
 import { kindColor, OWNER_COLOR } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
 import { Icon } from '../shared/Icon';
@@ -106,31 +109,6 @@ function buildIndexTree(visible: Array<{ id: string; depth: number }>): IndexTre
   return roots;
 }
 
-// Collapse state for the 見出し index, persisted per facet so a reload
-// restores which subtrees are folded (依頼1). Stores the set of *collapsed*
-// ids, so the default (empty) is "all expanded". Pure localStorage, no bearing
-// on the .pmem model — same private-mode-tolerant pattern as settings.ts.
-const COLLAPSE_KEY_PREFIX = 'pmem-browse-collapse-';
-
-function loadCollapsed(facet: string): Set<string> {
-  try {
-    const raw = localStorage.getItem(COLLAPSE_KEY_PREFIX + facet);
-    if (!raw) return new Set();
-    const arr: unknown = JSON.parse(raw);
-    return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === 'string')) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function saveCollapsed(facet: string, ids: Set<string>): void {
-  try {
-    localStorage.setItem(COLLAPSE_KEY_PREFIX + facet, JSON.stringify([...ids]));
-  } catch {
-    // Private-mode/quota failures still fold this session — just don't persist.
-  }
-}
-
 /** Filters for a (re)seed: URL's `f=` wins whenever the param is present at
     all — including an explicit empty string (the user cleared every filter
     chip, which must stick across reload) — otherwise falls back to the
@@ -201,10 +179,10 @@ export function BrowseView({
     setFilters((prev) => (encodeFilters(prev) === encodeFilters(next) ? prev : next));
 
   // Per-facet reset (design's `filters: { tags: [], specs: [] }` — each
-  // facet keeps its own independent filter/search/open state). This only
-  // fires when the *facet itself* changes (app.tsx mounts a fresh BrowseView
-  // per route anyway; this additionally covers initialFocus* changing while
-  // the same facet instance is reused for a same-facet legacy-route jump).
+  // facet keeps its own independent filter/search/open state). This also
+  // fires when initialFocus* changes while the same facet instance is reused
+  // (a same-facet re-focus: comment-panel jump to another record, or a URL
+  // edit that only swaps txId/tagId — app.tsx keeps the BrowseView mounted).
   useEffect(() => {
     // Re-derive from the URL rather than hardcoding blank defaults — this
     // effect also runs on first mount (alongside the lazy useState
@@ -217,12 +195,24 @@ export function BrowseView({
     setOpenTx(initialFocusTxId ? { [initialFocusTxId]: true } : {});
     setCollapsedIds(loadCollapsed(facet));
     scrollTarget.current = initialFocusTagId || initialFocusTxId || null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facet, initialFocusTagId, initialFocusTxId]);
+
+  // Loading (settled/failed) reset is keyed on `facet` ALONE, not on focus.
+  // The fetched data (full tags list / full transition list) doesn't depend
+  // on which record is focused, so a same-facet re-focus must NOT drop back
+  // to `settled=false`: the settle-side fetch effects below re-run only on
+  // `facet`/`tags`/`pendingDiff.version` changes, so a focus-only reset would
+  // clear settled with nothing to set it true again — the infinite
+  // `loading…` this fix targets. Facet changes still reset here (and the
+  // fetch effect re-runs on `facet`, flipping settled back to true).
+  useEffect(() => {
     setTagsSettled(false);
     setSpecsSettled(false);
     setTagsFailedCount(0);
     setSpecsFailedCount(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facet, initialFocusTagId, initialFocusTxId]);
+  }, [facet]);
 
   // Adopts search state pushed in from *outside* this component's own
   // typing/filter-clicking — i.e. Back/Forward (hashchange → new route →
@@ -518,13 +508,23 @@ export function BrowseView({
 
     title = t.browse.specsTitle;
     subtitle = t.browse.specsSubtitle;
-    indexItems = visible.map((tx) => ({
-      id: tx.id,
-      label: txDetails[tx.id]?.actionLabel || tx.id,
-      color: 'var(--t-act)',
-      indent: 0,
-      onClick: () => scrollToCard(tx.id),
-    }));
+    // 索引をタグ階層フォルダに（依頼C-1）: 各 spec を自分の own tags
+    // （Transition.tags — 確定基準）のフォルダすべてに重複して出し、タグ無しは
+    // 末尾の未分類フォルダへ。折りたたみは tags facet と同じ per-facet localStorage。
+    indexItems = buildFolderIndex({
+      roots: facetsData.roots,
+      leaves: visible.map((tx) => ({
+        id: tx.id,
+        label: txDetails[tx.id]?.actionLabel || tx.id,
+        color: 'var(--t-act)',
+        tags: txDetails[tx.id]?.tags || [],
+      })),
+      untaggedLabel: t.browse.uncategorized,
+      folderColor: (tag) => kindColor(tag.kind),
+      collapsedIds,
+      onToggle: toggleCollapse,
+      onSelect: scrollToCard,
+    });
 
     const newTransitionEntry = !isStaticMode && (
       <>
@@ -651,6 +651,7 @@ export function BrowseView({
         indexItems={indexItems}
         suggestions={suggestions}
       />
+      <Resizer config={RAIL_WIDTH} direction="rail" className="pmem-resizer--rail" />
       <main class="browse-main">
         <div class="browse-main-head">
           <h1>
