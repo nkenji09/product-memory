@@ -50,8 +50,8 @@ export function Header({ view, onSelectView }: Props) {
   // active language — strings pulled from `t`, not a module-level `strings`.
   const NAV: Array<[ViewName, string, IconName]> = [
     ['home', t.nav.home, 'layout-dashboard'],
-    ['vocab', t.nav.vocab, 'book-open'],
     ['tags', t.nav.tags, 'tags'],
+    ['vocab', t.nav.vocab, 'book-open'],
     ['browse', t.nav.specs, 'scroll-text'],
   ];
 
