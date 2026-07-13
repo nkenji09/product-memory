@@ -116,7 +116,7 @@ const ja = {
     hideDetail: '詳細を閉じる',
     rulesHeading: '意思決定',
     tagsHeading: 'タグ',
-    derivedHeading: '継承・祖先展開で効くタグ',
+    derivedHeading: '継承タグ',
     derivedHint: 'vocab継承＋親タグ展開の実効タグ',
     clickToFilter: 'クリックで検索条件に追加',
     // 実効タグの由来ラベル（gap G11）。own/vocab/ancestor は複数同時成立しうる
@@ -398,7 +398,7 @@ const en: Strings = {
     hideDetail: 'Hide details',
     rulesHeading: 'Decisions',
     tagsHeading: 'Tags',
-    derivedHeading: 'Tags in effect via inheritance / ancestor expansion',
+    derivedHeading: 'Inherited tags',
     derivedHint: 'Effective tags from vocab inheritance + parent tag expansion',
     clickToFilter: 'Click to add as a search condition',
     provenanceSourceLabel: { own: 'direct', vocab: 'via vocab', ancestor: 'via ancestor' } as Record<TagSource, string>,
