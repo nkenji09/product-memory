@@ -192,7 +192,7 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
           count={detail.rules!.length}
           icon="gavel"
           label={t.browse.rulesHeading}
-          initialOpen={isOpen}
+          focusOpen={isOpen}
           onToggle={onToggleOpen}
         >
           {detail.rules!.map((d) => (
