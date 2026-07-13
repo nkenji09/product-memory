@@ -38,7 +38,7 @@ function usedBy(v: VocabEntry, transitions: Transition[]): Transition[] {
 // the same rail/card *presentation*.
 export function VocabView({ onSelectTx, initialFocusId }: Props) {
   const t = useT();
-  const { tagById, tagKindLabel } = useLookups();
+  const { tagById } = useLookups();
   const { closeDrawer } = useDrawer();
   const [vocab, setVocab] = useState<VocabEntry[] | null>(null);
   const [transitions, setTransitions] = useState<Transition[]>([]);
@@ -146,22 +146,15 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   const activeVocab = subject ? subjectVocab : vocab;
   if (!activeVocab) return <div class="browse-view dim">{t.vocab.loading}</div>;
 
-  // コンポ別モードの selector 候補は「コンポ軸」のタグ。導出（VocabBySubject）は
-  // 任意タグで効くが、意味のある軸は config.facetKinds（＝Browse の facet 軸・
-  // 既定 pmem では subject を含む／このプロジェクトでは requirement・concept が
-  // コンポを表す）。kind をハードコードせず facetKinds に委ねると、subject kind が
-  // 無いプロジェクトでも component 相当タグを選べる。facetKinds の宣言順に
-  // optgroup へまとめ、各群内は名前順。
+  // コンポ別モード（combobox-unify）の軸は config.facetKinds のタグ。導出
+  // （VocabBySubject）は任意タグで効くが、意味のある「コンポーネント」は Browse の
+  // facet 軸に一致する（このプロジェクトでは subject/requirement/concern）。kind を
+  // ハードコードせず facetKinds に委ねると、subject kind が無いプロジェクトでも
+  // コンポ相当タグを選べる。この集合はコンボボックスのコンポーネント候補と、
+  // タグ候補からの除外（二重表示防止）の両方に使う。
   const facetKinds = config?.facetKinds ?? [];
-  const subjectGroups = facetKinds
-    .map((kind) => ({
-      label: tagKindLabel(kind),
-      options: Array.from(tagById.values())
-        .filter((tag) => tag.kind === kind)
-        .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
-        .map((tag) => ({ id: tag.id, label: tag.name || tag.id })),
-    }))
-    .filter((g) => g.options.length > 0);
+  const facetKindSet = new Set(facetKinds);
+  const isFacetTag = (kind: string | undefined): boolean => !!kind && facetKindSet.has(kind);
   const subjectName = subject ? tagById.get(subject)?.name || subject : '';
 
   // Single predicate for "does this vocab entry satisfy this one condition"
@@ -214,13 +207,30 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
     onSelect: scrollToCard,
   });
 
-  const conditions: ConditionChip[] = filters.map((f, i) => {
-    if (f.type === 'tag') {
-      const tag = tagById.get(f.id);
-      return { label: tag?.name || f.id, color: kindColor(tag?.kind), onRemove: () => removeFilter(i) };
-    }
-    return { label: f.id, color: OWNER_COLOR, onRemove: () => removeFilter(i) };
-  });
+  // アクティブなコンポーネント（subject モード）を、除去可能チップとして conditions
+  // 行の先頭に置く（combobox-unify）。廃止した <select> の「全体」に代わる復帰導線＝
+  // その × で setSubject('') によりグローバルへ戻る。`prefix` で tag/owner の AND
+  // フィルタチップと視覚的に区別する。onClearConditions（全消し）は filters だけを
+  // クリアし subject は残す（コンポーネントは別軸なので個別に外す設計）。
+  const conditions: ConditionChip[] = [
+    ...(subject
+      ? [
+          {
+            label: subjectName,
+            prefix: t.vocab.component,
+            color: kindColor(tagById.get(subject)?.kind),
+            onRemove: () => setSubject(''),
+          },
+        ]
+      : []),
+    ...filters.map((f, i) => {
+      if (f.type === 'tag') {
+        const tag = tagById.get(f.id);
+        return { label: tag?.name || f.id, color: kindColor(tag?.kind), onRemove: () => removeFilter(i) };
+      }
+      return { label: f.id, color: OWNER_COLOR, onRemove: () => removeFilter(i) };
+    }),
+  ];
 
   // Combobox candidates (2026-07-11 tweaks3 §3): every known tag, plus
   // (vocab-owner-tag) every distinct owner value, narrowed to whichever
@@ -244,10 +254,24 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
     return activeVocab.some((v) => testFilters.every((f) => matchesFilter(v, f)));
   };
   const ownerValues = Array.from(new Set(activeVocab.map((v) => v.owner).filter((o): o is string => !!o)));
+  // コンボボックスのサジェストを3系統に統合（combobox-unify）。廃止した <select> の
+  // コンポ別モード切替を、この1入力のコンポーネント候補に吸収する。並びは
+  // コンポーネント→タグ→owner（打った文字は BrowseRail が (id+' '+label) で部分一致）。
   const suggestions: SuggestionItem[] = [
+    // (1) コンポーネント（subject 軸）: facetKinds のタグ。wouldMatchAny gate は
+    // 通さない — コンポーネントタグは transition 側に付き vocab.tags には無いのが
+    // 正常で、gate すると全部消える。選択は AND フィルタではなく setSubject の
+    // モード切替。現在 active な subject は除外し、他コンポは切替候補として残す。
     ...Array.from(tagById.values())
-      .filter((tag) => !filters.some((f) => f.type === 'tag' && f.id === tag.id) && wouldMatchAny({ type: 'tag', id: tag.id }))
+      .filter((tag) => isFacetTag(tag.kind) && tag.id !== subject)
+      .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+      .map((tag) => ({ id: tag.id, label: tag.name || tag.id, color: kindColor(tag.kind), kindLabel: t.vocab.component, onSelect: () => setSubject(tag.id) })),
+    // (2) タグ（二次フィルタ）: facetKinds 以外のタグで wouldMatchAny を通るもの。
+    // facetKinds 分は (1) に回すので排他になり二重表示しない。選択は AND フィルタ。
+    ...Array.from(tagById.values())
+      .filter((tag) => !isFacetTag(tag.kind) && !filters.some((f) => f.type === 'tag' && f.id === tag.id) && wouldMatchAny({ type: 'tag', id: tag.id }))
       .map((tag) => ({ id: tag.id, label: tag.name || tag.id, color: kindColor(tag.kind), kindLabel: t.nav.tags, onSelect: () => addFilter({ type: 'tag', id: tag.id }) })),
+    // (3) owner: 現状どおり（wouldMatchAny gate・AND フィルタ）。
     ...ownerValues
       .filter((o) => !filters.some((f) => f.type === 'owner' && f.id === o) && wouldMatchAny({ type: 'owner', id: o }))
       .map((o) => ({ id: o, label: o, color: OWNER_COLOR, kindLabel: t.vocab.owner, onSelect: () => addFilter({ type: 'owner', id: o }) })),
@@ -265,19 +289,6 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
         onClearConditions={() => setFilters([])}
         indexItems={indexItems}
         suggestions={suggestions}
-        subjectSelect={
-          subjectGroups.length > 0
-            ? {
-                label: t.vocab.subjectLabel,
-                allLabel: t.vocab.subjectAll,
-                value: subject,
-                groups: subjectGroups,
-                // モード切替は kindFacet と同類（レール内で見る対象を変えるだけ）
-                // なのでドロワーは閉じない。切替時にスクロール目標は持ち越さない。
-                onChange: setSubject,
-              }
-            : undefined
-        }
       />
       <main class="browse-main">
         <div class="browse-main-head">

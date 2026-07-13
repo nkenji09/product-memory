@@ -82,10 +82,11 @@ const ja = {
     // 語彙ドロワーの索引ツリー（vocab-view-p1）: category→kind の第2階層で
     // kind 未設定の vocab を落とす末尾バケットのラベル。
     otherKind: 'その他',
-    // コンポ別モード（vocab-view-p2）: subject（コンポ）を選ぶと、その subject に
-    // 属す遷移が参照する語彙だけを category→kind ツリーで表示する。
-    subjectLabel: '対象コンポ',
-    subjectAll: '全体（グローバル）',
+    // コンポ別モード（vocab-view-p2 → combobox-unify）: コンボボックスで
+    // コンポーネント（facetKinds タグ）を選ぶと、その subject に属す遷移が参照する
+    // 語彙だけを category→kind ツリーで表示する。`component` はサジェストの種別
+    // バッジ／絞り込みチップの接頭ラベルに使う（tag/owner チップと差別化）。
+    component: 'コンポーネント',
     subjectEmpty: (name: string) => `${name} に属す遷移が参照する語彙はありません`,
   },
   // WHEN/GIVEN/THEN の言い換え（調整4）。遷移カード全般（一覧・詳細・spec）で共通利用。
@@ -374,8 +375,7 @@ const en: Strings = {
     loading: 'loading…',
     categoryLabel: (c) => ({ action: FLOW_TRIGGER_EN, condition: FLOW_GIVEN_EN, effect: FLOW_RESULT_EN } as Record<string, string>)[c] || c,
     otherKind: 'Other',
-    subjectLabel: 'Component',
-    subjectAll: 'All (global)',
+    component: 'Component',
     subjectEmpty: (name) => `No vocab referenced by transitions under ${name}`,
   },
   flow: {

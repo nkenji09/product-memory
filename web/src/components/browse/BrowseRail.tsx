@@ -14,6 +14,10 @@ export interface ConditionChip {
   label: string;
   color: string;
   onRemove: () => void;
+  /** Optional leading badge inside the chip (combobox-unify) — used by
+      VocabView to mark the active コンポーネント (subject-mode) chip so it
+      reads distinctly from ordinary tag/owner AND-filter chips. */
+  prefix?: string;
 }
 
 export interface IndexItem {
@@ -59,19 +63,6 @@ interface Props {
       screens that don't offer suggestions — the free-text filter behavior
       is unaffected either way. */
   suggestions?: SuggestionItem[];
-  /** Optional subject (component) selector shown above the kind facets —
-      VocabView's コンポ別モード (vocab-view-p2). Omit on screens that don't
-      offer it. The empty-string value means the global (all-vocab) mode; a
-      subject id switches to the derived per-component list. */
-  subjectSelect?: {
-    label: string;
-    allLabel: string;
-    value: string;
-    /** Grouped by facet kind (optgroup per group) — e.g. one group per
-        config.facetKinds axis. */
-    groups: { label: string; options: { id: string; label: string }[] }[];
-    onChange: (id: string) => void;
-  };
 }
 
 const MAX_SUGGESTIONS = 8;
@@ -96,7 +87,6 @@ export function BrowseRail({
   onClearConditions,
   indexItems,
   suggestions = [],
-  subjectSelect,
 }: Props) {
   const t = useT();
   const [focused, setFocused] = useState(false);
@@ -191,31 +181,6 @@ export function BrowseRail({
           )}
         </div>
 
-        {subjectSelect && (
-          <div class="browse-rail-section">
-            <div class="browse-rail-divider" />
-            <label class="browse-rail-subject">
-              <span class="browse-rail-label dim">{subjectSelect.label}</span>
-              <select
-                class="browse-rail-subject-select"
-                value={subjectSelect.value}
-                onChange={(e) => subjectSelect.onChange((e.target as HTMLSelectElement).value)}
-              >
-                <option value="">{subjectSelect.allLabel}</option>
-                {subjectSelect.groups.map((g) => (
-                  <optgroup key={g.label} label={g.label}>
-                    {g.options.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
-          </div>
-        )}
-
         {kindOptions.length > 0 && (
           <div class="browse-rail-section">
             <div class="browse-rail-divider" />
@@ -252,6 +217,7 @@ export function BrowseRail({
             <div class="browse-rail-condition-chips">
               {conditions.map((c, i) => (
                 <Chip key={i} color={c.color} onRemove={c.onRemove}>
+                  {c.prefix && <span class="chip-prefix">{c.prefix}</span>}
                   {c.label}
                 </Chip>
               ))}
