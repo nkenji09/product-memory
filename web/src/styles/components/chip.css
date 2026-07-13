@@ -49,6 +49,22 @@
   opacity: 1;
 }
 
+/* Leading badge inside a chip (combobox-unify) — VocabView's active
+   コンポーネント (subject-mode) chip prefixes its name with this so it reads
+   as a mode marker, not an ordinary tag/owner AND-filter chip. Solid
+   --chip-color fill (vs the chip's own 14% tint) makes it pop. */
+.chip-prefix {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--r-full);
+  padding: 1px 7px;
+  margin-right: 2px;
+  font-size: 0.85em;
+  font-weight: 700;
+  background: var(--chip-color);
+  color: var(--lm-bg);
+}
+
 /* Effective-tag provenance badge (gap G11) — the vocab/ancestor label shown
    inside a chip whose tag arrived via a path other than direct assignment
    (or, for an own tag, via an *additional* path — the multi-path case). */
