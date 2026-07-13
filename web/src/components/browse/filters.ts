@@ -92,6 +92,32 @@ export function childrenOf(roots: FacetTreeNode[], tagId: string, tagById: Map<s
   return Array.from(tagById.values()).filter((t) => (t.parentIds || []).includes(tagId));
 }
 
+// Wire format for BrowseView's URL sync (router.ts's Route.searchFilters):
+// "<type>:<encodeURIComponent(id)>" joined by ",". Only the id is percent-
+// encoded — `type` is always one of the three literals below, so it can
+// never itself contain the ':'/',' delimiters; encoding the id is what
+// keeps a raw ':' or ',' inside an id (e.g. a vocab id with a colon) from
+// being mistaken for a delimiter when decoding. The outer hash query string
+// (router.ts's URLSearchParams) percent-encodes this whole value again for
+// the wire, transparently — this codec only has to defend its own
+// delimiters, not URL-safety in general.
+export function encodeFilters(filters: FilterCondition[]): string {
+  return filters.map((f) => `${f.type}:${encodeURIComponent(f.id)}`).join(',');
+}
+
+export function decodeFilters(encoded: string): FilterCondition[] {
+  if (!encoded) return [];
+  const out: FilterCondition[] = [];
+  for (const part of encoded.split(',')) {
+    const i = part.indexOf(':');
+    if (i < 0) continue;
+    const type = part.slice(0, i);
+    const id = decodeURIComponent(part.slice(i + 1));
+    if (type === 'tag' || type === 'vocab' || type === 'owner') out.push({ type, id } as FilterCondition);
+  }
+  return out;
+}
+
 export function tagMatchesFilters(tag: Tag, filters: FilterCondition[], roots: FacetTreeNode[]): boolean {
   return filters.every((f) => {
     if (f.type !== 'tag') return true;

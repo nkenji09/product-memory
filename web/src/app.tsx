@@ -10,6 +10,7 @@ import type { CommentRecord } from './components/comments/useComments';
 import { useDrawer } from './drawer';
 import { useHashRoute } from './router';
 import type { ViewName } from './router';
+import type { SearchStateChange } from './components/browse/BrowseView';
 
 export function App() {
   const [route, navigate] = useHashRoute();
@@ -36,6 +37,20 @@ export function App() {
   const openTagSpec = (tagId: string) => navigate({ view: 'spec', tagId });
   const openVocabEntry = (vocabId: string) => navigate({ view: 'vocab', vocabId });
   const setView = (next: ViewName) => navigate({ view: next });
+  // BrowseView's query/kindFacet/filters, mirrored into the current route's
+  // hash (url-state-sync): merges onto whatever view/tagId/txId/vocabId are
+  // already in `route` rather than replacing them, so search state composes
+  // with the existing focus-on-a-card routes instead of clobbering them.
+  const onSearchChange = (s: SearchStateChange) =>
+    navigate({ ...route, searchQuery: s.query, searchKindFacet: s.kindFacet, searchFilters: s.filtersEncoded });
+  const browseSearchProps = {
+    searchQuery: route.searchQuery || '',
+    searchKindFacet: route.searchKindFacet || 'all',
+    // Passed through as-is (not `|| ''`) — undefined vs '' is meaningful
+    // here, see BrowseView's deriveFilters.
+    searchFiltersEncoded: route.searchFilters,
+    onSearchChange,
+  };
   // recordId for a 'page' comment is the page it was left on (BrowseView's
   // `facet` prop value, or 'vocab') — see CommentButton call sites in
   // BrowseView.tsx/VocabView.tsx.
@@ -52,11 +67,19 @@ export function App() {
       <Header view={view} onSelectView={setView} />
       {view === 'home' && <HomeView onGoTags={() => setView('tags')} onSelectTag={openTagSpec} onSelectTx={openTransition} />}
       {view === 'browse' && (
-        <BrowseView facet="specs" initialFocusTagId={route.tagId} initialFocusTxId={route.txId} onGoToSpec={openTransition} />
+        <BrowseView
+          facet="specs"
+          initialFocusTagId={route.tagId}
+          initialFocusTxId={route.txId}
+          onGoToSpec={openTransition}
+          {...browseSearchProps}
+        />
       )}
       {view === 'vocab' && <VocabView onSelectTx={openTransition} initialFocusId={route.vocabId} />}
-      {view === 'spec' && <BrowseView facet="tags" initialFocusTagId={route.tagId} onGoToSpec={openTransition} />}
-      {view === 'tags' && <BrowseView facet="tags" onGoToSpec={openTransition} />}
+      {view === 'spec' && (
+        <BrowseView facet="tags" initialFocusTagId={route.tagId} onGoToSpec={openTransition} {...browseSearchProps} />
+      )}
+      {view === 'tags' && <BrowseView facet="tags" onGoToSpec={openTransition} {...browseSearchProps} />}
       {view === 'config' && <ConfigView />}
       <CommentPanel onGoto={gotoComment} />
     </>
