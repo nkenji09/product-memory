@@ -38,7 +38,7 @@ function usedBy(v: VocabEntry, transitions: Transition[]): Transition[] {
 // the same rail/card *presentation*.
 export function VocabView({ onSelectTx, initialFocusId }: Props) {
   const t = useT();
-  const { tagById } = useLookups();
+  const { tagById, tagKindLabel } = useLookups();
   const { closeDrawer } = useDrawer();
   const [vocab, setVocab] = useState<VocabEntry[] | null>(null);
   const [transitions, setTransitions] = useState<Transition[]>([]);
@@ -52,6 +52,12 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
 
   const [query, setQuery] = useState('');
   const [categoryFacet, setCategoryFacet] = useState('all');
+  // コンポ別モード（vocab-view-p2）: '' = グローバル（全語彙・Phase 1）、subject
+  // タグ id = その subject に属す遷移が参照する導出語彙。導出は Go 側
+  // （GET /api/vocab?subject=…）に委ね、ここは差し替えた集合を Phase 1 と同じ
+  // buildCategoryKindIndex で描くだけ。null は導出結果の読み込み中。
+  const [subject, setSubject] = useState('');
+  const [subjectVocab, setSubjectVocab] = useState<VocabEntry[] | null>(null);
   // Generalized from a bare tag-id array (vocab-owner-tag) so owner can join
   // tag as a second, AND-composed condition kind — same FilterCondition
   // shape BrowseView.tsx uses for its own facets, but this page still keeps
@@ -79,6 +85,28 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
       })
       .catch((err) => setError(String(err)));
   }, []);
+
+  // コンポ別モード: subject が選ばれたらその導出語彙を取得する。'' に戻したら
+  // 破棄してグローバルへ。競合する応答は cancelled ガードで捨てる。
+  useEffect(() => {
+    if (!subject) {
+      setSubjectVocab(null);
+      return;
+    }
+    let cancelled = false;
+    setSubjectVocab(null);
+    api
+      .getVocab({ subject })
+      .then((v) => {
+        if (!cancelled) setSubjectVocab(v);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [subject]);
 
   useEffect(() => {
     const id = scrollTarget.current;
@@ -112,6 +140,30 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   if (error) return <div class="browse-view error">{error}</div>;
   if (!vocab) return <div class="browse-view dim">{t.vocab.loading}</div>;
 
+  // 表示対象の語彙集合: コンポ別モードでは導出語彙、グローバルでは全語彙。以降の
+  // 一覧/索引/フィルタ候補/件数はすべてこの activeVocab を基準に組む（Phase 1 の
+  // 描画機構はそのまま・集合だけ差し替える）。導出結果を待つ間は loading。
+  const activeVocab = subject ? subjectVocab : vocab;
+  if (!activeVocab) return <div class="browse-view dim">{t.vocab.loading}</div>;
+
+  // コンポ別モードの selector 候補は「コンポ軸」のタグ。導出（VocabBySubject）は
+  // 任意タグで効くが、意味のある軸は config.facetKinds（＝Browse の facet 軸・
+  // 既定 pmem では subject を含む／このプロジェクトでは requirement・concept が
+  // コンポを表す）。kind をハードコードせず facetKinds に委ねると、subject kind が
+  // 無いプロジェクトでも component 相当タグを選べる。facetKinds の宣言順に
+  // optgroup へまとめ、各群内は名前順。
+  const facetKinds = config?.facetKinds ?? [];
+  const subjectGroups = facetKinds
+    .map((kind) => ({
+      label: tagKindLabel(kind),
+      options: Array.from(tagById.values())
+        .filter((tag) => tag.kind === kind)
+        .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+        .map((tag) => ({ id: tag.id, label: tag.name || tag.id })),
+    }))
+    .filter((g) => g.options.length > 0);
+  const subjectName = subject ? tagById.get(subject)?.name || subject : '';
+
   // Single predicate for "does this vocab entry satisfy this one condition"
   // — shared by `visible` (the actual list filter) and `wouldMatchAny`
   // below (the combobox's "would this candidate leave ≥1 result" check).
@@ -126,10 +178,10 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   const kindOptions: KindOption[] = CATEGORIES.map((c) => ({
     key: c,
     label: t.vocab.categoryLabel(c),
-    count: vocab.filter((v) => v.category === c).length,
+    count: activeVocab.filter((v) => v.category === c).length,
   }));
 
-  const visible = vocab
+  const visible = activeVocab
     .filter((v) => categoryFacet === 'all' || v.category === categoryFacet)
     .filter((v) => !q || (v.id + ' ' + v.label + ' ' + (v.description || '')).toLowerCase().includes(q))
     .filter((v) => filters.every((f) => matchesFilter(v, f)))
@@ -189,9 +241,9 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   // diverge again.
   const wouldMatchAny = (candidate: FilterCondition): boolean => {
     const testFilters = [...filters, candidate];
-    return vocab.some((v) => testFilters.every((f) => matchesFilter(v, f)));
+    return activeVocab.some((v) => testFilters.every((f) => matchesFilter(v, f)));
   };
-  const ownerValues = Array.from(new Set(vocab.map((v) => v.owner).filter((o): o is string => !!o)));
+  const ownerValues = Array.from(new Set(activeVocab.map((v) => v.owner).filter((o): o is string => !!o)));
   const suggestions: SuggestionItem[] = [
     ...Array.from(tagById.values())
       .filter((tag) => !filters.some((f) => f.type === 'tag' && f.id === tag.id) && wouldMatchAny({ type: 'tag', id: tag.id }))
@@ -213,6 +265,19 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
         onClearConditions={() => setFilters([])}
         indexItems={indexItems}
         suggestions={suggestions}
+        subjectSelect={
+          subjectGroups.length > 0
+            ? {
+                label: t.vocab.subjectLabel,
+                allLabel: t.vocab.subjectAll,
+                value: subject,
+                groups: subjectGroups,
+                // モード切替は kindFacet と同類（レール内で見る対象を変えるだけ）
+                // なのでドロワーは閉じない。切替時にスクロール目標は持ち越さない。
+                onChange: setSubject,
+              }
+            : undefined
+        }
       />
       <main class="browse-main">
         <div class="browse-main-head">
@@ -224,7 +289,7 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
         </div>
         <div class="browse-card-list">
           {visible.length === 0 ? (
-            <div class="card-empty">{t.vocab.empty}</div>
+            <div class="card-empty">{subject ? t.vocab.subjectEmpty(subjectName) : t.vocab.empty}</div>
           ) : (
             visible.map((v) => (
               <VocabCard
