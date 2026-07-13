@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nkenji09/product-memory/internal/store"
@@ -126,5 +127,71 @@ func TestCLI_DecisionAddCommit(t *testing.T) {
 	}
 	if before.Why != after.Why || before.Changed != after.Changed || before.Ref != after.Ref || before.At != after.At {
 		t.Fatalf("判断フィールドが変化した: before=%+v after=%+v", before, after)
+	}
+}
+
+// `pmem decision list` は decision レコードをフラットに一覧し、--on で対象を
+// 完全一致絞り込み（祖先展開なし＝rules との違い）できる。
+func TestCLI_DecisionList(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := run(t, dir, "init"); err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	if _, err := run(t, dir, "tag", "create", "subject.parent", "--name", "親", "--kind", "subject"); err != nil {
+		t.Fatalf("tag create parent: %v", err)
+	}
+	if _, err := run(t, dir, "tag", "create", "subject.child", "--name", "子", "--kind", "subject", "--parent", "subject.parent"); err != nil {
+		t.Fatalf("tag create child: %v", err)
+	}
+	if _, err := run(t, dir, "decide", "--on", "tag:subject.parent", "--why", "親への決定"); err != nil {
+		t.Fatalf("decide parent: %v", err)
+	}
+	if _, err := run(t, dir, "decide", "--on", "tag:subject.child", "--why", "子への決定"); err != nil {
+		t.Fatalf("decide child: %v", err)
+	}
+
+	// 絞り込みなし: 両方出る。
+	out, err := run(t, dir, "decision", "list")
+	if err != nil {
+		t.Fatalf("decision list failed: %v\noutput:\n%s", err, out)
+	}
+	for _, want := range []string{"tag:subject.parent", "親への決定", "tag:subject.child", "子への決定"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("decision list output missing %q:\n%s", want, out)
+		}
+	}
+
+	// --on tag:subject.child は完全一致のみ（親の decision は rules と違い出ない）。
+	filtered, err := run(t, dir, "decision", "list", "--on", "tag:subject.child")
+	if err != nil {
+		t.Fatalf("decision list --on failed: %v\noutput:\n%s", err, filtered)
+	}
+	if !strings.Contains(filtered, "子への決定") {
+		t.Fatalf("decision list --on output missing child decision:\n%s", filtered)
+	}
+	if strings.Contains(filtered, "親への決定") {
+		t.Fatalf("decision list --on は祖先展開してはならない（rules との違い）:\n%s", filtered)
+	}
+
+	// --json はレコード配列。
+	jsonOut, err := run(t, dir, "decision", "list", "--json")
+	if err != nil {
+		t.Fatalf("decision list --json failed: %v\noutput:\n%s", err, jsonOut)
+	}
+	var parsed struct {
+		Decisions []struct {
+			Why string `json:"why"`
+		} `json:"decisions"`
+	}
+	if err := json.Unmarshal([]byte(jsonOut), &parsed); err != nil {
+		t.Fatalf("unmarshal: %v\noutput:\n%s", err, jsonOut)
+	}
+	if len(parsed.Decisions) != 2 {
+		t.Fatalf("expected 2 decisions, got %d: %+v", len(parsed.Decisions), parsed.Decisions)
+	}
+
+	// 存在しない --on の対象種別はエラー。
+	if _, err := run(t, dir, "decision", "list", "--on", "bogus:x"); err == nil {
+		t.Fatalf("expected error for invalid --on target type")
 	}
 }

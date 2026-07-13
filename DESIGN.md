@@ -352,6 +352,7 @@ pmem tx rm <id> --why <理由> --force                      # 破壊的（decisi
 # 意思決定（transition か tag に付く）
 pmem decide --on <transition|tag>:<id> --why <t> [--changed <s>] [--ref <s>] [--commit <hash>…]
 pmem decision add-commit <decisionId> <hash> [<hash>...] [--json]  # 既存 decision の commits[] に追記専用（§3.5）
+pmem decision list [--on <transition|tag>:<id>] [--json]           # decision をフラット一覧（--on は完全一致・祖先展開なし。rules=対象別集約とは別）
 
 # 提案コメント（レビュー）— AI コメント配送のサイドカー（§8.4・read-only オーバーレイ）
 pmem review add --on <transition|vocab|tag>:<id> --body <why> [--source ai] [--json]  # .pmem/reviews/<ulid>.json を書く
@@ -359,6 +360,7 @@ pmem review list [--on <transition|vocab|tag>:<id>] [--json]                    
 
 # 読み取り / 派生ビュー
 pmem show tx <id> [--resolve] [--json]                    # 遷移 1 件（語彙 label 解決）
+pmem show vocab <id> [--json]                             # 語彙 1 件 + 使用箇所（参照 transition の逆引き＝真の影響集合・§3.3）
 pmem spec <subjectTag> [--json]                           # 主題タグで束ねた"仕様"レポート（派生）
 pmem list [--facet <tagKind>] [--tag <id>] [--kind <k>] [--json]   # faceted 一覧・グルーピング
 pmem rules [--tag <id> | --tx <id> | --facet <k>] [--sort chrono|target] [--json]
