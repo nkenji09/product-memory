@@ -103,8 +103,19 @@ func TestExportHTML_WritesSelfContainedIndexHTML(t *testing.T) {
 	if !strings.Contains(html, `<style>`) {
 		t.Fatal("exported index.html does not inline CSS via <style>")
 	}
-	if !strings.Contains(html, `<script type="module">`) {
-		t.Fatal("exported index.html does not inline the SPA bundle as an inline module script")
+	// The entry chunk (and, when the SPA imports one, its dynamically-loaded
+	// dependents — see export_bundle.go) is inlined as a plain <script> that
+	// resolves each chunk's source to a Blob URL at load time, not as a
+	// literal <script type="module"> — a real module fetch is blocked by
+	// Chrome's file: CORS policy (this file's own doc comment). The
+	// resolver's own error string is a stable signature that this bootstrap
+	// actually landed, independent of the entry bundle's (hashed, minified)
+	// content.
+	if strings.Contains(html, `<script type="module">`) {
+		t.Fatal("exported index.html inlines the SPA bundle as a literal <script type=\"module\"> — that fetch is blocked under file://")
+	}
+	if !strings.Contains(html, "pmem export: missing inlined module ") {
+		t.Fatal("exported index.html does not inline the SPA bundle via the offline chunk resolver")
 	}
 
 	data := extractStaticPayload(t, html)
@@ -130,8 +141,10 @@ func TestExportHTML_WritesSelfContainedIndexHTML(t *testing.T) {
 	if detail.ActionLabel != "ログイン" {
 		t.Fatalf("detail.ActionLabel = %q, want ログイン", detail.ActionLabel)
 	}
-	if len(detail.Rules) != 1 || detail.Rules[0].ID != "d1" {
-		t.Fatalf("detail.Rules = %+v, want [d1] via effective-tag cross-cutting rule", detail.Rules)
+	// transition カードは自身の decision のみ（祖先タグ subject.auth 宛の
+	// cross-cutting d1 は含めない）。T-login 自身宛の decision は無いので空。
+	if len(detail.Rules) != 0 {
+		t.Fatalf("detail.Rules = %+v, want [] (own-only; ancestor cross-cutting excluded)", detail.Rules)
 	}
 
 	if len(data.Traceability.Entries) != 1 || data.Traceability.Entries[0].Tag.ID != "req.auth-happy" {
