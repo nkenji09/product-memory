@@ -179,7 +179,7 @@ export function BrowseRail({
 
         {kindOptions.length > 0 && (
           <div class="browse-rail-section">
-            <span class="browse-rail-label dim">{t.browse.kindHeading}</span>
+            <div class="browse-rail-divider" />
             <div class="browse-rail-kinds">
               <button type="button" class={'browse-rail-kind' + (kindFacet === 'all' ? ' active' : '')} onClick={() => onKindFacetChange('all')}>
                 <span>{t.browse.kindAll}</span>
@@ -204,7 +204,7 @@ export function BrowseRail({
           <div class="browse-rail-conditions">
             <div class="browse-rail-conditions-head">
               <span class="browse-rail-label dim">
-                <Icon name="filter" size={13} /> {t.browse.conditionsHeading} <span class="browse-rail-and">{t.browse.and}</span>
+                <Icon name="filter" size={13} /> <span class="browse-rail-and">{t.browse.and}</span>
               </span>
               <button type="button" class="browse-rail-clear" onClick={onClearConditions}>
                 {t.browse.clear}
@@ -221,12 +221,13 @@ export function BrowseRail({
         )}
 
         <div class="browse-rail-section browse-rail-index">
-          <span class="browse-rail-label dim">
-            <Icon name="list" size={13} /> {t.browse.indexHeading} <span class="browse-rail-index-count">{indexItems.length}</span>
+          <div class="browse-rail-divider" />
+          <span class="browse-rail-label browse-rail-index-head dim">
+            <Icon name="list" size={13} /> <span class="browse-rail-index-count">{indexItems.length}</span>
           </span>
           <div class="browse-rail-index-list">
             {indexItems.map((item) => (
-              <div key={item.id} class="browse-rail-index-row" style={{ paddingLeft: `${8 + item.indent * 14}px` }}>
+              <div key={item.id} class="browse-rail-index-row" style={{ paddingLeft: `${4 + item.indent * 12}px` }}>
                 {item.hasChildren ? (
                   <button
                     type="button"
