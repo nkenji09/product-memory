@@ -88,6 +88,12 @@ const ja = {
     // バッジ／絞り込みチップの接頭ラベルに使う（tag/owner チップと差別化）。
     component: 'コンポーネント',
     subjectEmpty: (name: string) => `${name} に属す遷移が参照する語彙はありません`,
+    // 索引の表示モード切替（vocab-tree-mode）: モードA=category×kind の分類ツリー、
+    // モードB=消費 transition 文脈ツリー。索引ヘッダ右端のトグルのラベル。
+    treeModeCategory: '分類',
+    treeModeTransition: '文脈',
+    // モードB でどの遷移にも消費されない vocab を集約する末尾バケットのラベル。
+    unusedBucket: '未使用',
   },
   // WHEN/GIVEN/THEN の言い換え（調整4）。遷移カード全般（一覧・詳細・spec）で共通利用。
   flow: {
@@ -377,6 +383,9 @@ const en: Strings = {
     otherKind: 'Other',
     component: 'Component',
     subjectEmpty: (name) => `No vocab referenced by transitions under ${name}`,
+    treeModeCategory: 'Category',
+    treeModeTransition: 'Context',
+    unusedBucket: 'Unused',
   },
   flow: {
     trigger: FLOW_TRIGGER_EN,

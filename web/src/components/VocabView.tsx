@@ -7,7 +7,15 @@ import type { Config, Transition, VocabEntry } from '../types';
 import { BrowseRail } from './browse/BrowseRail';
 import type { ConditionChip, KindOption, SuggestionItem } from './browse/BrowseRail';
 import type { FilterCondition } from './browse/filters';
-import { buildCategoryKindIndex, loadCollapsed, saveCollapsed } from './browse/indexTree';
+import {
+  buildCategoryKindIndex,
+  buildTransitionVocabIndex,
+  loadCollapsed,
+  loadIndexMode,
+  saveCollapsed,
+  saveIndexMode,
+  type VocabIndexMode,
+} from './browse/indexTree';
 import { VocabCard } from './browse/VocabCard';
 import { CommentButton } from './comments/CommentButton';
 import { kindColor, OWNER_COLOR } from './shared/Chip';
@@ -49,6 +57,10 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   // 見出しフォルダ（category→kind ツリー）の折りたたみ状態 — vocab 専用の
   // per-facet localStorage キーで復元（tags/specs とは独立）。
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => loadCollapsed('vocab'));
+  // 索引の表示モード（vocab-tree-mode）: 'category-kind'=モードA（既存・維持）、
+  // 'transition'=モードB（消費 transition 文脈）。選択は localStorage 永続で
+  // 再訪時に保つ（既存の collapse 永続と同系）。
+  const [indexMode, setIndexMode] = useState<VocabIndexMode>(() => loadIndexMode());
 
   const [query, setQuery] = useState('');
   const [categoryFacet, setCategoryFacet] = useState('all');
@@ -58,6 +70,11 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   // buildCategoryKindIndex で描くだけ。null は導出結果の読み込み中。
   const [subject, setSubject] = useState('');
   const [subjectVocab, setSubjectVocab] = useState<VocabEntry[] | null>(null);
+  // モードB（vocab-tree-mode）の scope transitions: subject が選ばれたら、その
+  // subject の実効タグを持つ遷移（VocabBySubject と同じ per-component 導出の
+  // transition 側・server が実効タグ＝祖先ロールアップで判定）。'' はグローバルで
+  // 全遷移（下の transitions）を使うので null。モードB のツリー構築のみが使う。
+  const [subjectTransitions, setSubjectTransitions] = useState<Transition[] | null>(null);
   // Generalized from a bare tag-id array (vocab-owner-tag) so owner can join
   // tag as a second, AND-composed condition kind — same FilterCondition
   // shape BrowseView.tsx uses for its own facets, but this page still keeps
@@ -108,6 +125,29 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
     };
   }, [subject]);
 
+  // モードB の scope transitions を subject に追従して取得（vocab-tree-mode）。
+  // subjectVocab と別 effect にして既存の導出経路に触れない（追加レンズ）。'' は
+  // グローバル（全 transitions を使う）なので破棄。競合応答は cancelled で捨てる。
+  useEffect(() => {
+    if (!subject) {
+      setSubjectTransitions(null);
+      return;
+    }
+    let cancelled = false;
+    setSubjectTransitions(null);
+    api
+      .getTransitions({ tag: subject })
+      .then((res) => {
+        if (!cancelled) setSubjectTransitions(res.transitions || []);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [subject]);
+
   useEffect(() => {
     const id = scrollTarget.current;
     if (!id || !vocab) return;
@@ -135,6 +175,13 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
       saveCollapsed('vocab', next);
       return next;
     });
+  };
+  // 索引モード切替（vocab-tree-mode）— 選択を localStorage 永続。ドロワーは
+  // 閉じない（索引の見せ方を変えるだけで絞り込み選択ではない・toggleCollapse と同じ）。
+  const changeIndexMode = (mode: string) => {
+    const m: VocabIndexMode = mode === 'transition' ? 'transition' : 'category-kind';
+    setIndexMode(m);
+    saveIndexMode(m);
   };
 
   if (error) return <div class="browse-view error">{error}</div>;
@@ -189,23 +236,47 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
   // intrinsic な軸で分類するので、タグ未付与でも未分類にフラットに落ちない。
   // タグは二次的な横断フィルタとして残る（filters/matchesFilter は無改修）。
   const kindOrder = (category: string): string[] => (config?.kinds as Record<string, string[]> | undefined)?.[category] || [];
-  const indexItems = buildCategoryKindIndex({
-    leaves: visible.map((v) => ({
-      id: v.id,
-      label: v.label,
-      color: kindColor(v.category),
-      category: v.category,
-      kind: v.kind,
-    })),
-    categories: CATEGORIES,
-    categoryLabel: t.vocab.categoryLabel,
-    kindOrder,
-    otherKindLabel: t.vocab.otherKind,
-    folderColor: (category) => kindColor(category),
-    collapsedIds,
-    onToggle: toggleCollapse,
-    onSelect: scrollToCard,
-  });
+  // モードB（vocab-tree-mode）の scope transitions: グローバルは全 transitions、
+  // subject 選択時はその subject 導出の transitions。subject 選択直後で導出が
+  // まだ届いていない間（subjectTransitions===null）は「全 vocab が未使用」に見える
+  // 誤表示を避けるため index を空にする（vocab 一覧側は subjectVocab で既に表示）。
+  const scopeTransitions = subject ? subjectTransitions : transitions;
+  const modeBReady = !subject || subjectTransitions !== null;
+  const indexItems =
+    indexMode === 'transition'
+      ? buildTransitionVocabIndex({
+          transitions:
+            modeBReady && scopeTransitions ? scopeTransitions.map((tx) => ({ id: tx.id, refs: [tx.action, ...tx.given, ...tx.then] })) : [],
+          // 母集合＝可視 vocab（mode A の leaves と同源）。検索/カテゴリ/タグの
+          // 絞り込みがそのまま索引に効く。leaf の色は役割（きっかけ/前提/結果）＝
+          // vocab.category の色。
+          vocabById: modeBReady
+            ? new Map(visible.map((v) => [v.id, { id: v.id, label: v.label, color: kindColor(v.category) }]))
+            : new Map(),
+          unusedLabel: t.vocab.unusedBucket,
+          transitionColor: 'var(--lm-text-muted)',
+          unusedColor: 'var(--lm-text-dim)',
+          collapsedIds,
+          onToggle: toggleCollapse,
+          onSelect: scrollToCard,
+        })
+      : buildCategoryKindIndex({
+          leaves: visible.map((v) => ({
+            id: v.id,
+            label: v.label,
+            color: kindColor(v.category),
+            category: v.category,
+            kind: v.kind,
+          })),
+          categories: CATEGORIES,
+          categoryLabel: t.vocab.categoryLabel,
+          kindOrder,
+          otherKindLabel: t.vocab.otherKind,
+          folderColor: (category) => kindColor(category),
+          collapsedIds,
+          onToggle: toggleCollapse,
+          onSelect: scrollToCard,
+        });
 
   // アクティブなコンポーネント（subject モード）を、除去可能チップとして conditions
   // 行の先頭に置く（combobox-unify）。廃止した <select> の「全体」に代わる復帰導線＝
@@ -289,6 +360,12 @@ export function VocabView({ onSelectTx, initialFocusId }: Props) {
         onClearConditions={() => setFilters([])}
         indexItems={indexItems}
         suggestions={suggestions}
+        indexModes={[
+          { key: 'category-kind', label: t.vocab.treeModeCategory },
+          { key: 'transition', label: t.vocab.treeModeTransition },
+        ]}
+        indexMode={indexMode}
+        onIndexModeChange={changeIndexMode}
       />
       <main class="browse-main">
         <div class="browse-main-head">
