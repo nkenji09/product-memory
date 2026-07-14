@@ -38,6 +38,20 @@ decision はタグにも付けられる。
 複数の遷移をまたぐ不変条件は、共有タグに刻んでおく。
 そうすると、片方の遷移を変更したときに、そのタグに付いた過去の decision が表に出て、もう片方との矛盾に気づける。
 
+保存する原子と、そこから導出される派生ビューの関係を、次の図に示す。
+
+```mermaid
+flowchart LR
+    act["action"] --> tx["transition（原子）"]
+    cond["condition"] --> tx
+    eff["effect"] --> tx
+    tag["tag（横断分類）"] -. 分類 .-> tx
+    dec["decision（なぜ / append-only）"] -. 付く .-> tx
+    dec -. 付く .-> tag
+    tx --> q["派生ビュー：spec / タグ階層 / rules<br/>（保存せず query で導出）"]
+    tag --> q
+```
+
 詳しい設計は [DESIGN.md](DESIGN.md) を参照。
 
 ## インストール
