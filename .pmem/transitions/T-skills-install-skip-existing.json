@@ -7,7 +7,7 @@
     "cond.skills-target-exists"
   ],
   "then": [
-    "eff.state.skip-existing-file"
+    "eff.log.skip-existing-warning"
   ],
   "tags": [
     "req.skill-distribution.no-clobber",
