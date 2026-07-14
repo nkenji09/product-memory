@@ -30,6 +30,31 @@ export function saveCollapsed(facet: string, ids: Set<string>): void {
   }
 }
 
+// ── 索引の表示モード永続（vocab-tree-mode） ─────────────────────────
+// 語彙索引を「モードA=category×kind / モードB=消費 transition 文脈」で切り替える
+// （req.comfortable-viewer.vocab-tree-mode）。選択は再訪時に保つよう localStorage
+// へ永続する — 既存の折りたたみ永続（loadCollapsed/saveCollapsed・
+// eff.state.section-visibility 系）と同じ private-mode 耐性の流儀で、モデル
+// （.pmem）には一切触れない純 UI 状態。未保存/不正値は既定モードA へフォールバック。
+export type VocabIndexMode = 'category-kind' | 'transition';
+const INDEX_MODE_KEY = 'pmem-vocab-index-mode';
+
+export function loadIndexMode(): VocabIndexMode {
+  try {
+    return localStorage.getItem(INDEX_MODE_KEY) === 'transition' ? 'transition' : 'category-kind';
+  } catch {
+    return 'category-kind';
+  }
+}
+
+export function saveIndexMode(mode: VocabIndexMode): void {
+  try {
+    localStorage.setItem(INDEX_MODE_KEY, mode);
+  } catch {
+    // Private-mode/quota failures still switch this session — just don't persist.
+  }
+}
+
 // ── タグ階層フォルダ索引（依頼C-1） ─────────────────────────────────
 // One vocab/spec item shown in the rail index. `tags` is the item's *own*
 // tag ids (Transition.tags / VocabEntry.tags — the confirmed basis, §C-1):
@@ -290,6 +315,122 @@ export function buildCategoryKindIndex(opts: BuildCategoryKindIndexOpts): IndexI
 
     for (const kind of [...declared, ...extra]) emitKindFolder(kind, kind, byKind.get(kind) || []);
     emitKindFolder('__other__', otherKindLabel, otherLeaves);
+  }
+
+  return out;
+}
+
+// ── 消費 transition 文脈ツリー索引（モードB・vocab-tree-mode） ───────────
+// vocab は「消費される transition の下」で意味を持つ、という faceted-nav の
+// per-component 導出（subject→実効タグに subject を含む遷移→参照 vocab）を索引の
+// 軸に据えるモードB（eff.state.tree-mode-b-structure）。上位のコンポ/タグ階層は
+// selector（subject コンボ）に寄せ、ここは選択スコープ内で「Transition →
+// その transition が参照する vocab（きっかけ/前提/結果の色バッジ leaf）」の
+// 2 階層に畳む。vocab に直接タグを振らず消費 transition を橋渡しに階層位置を得る
+// ので faceted-nav decision と非矛盾（category×kind の置換ではなく追加レンズ）。
+// どの scope 内 transition にも消費されない vocab は末尾の「未使用」バケットへ
+// 集約する（eff.state.tree-mode-b-unused-bucket）。折りたたみは buildFolderIndex /
+// buildCategoryKindIndex と同じ collapsedIds/onToggle 基盤を流用（キー接頭辞
+// tx: で mode A の catkind: と衝突しない）。
+export interface TransitionVocabLeaf {
+  id: string;
+  label: string;
+  /** 役割（きっかけ/前提/結果）＝ vocab.category の色。呼び出し側で解決する。 */
+  color: string;
+}
+
+interface BuildTransitionVocabIndexOpts {
+  /** 選択スコープ内の transitions（描画順＝id 昇順で渡す）。refs は
+      action→given→then の順の vocab id 列（役割順＝きっかけ→前提→結果）。 */
+  transitions: { id: string; refs: string[] }[];
+  /** ツリーに出しうる vocab の母集合（＝可視 vocab）。id→leaf。transition の
+      refs はこの map で解決し、未解決（dangling / スコープ外 / フィルタ外）は
+      leaf 化しない。未使用判定もこの母集合を基準にする。 */
+  vocabById: Map<string, TransitionVocabLeaf>;
+  /** 末尾「未使用」バケットのラベル。 */
+  unusedLabel: string;
+  /** transition フォルダ行の色。 */
+  transitionColor: string;
+  /** 「未使用」バケット行の色。 */
+  unusedColor: string;
+  collapsedIds: Set<string>;
+  onToggle: (key: string) => void;
+  onSelect: (id: string) => void;
+}
+
+const UNUSED_KEY = 'tx:__unused__';
+
+export function buildTransitionVocabIndex(opts: BuildTransitionVocabIndexOpts): IndexItem[] {
+  const { transitions, vocabById, unusedLabel, transitionColor, unusedColor, collapsedIds, onToggle, onSelect } = opts;
+
+  const out: IndexItem[] = [];
+  // 消費された vocab id（scope 内 transition のいずれかが参照）。未使用判定の逆。
+  const used = new Set<string>();
+
+  for (const tx of transitions) {
+    // この transition が参照する可視 vocab を役割順・重複排除で leaf 化。
+    const seen = new Set<string>();
+    const leaves: TransitionVocabLeaf[] = [];
+    for (const ref of tx.refs) {
+      if (seen.has(ref)) continue;
+      const leaf = vocabById.get(ref);
+      if (!leaf) continue; // dangling ref・スコープ外・フィルタ外は出さない
+      seen.add(ref);
+      used.add(ref);
+      leaves.push(leaf);
+    }
+    // 参照可視 vocab が無い transition は索引に出さない（空フォルダはノイズ）。
+    if (leaves.length === 0) continue;
+
+    const key = 'tx:' + tx.id;
+    const collapsed = collapsedIds.has(key);
+    out.push({
+      id: key,
+      label: tx.id,
+      color: transitionColor,
+      indent: 0,
+      hasChildren: true,
+      collapsed,
+      onToggle: () => onToggle(key),
+      onClick: () => onToggle(key),
+    });
+    if (collapsed) continue;
+    for (const leaf of leaves) {
+      out.push({
+        id: key + '::' + leaf.id,
+        label: leaf.label,
+        color: leaf.color,
+        indent: 1,
+        onClick: () => onSelect(leaf.id),
+      });
+    }
+  }
+
+  // 未使用: どの scope 内 transition にも消費されない可視 vocab を末尾バケットへ。
+  const unusedLeaves = [...vocabById.values()].filter((v) => !used.has(v.id));
+  if (unusedLeaves.length > 0) {
+    const collapsed = collapsedIds.has(UNUSED_KEY);
+    out.push({
+      id: UNUSED_KEY,
+      label: unusedLabel,
+      color: unusedColor,
+      indent: 0,
+      hasChildren: true,
+      collapsed,
+      onToggle: () => onToggle(UNUSED_KEY),
+      onClick: () => onToggle(UNUSED_KEY),
+    });
+    if (!collapsed) {
+      for (const leaf of unusedLeaves) {
+        out.push({
+          id: UNUSED_KEY + '::' + leaf.id,
+          label: leaf.label,
+          color: leaf.color,
+          indent: 1,
+          onClick: () => onSelect(leaf.id),
+        });
+      }
+    }
   }
 
   return out;

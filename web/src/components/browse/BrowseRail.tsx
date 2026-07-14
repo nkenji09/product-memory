@@ -63,6 +63,12 @@ interface Props {
       screens that don't offer suggestions — the free-text filter behavior
       is unaffected either way. */
   suggestions?: SuggestionItem[];
+  /** Index display-mode toggle shown at the right end of the index header
+      row (vocab-tree-mode). Omit on screens with a single index shape
+      (BrowseView) — the header then renders as before (count only). */
+  indexModes?: { key: string; label: string }[];
+  indexMode?: string;
+  onIndexModeChange?: (key: string) => void;
 }
 
 const MAX_SUGGESTIONS = 8;
@@ -87,6 +93,9 @@ export function BrowseRail({
   onClearConditions,
   indexItems,
   suggestions = [],
+  indexModes,
+  indexMode,
+  onIndexModeChange,
 }: Props) {
   const t = useT();
   const [focused, setFocused] = useState(false);
@@ -227,9 +236,27 @@ export function BrowseRail({
 
         <div class="browse-rail-section browse-rail-index">
           <div class="browse-rail-divider" />
-          <span class="browse-rail-label browse-rail-index-head dim">
-            <Icon name="list" size={13} /> <span class="browse-rail-index-count">{indexItems.length}</span>
-          </span>
+          <div class="browse-rail-index-head-row">
+            <span class="browse-rail-label browse-rail-index-head dim">
+              <Icon name="list" size={13} /> <span class="browse-rail-index-count">{indexItems.length}</span>
+            </span>
+            {indexModes && indexModes.length > 1 && onIndexModeChange && (
+              <div class="browse-rail-index-modes" role="tablist">
+                {indexModes.map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={indexMode === m.key}
+                    class={'browse-rail-index-mode' + (indexMode === m.key ? ' active' : '')}
+                    onClick={() => onIndexModeChange(m.key)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div class="browse-rail-index-list">
             {indexItems.map((item) => (
               <div key={item.id} class="browse-rail-index-row" style={{ paddingLeft: `${4 + item.indent * 12}px` }}>
