@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -104,6 +105,9 @@ func TestSkillsInstall_DefaultDoesNotOverwrite_ForceDoes(t *testing.T) {
 	}
 	if string(data) != string(sentinel) {
 		t.Fatalf("expected existing file to be left untouched without --force, got: %s", string(data))
+	}
+	if !strings.Contains(out, "警告") || !strings.Contains(out, "スキップ") {
+		t.Fatalf("expected skip warning in output, got:\n%s", out)
 	}
 
 	// --force で上書きされること。
