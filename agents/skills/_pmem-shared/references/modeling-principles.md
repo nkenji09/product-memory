@@ -19,6 +19,9 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 - **vocab を共有する ⟺ 実装が同一**（同じ component / composable / 関数を使う）。だから vocab の逆引き＝真の影響。
 - **概念が同じだけ**（型は同じ `v-model` でも A と B が独立実装）→ **vocab は分ける**。束ねるのは **tag（概念の族）**。共有にすると A を直しても B に影響しないのに**偽の影響**が逆引きに出る。
 - **「この概念はこう振る舞うべき」という共有ルール**は、その概念 tag への **decision**。編集時に surface するのは誤爆ではなく「契約が変わるなら関係箇所を全部見直せ」という**正当な cross-cutting**。
+- **横断（concept）タグは「横断の観点＝軸」で作る**（重要）。`v-model` のような **generic な共通点**でグルーピングしない — v-model は全主題が持つので、プロジェクト全体では無関係な主題まで巻き込み、軸として意味を成さない。まず **「何の観点でこれらは横断されるのか」= 軸を特定**し、その軸で概念タグを作る。派生する個別ルールはその軸タグへの decision に置く。
+  - 例: UISampleRangeInput と UISampleRangePicker を横断させている軸は **「開始〜終了のレンジを扱う」**（`concept.sample-shared`）。v-model が `SampleRangeTuple` であること・phase（start/end）・start≤end 不変条件は、**すべて「レンジである」ことから派生する aspect** で、`concept.sample-shared` への decision（共有ルール）として置く。`concept.v-model` のような generic 名で切らない。
+  - 見分け方: 「これらが共通なのは、**何の性質を共有しているからか**？」を問う。その性質＝軸。軸が generic（どの主題にもある）なら、それは横断タグの単位として弱い。
 
 ### phase-boundary（重要）
 
