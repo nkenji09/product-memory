@@ -46,6 +46,9 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 - **vocab id は実装同一性で粒度を決める**：**独立実装は最初から `<eff|act>.<Owner>.<name>`（＝主題名で命名）が既定**。plain / 総称名（`eff.self.apply-size` 等）にすると、**プロジェクト全体 store では別主題が同名の独立実装を足したとき id 衝突→意図せず共有→主題横断の false-impact** を生む（size/blur/focus/status/loading 等の汎用挙動は必ず被る）。だから片主題専用でも owner 名で作る。plain id にしてよいのは**実装が共通と判明した共有**だけ（例: wrapper が inner を embed して同一コードを呼ぶ → owner=inner 名にして wrapper がそれを参照する）。「per-component で作り、共通と分かったら共通化」がルール。
 - **label**：action（きっかけ）は **「〜したとき」のトリガー表現**（例 `API setValue() を実行したとき`）。メソッドシグネチャの羅列にしない — `spec` の `WHEN 〜 THEN 〜` が読めなくなる。effect（結果）は**起きる事実**（`終了入力へフォーカスを送る`）。
   - ※ label / owner を変える CLI は無い（`vocab edit` は description のみ）。後から直すなら JSON の当該フィールドを直接編集。
+- **condition（前提）に結果を混ぜない（カテゴリ分離）**：condition の label には「そのとき成り立っている事実・状態」だけを書く。**結果（何が起きるか）は transition の `then`（effect）の責務**であり、condition 側に埋め込まない。見分け方は一言で「WHEN/GIVEN で真であること＝condition」「THEN で起きること＝effect」。同じ 1 つの事柄を condition と effect の両方に書かない。
+  - ❌ `--force が指定されている（既存を上書き）` — 「既存を上書き」は結果（effect）であり、前提（condition）に混ぜてはいけない。
+  - ✅ `--force が指定されている` — 結果は `then` 側の effect vocab（例 `既存を上書きする`）が表す。
 
 ---
 
