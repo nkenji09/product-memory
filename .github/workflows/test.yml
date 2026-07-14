@@ -1,0 +1,91 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: go build
+        run: go build ./...
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: gofmt
+        run: |
+          diff="$(gofmt -l .)"
+          if [ -n "$diff" ]; then
+            echo "gofmt needs to be run on the following files:"
+            echo "$diff"
+            exit 1
+          fi
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.13.0"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: npm ci
+        working-directory: web
+        run: npm ci
+
+      - name: tsc --noEmit
+        working-directory: web
+        run: npx tsc --noEmit
+
+      - name: build
+        working-directory: web
+        run: npm run build
+
+      # committed web/dist is the canonical embed source (go:embed); the local darwin
+      # build is the authority normalized by hand at merge time. This step is a
+      # best-effort drift check only: CI runs on ubuntu-latest (cross-platform from
+      # the darwin authority), and byte-identical output across OSes is not guaranteed
+      # (rolldown/mermaid chunk hashes). continue-on-error keeps this from failing the
+      # job on a false positive — it only surfaces drift for a human to look at; the
+      # build itself (tsc/vite above) still fails the job on real breakage.
+      - name: verify web/dist matches committed build
+        continue-on-error: true
+        run: git diff --exit-code -- web/dist
+
+  lint:
+    name: pmem lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: build pmem
+        run: go build -o /tmp/pmem ./cmd/pmem
+
+      - name: pmem lint
+        run: /tmp/pmem lint

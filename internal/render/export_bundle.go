@@ -89,9 +89,9 @@ func collectChunkGraph(distFS fs.FS, assetsDir, entryKey string, entrySrc []byte
 // line up with ExportHTML's single-file constraint. Uses
 // `String.fromCharCode(96)` instead of a literal backtick so this can stay
 // one plain Go string; three quote variants because (like jsImportRes) a
-// chunk's own `from`/`import(` specifiers may be quoted with any of `"`,
-// `'`, or `` ` ``, and rewriting is a plain per-quote loop rather than a
-// single backreferenced regex.
+// chunk's own `from`/`import(` specifiers may be quoted with a double quote,
+// a single quote, or a backtick, and rewriting is a plain per-quote loop
+// rather than a single backreferenced regex.
 //
 // The `vite:preloadError` listener is defense in depth: build.modulePreload
 // = false (vite.config.ts) already empties out most chunks' own
