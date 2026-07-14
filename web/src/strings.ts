@@ -138,6 +138,11 @@ const ja = {
     // ↗ 詳細リンク（card-detail-link）。filter（⊕）とは別の専用アンカーで、
     // 平打ち=SPA遷移／Cmd・Ctrl・中クリック=別タブ／右クリック=リンクコピー。
     openDetail: '詳細を開く（Cmd/Ctrl+クリックで別タブ）',
+    // ⋮ アフォーダンスメニュー（card-affordance-menu）: 各タグ/語彙の末尾の
+    // 3点メニュー。トリガの aria-label と2項目（フィルタ追加／別タブで詳細）。
+    menuTrigger: 'この項目の操作',
+    menuAddFilter: '検索条件に追加',
+    menuOpenLink: 'リンク先を開く（別タブ）',
     // 実効タグの由来ラベル（gap G11）。own/vocab/ancestor は複数同時成立しうる
     // ので順に連結する — バックエンドの EffectiveTag.sources をそのまま表示
     // するだけで、フロントは由来を再計算しない（§9）。
@@ -427,6 +432,9 @@ const en: Strings = {
     derivedHint: 'Effective tags from vocab inheritance + parent tag expansion',
     clickToFilter: 'Click to add as a search condition',
     openDetail: 'Open details (⌘/Ctrl-click for a new tab)',
+    menuTrigger: 'Actions for this item',
+    menuAddFilter: 'Add to search conditions',
+    menuOpenLink: 'Open link (new tab)',
     provenanceSourceLabel: { own: 'direct', vocab: 'via vocab', ancestor: 'via ancestor' } as Record<TagSource, string>,
     provenanceLabel: (sources) => sources.map((s) => en.browse.provenanceSourceLabel[s]).join(' + '),
     fetchWarning: (n) => `${n} item(s) failed to load (the cards shown are fine — reload to retry)`,
