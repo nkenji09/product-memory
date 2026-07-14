@@ -203,6 +203,47 @@
   gap: 4px;
 }
 
+/* 索引ヘッダの行: 左に件数バッジ、右端にモード切替トグル（vocab-tree-mode）。
+   トグルを渡さない画面（BrowseView）では件数バッジだけが従来どおり左寄せで並ぶ。 */
+.browse-rail-index-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+/* モードA/B のセグメント切替（索引ヘッダ右端）。kind ピルと同系の見た目で、
+   小さく収める。 */
+.browse-rail-index-modes {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--lm-s2);
+  border-radius: var(--r-md);
+}
+
+.browse-rail-index-mode {
+  border: none;
+  background: transparent;
+  color: var(--lm-text-dim);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.browse-rail-index-mode:hover {
+  color: var(--lm-text);
+}
+
+.browse-rail-index-mode.active {
+  background: var(--lm-s1);
+  color: var(--lm-text-strong);
+  box-shadow: var(--sh-sm);
+}
+
 .browse-rail-label {
   display: inline-flex;
   align-items: center;
