@@ -747,67 +747,96 @@
   gap: 6px;
 }
 
-/* card-detail-link: タグは非クリックの pill（Chip）+ その隣に ⊕/↗ affordance を
-   置いた1グループ。affordances を pill の内側に入れると 44px タップターゲットが
-   pill を肥大させるため、pill の外・横に並置する。 */
+/* card-affordance-menu: タグは非クリックの pill（Chip）+ その末尾に ⋮ メニュー
+   トリガを1つだけ置いた1グループ。旧 card-detail-link は pill の外に ⊕/↗ の2
+   アイコンを並べてタグ多数/長名で行が破綻したため、アフォーダンスを ⋮ 1つに集約。 */
 .spec-tag-item {
   display: inline-flex;
   align-items: center;
   gap: 2px;
 }
 
-/* ⊕（フィルタ追加）と ↗（詳細を開く）の2アイコンだけをクリック領域にする対。
-   両者は独立したクリック領域で、各ボタン自身が 44px 幅ぶんの離隔を生む。 */
-.spec-affordances {
+/* ⋮ アフォーダンスメニュー（card-affordance-menu）: トリガ + popover のラッパ。
+   popover を絶対配置する基準にするため position:relative。 */
+.kebab-menu {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 2px;
   flex-shrink: 0;
 }
 
-/* ⊕/↗ 共通: 最小 44×44 CSS px 相当のタップターゲット（padding ではなく
-   min-width/height で確保）。既定は透明で、hover/focus 時のみ淡い背景。 */
-.spec-affordance-btn {
+/* ⋮ トリガ: 各要素の footprint をアイコン1つぶんしか増やさないコンパクトな
+   ボタン（旧 2×44px が破綻の原因だった）。既定は薄く、hover/focus で濃く。 */
+.kebab-menu-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: none;
   background: transparent;
   border-radius: var(--r-sm);
+  color: var(--lm-text-dim);
   cursor: pointer;
-  text-decoration: none;
 }
 
-.spec-affordance-btn:hover,
-.spec-affordance-btn:focus-visible {
+.kebab-menu-trigger:hover,
+.kebab-menu-trigger:focus-visible,
+.kebab-menu-trigger[aria-expanded='true'] {
   background: var(--lm-s2);
+  color: var(--lm-text);
 }
 
-.spec-affordance-btn:focus-visible {
+.kebab-menu-trigger:focus-visible {
   outline: 2px solid var(--lm-primary-strong);
   outline-offset: -2px;
 }
 
-/* ⊕ は既存 filter-plus-icon の見た目（primary・opacity 0.5）を維持し、
-   hover/focus で濃く。 */
-.spec-filter-btn:hover .filter-plus-icon,
-.spec-filter-btn:focus-visible .filter-plus-icon {
-  opacity: 1;
+/* popover はトリガの右端に揃えて左へ展開する（chip 行はスクロール領域内に
+   あり overflow-x が clip されうるため、右へはみ出させない）。 */
+.kebab-menu-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  min-width: 180px;
+  padding: var(--sp-1);
+  background: var(--lm-bg);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-/* ↗ は常時薄く（低コントラスト）→ hover/focus で濃く。静止時のノイズを抑える。 */
-.spec-detail-link {
-  color: var(--lm-text-dim);
-  opacity: 0.5;
-}
-
-.spec-detail-link:hover,
-.spec-detail-link:focus-visible {
+.kebab-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
   color: var(--lm-text);
-  opacity: 1;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  line-height: 1.3;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.kebab-menu-item:hover,
+.kebab-menu-item:focus-visible {
+  background: var(--lm-s2);
+}
+
+.kebab-menu-item:focus-visible {
+  outline: 2px solid var(--lm-primary-strong);
+  outline-offset: -2px;
 }
 
 .spec-card-derived {
