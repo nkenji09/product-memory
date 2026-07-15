@@ -24,7 +24,11 @@ func newRefsRewriteCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			report, err := refs.Execute(projectRoot(s), []refs.Pair{{OldID: oldID, NewID: newID}}, apply)
+			opts, err := refsOptions(s)
+			if err != nil {
+				return err
+			}
+			report, err := refs.Execute(projectRoot(s), []refs.Pair{{OldID: oldID, NewID: newID}}, apply, opts)
 			if err != nil {
 				return err
 			}

@@ -43,7 +43,11 @@ func newRefsScanCmd() *cobra.Command {
 				sort.Strings(ids)
 			}
 
-			report, err := refs.ScanIDs(projectRoot(s), ids)
+			opts, err := refsOptions(s)
+			if err != nil {
+				return err
+			}
+			report, err := refs.ScanIDs(projectRoot(s), ids, opts)
 			if err != nil {
 				return err
 			}

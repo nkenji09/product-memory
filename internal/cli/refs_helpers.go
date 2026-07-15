@@ -34,6 +34,23 @@ func projectRoot(s *store.Store) string {
 	return filepath.Dir(s.Dir)
 }
 
+// refsOptions loads config.sourceRefs (if set) and turns it into the
+// refs.Options that scope file discovery — the wiring that makes
+// `pmem config set sourceRefs...`-style scan/exclude settings actually
+// affect rename's implicit scan and `pmem refs scan|rewrite`. A nil
+// SourceRefs (the common case: unset) yields the zero-value Options,
+// which narrows nothing — identical to behavior before this field existed.
+func refsOptions(s *store.Store) (refs.Options, error) {
+	cfg, err := s.LoadConfig()
+	if err != nil {
+		return refs.Options{}, err
+	}
+	if cfg.SourceRefs == nil {
+		return refs.Options{}, nil
+	}
+	return refs.Options{Scan: cfg.SourceRefs.Scan, Exclude: cfg.SourceRefs.Exclude}, nil
+}
+
 // renameOutput is what tag/vocab/tx rename print in --json mode: the
 // store's rename summary alongside the refs report (nil when --no-refs was
 // given), in one JSON document.
@@ -56,7 +73,11 @@ func applyRenameRefs(s *store.Store, pairs []refs.Pair, flags renameRefsFlags) (
 	if flags.noRefs || len(pairs) == 0 {
 		return nil, nil
 	}
-	report, err := refs.Execute(projectRoot(s), pairs, flags.rewrite)
+	opts, err := refsOptions(s)
+	if err != nil {
+		return nil, fmt.Errorf("config の読み込みに失敗しました（rename 自体は確定済みです）: %w", err)
+	}
+	report, err := refs.Execute(projectRoot(s), pairs, flags.rewrite, opts)
 	if err != nil {
 		return nil, fmt.Errorf("ソース走査に失敗しました（rename 自体は確定済みです）: %w", err)
 	}

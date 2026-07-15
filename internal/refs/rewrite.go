@@ -54,10 +54,19 @@ type Report struct {
 // "req.foo-bar" can't have the first pair's replacement swallow the
 // second's, and vice versa), so the order pairs are applied in doesn't
 // change the result — sorting them is only for deterministic output.
-func Execute(root string, pairs []Pair, apply bool) (Report, error) {
+//
+// opts is optional (variadic so every pre-existing call site keeps
+// compiling and behaving identically): passing none, or the zero value,
+// scans the whole project root exactly as before this parameter existed.
+// A non-zero Options narrows/excludes per model.Config's SourceRefs (the
+// CLI passes it through when config.json sets sourceRefs.scan/exclude).
+func Execute(root string, pairs []Pair, apply bool, opts ...Options) (Report, error) {
 	files, err := EnumerateFiles(root)
 	if err != nil {
 		return Report{}, err
+	}
+	if len(opts) > 0 {
+		files = filterScope(files, opts[0])
 	}
 	sorted := make([]Pair, len(pairs))
 	copy(sorted, pairs)
@@ -117,13 +126,13 @@ func Execute(root string, pairs []Pair, apply bool) (Report, error) {
 // ScanIDs finds every boundary-safe occurrence of any of ids in root's
 // source files — an inventory/health-check read, not tied to a rename (no
 // replacement happens; NewID is set equal to OldID as a placeholder Execute
-// never uses in dry-run mode).
-func ScanIDs(root string, ids []string) (Report, error) {
+// never uses in dry-run mode). opts is optional, same as Execute's.
+func ScanIDs(root string, ids []string, opts ...Options) (Report, error) {
 	pairs := make([]Pair, len(ids))
 	for i, id := range ids {
 		pairs[i] = Pair{OldID: id, NewID: id}
 	}
-	return Execute(root, pairs, false)
+	return Execute(root, pairs, false, opts...)
 }
 
 // lineAt returns the 1-indexed line number containing byte offset.
