@@ -144,6 +144,14 @@ issue）を指し、`.concierge/` 等の揮発物は指さない。
    pmem spec <subjectTag>         # 主題タグで束ねた仕様レポート（WHEN/GIVEN/THEN を並べて見る）
    ```
    **`pmem lint` が緑でも網羅の証明にはならない**（DESIGN §5・§8）。ここは手動の突合として別に行う。
+   **もう一つの観点として、変更が分岐する軸・実装の枝を数え上げる**——「この振る舞いはどの入力／サーフェスで
+   発火するか、実装は何分岐しているか」を問い、提案がその全ケースを覆っているか（or 明示的にスコープ外＋
+   理由）を確認する。兄弟 transition の整合が「同じ主題タグ配下を横に見る」観点なのに対し、こちらは
+   「1 つの操作が実装内で分岐する軸を縦に数える」観点で、互いを代替しない。
+   実例（#35）: viewer の「adopt で昇格元コメントを削除」は、採用ボタンの `confirmAdopt` が
+   `c.source === 'ai'`（AI review）／それ以外（人コメント）で 2 分岐する
+   （`web/src/components/comments/CommentPanel.tsx` の `confirmAdopt`）。初版は人コメントのみモデル化し、
+   「AI review を viewer で adopt」ケースが漏れていた——分岐を数えて初めて気づけた。
 7. **確定したら decide** — 変更した transition ごとに:
    ```
    pmem decide --on transition:<id> --why "<変更の理由>" --changed "<変更内容>" --ref <PR/URL>
