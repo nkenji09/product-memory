@@ -74,6 +74,69 @@ func TestCLI_VocabEditRequiresOneDescFlag(t *testing.T) {
 	}
 }
 
+func TestCLI_VocabEditUpdatesLabelKeepsDescription(t *testing.T) {
+	dir := t.TempDir()
+	mustRun(t, dir, "init")
+	mustRun(t, dir, "vocab", "add", "action", "act.foo", "--label", "旧ラベル", "--description", "説明本文")
+
+	mustRun(t, dir, "vocab", "edit", "act.foo", "--label", "新ラベル")
+
+	s, err := store.Open(dir)
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	v, err := s.LoadVocab("act.foo")
+	if err != nil {
+		t.Fatalf("LoadVocab: %v", err)
+	}
+	if v.Label != "新ラベル" {
+		t.Fatalf("Label = %q, want 新ラベル", v.Label)
+	}
+	if v.Description != "説明本文" {
+		t.Fatalf("Description = %q, want unchanged", v.Description)
+	}
+}
+
+func TestCLI_VocabEditUpdatesLabelAndDescriptionTogether(t *testing.T) {
+	dir := t.TempDir()
+	mustRun(t, dir, "init")
+	mustRun(t, dir, "vocab", "add", "action", "act.foo", "--label", "旧ラベル", "--description", "旧説明")
+
+	mustRun(t, dir, "vocab", "edit", "act.foo", "--label", "新ラベル", "--description", "新説明")
+
+	s, err := store.Open(dir)
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	v, err := s.LoadVocab("act.foo")
+	if err != nil {
+		t.Fatalf("LoadVocab: %v", err)
+	}
+	if v.Label != "新ラベル" {
+		t.Fatalf("Label = %q, want 新ラベル", v.Label)
+	}
+	if v.Description != "新説明" {
+		t.Fatalf("Description = %q, want 新説明", v.Description)
+	}
+}
+
+func TestCLI_VocabEditRejectsEmptyLabel(t *testing.T) {
+	dir := t.TempDir()
+	mustRun(t, dir, "init")
+	mustRun(t, dir, "vocab", "add", "action", "act.foo", "--label", "ラベル")
+	if _, err := run(t, dir, "vocab", "edit", "act.foo", "--label", ""); err == nil {
+		t.Fatalf("expected error for empty --label")
+	}
+}
+
+func TestCLI_VocabEditRejectsUnknownIDWithLabel(t *testing.T) {
+	dir := t.TempDir()
+	mustRun(t, dir, "init")
+	if _, err := run(t, dir, "vocab", "edit", "act.missing", "--label", "x"); err == nil {
+		t.Fatalf("expected error for unknown vocab id")
+	}
+}
+
 func TestCLI_VocabEditRejectsDescriptionAndDescFileTogether(t *testing.T) {
 	dir := t.TempDir()
 	mustRun(t, dir, "init")
