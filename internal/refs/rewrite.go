@@ -43,17 +43,23 @@ type Report struct {
 // Execute scans root for every pair's OldID and, when apply is true,
 // replaces each boundary-safe occurrence with the pair's NewID, writing
 // changed files atomically (temp file + rename), one file at a time. With
-// apply false, it only collects Matches — a dry-run preview of exactly
-// what apply would change, built from the same matching path so the
-// preview can never drift from the real rewrite.
+// apply false, it only collects Matches — a dry-run preview built from the
+// same matching path apply uses, so for the pairs this package's own
+// callers construct (rename's plan, or a single CLI-supplied old/new
+// pair — always boundary-disjoint, see below) the preview matches what
+// apply would do.
 //
-// Pairs are applied independently against each file's current buffer.
-// Because findOccurrences rejects any occurrence whose trailing run
-// contains a letter/digit, one pair's OldID can never match inside another
-// pair's OldID/NewID text (a cascade renaming both "req.foo" and
-// "req.foo-bar" can't have the first pair's replacement swallow the
-// second's, and vice versa), so the order pairs are applied in doesn't
-// change the result — sorting them is only for deterministic output.
+// Pairs are applied independently against each file's current buffer, and
+// for boundary-disjoint pairs the order doesn't matter: because
+// findOccurrences rejects any occurrence whose trailing run contains a
+// letter/digit, one pair's OldID can't match inside another pair's
+// OldID/NewID text (a cascade renaming both "req.foo" and "req.foo-bar"
+// can't have the first pair's replacement swallow the second's, and vice
+// versa). This guarantee is about the pair *shapes* CLI callers construct,
+// not a property Execute enforces on arbitrary caller-supplied pairs —
+// e.g. a caller that hands Execute overlapping pairs like {OldID: "a",
+// NewID: "b"} and {OldID: "b", NewID: "c"} could see a value rewritten
+// twice in one apply pass; nothing here validates pairs are disjoint.
 //
 // opts is optional (variadic so every pre-existing call site keeps
 // compiling and behaving identically): passing none, or the zero value,

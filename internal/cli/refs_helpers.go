@@ -36,10 +36,12 @@ func projectRoot(s *store.Store) string {
 
 // refsOptions loads config.sourceRefs (if set) and turns it into the
 // refs.Options that scope file discovery — the wiring that makes
-// `pmem config set sourceRefs...`-style scan/exclude settings actually
-// affect rename's implicit scan and `pmem refs scan|rewrite`. A nil
-// SourceRefs (the common case: unset) yields the zero-value Options,
-// which narrows nothing — identical to behavior before this field existed.
+// config.json's sourceRefs.scan/exclude actually affect rename's implicit
+// scan and `pmem refs scan|rewrite` (there is no `pmem config set` key for
+// it yet; setting it today means editing config.json directly or via the
+// store's Go API). A nil SourceRefs (the common case: unset) yields the
+// zero-value Options, which narrows nothing — identical to behavior
+// before this field existed.
 func refsOptions(s *store.Store) (refs.Options, error) {
 	cfg, err := s.LoadConfig()
 	if err != nil {
@@ -114,10 +116,19 @@ func printRenameRefsReport(cmd *cobra.Command, report *refs.Report, rewrite bool
 	}
 }
 
+// uniqueRewriteSuggestions collects the distinct rewrite pairs worth
+// suggesting to the user. Pairs where OldID == NewID are dropped — that
+// shape only occurs from `pmem refs scan`'s inventory read (ScanIDs uses
+// NewID=OldID as a placeholder Execute never uses in dry-run mode), where
+// there is no rename in progress, and printing `pmem refs rewrite X X
+// --apply` would be a no-op suggestion nobody should ever run.
 func uniqueRewriteSuggestions(matches []refs.Match) []refs.Pair {
 	seen := map[refs.Pair]bool{}
 	var out []refs.Pair
 	for _, m := range matches {
+		if m.Old == m.New {
+			continue
+		}
 		p := refs.Pair{OldID: m.Old, NewID: m.New}
 		if !seen[p] {
 			seen[p] = true

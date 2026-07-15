@@ -36,6 +36,13 @@ type SkipNote struct {
 // git is available, falling back to a directory walk otherwise. Both paths
 // apply the always-excluded orchestration/store directories. Returned
 // paths are root-relative, "/"-separated, sorted.
+//
+// The two paths are NOT at full parity: the walk fallback (no git, or git
+// missing from PATH) does not parse or honor .gitignore at all — it only
+// applies the always-excluded directories above. This only matters for
+// projects that (a) aren't a git repo, or (b) run without git on PATH; the
+// common case (git repo, git installed) always takes the `git ls-files`
+// path and is unaffected. See DESIGN.md §8.5 for the user-facing note.
 func EnumerateFiles(root string) ([]string, error) {
 	if paths, err := gitLsFiles(root); err == nil {
 		return filterExcluded(paths), nil

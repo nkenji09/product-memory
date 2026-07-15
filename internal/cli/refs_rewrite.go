@@ -16,7 +16,9 @@ func newRefsRewriteCmd() *cobra.Command {
 		Long: "ソースコード中の <old-id> の出現を境界安全に <new-id> へ置換する。.pmem には一切触れない。\n" +
 			"既定は dry-run 表示（ソース不変）、--apply で実際に書き換える。\n\n" +
 			"rename の --rewrite-refs が部分失敗した場合の再実行、およびマーカー無しで rename 済みの " +
-			"参照を後から直す場合に使う（同じ <old-id> <new-id> で再実行しても冪等）。",
+			"参照を後から直す場合に使う（同じ <old-id> <new-id> で再実行しても冪等）。\n\n" +
+			"走査は git ls-files（.gitignore 尊重）が既定経路。git が使えない場合はディレクトリ walk に" +
+			"フォールバックし、その場合 .gitignore は尊重されない。走査範囲は config.sourceRefs（scan/exclude）で絞れる。",
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			oldID, newID := args[0], args[1]
