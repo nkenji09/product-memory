@@ -26,8 +26,10 @@ decision 下書きを出す判断層。本スキルはその先、**方針が出
 CLI を軸に書くが、viewer を使う場合も同じ順序（提案 → コメント/手直し → 評価 → decide → commit → 結線）で進む。
 
 **提案レビューは必ず `pmem view` で行い、AI（提案者）は対象を開いた状態の深リンク URL をレビュアに渡す。**
-チャットに decision/transition 本文を貼るだけの軽い確認や、深リンクできない静的 `export --html` は
-レビュー提示としては不十分——対象タグ・関連 transition・decision 履歴の文脈込みで人が理解してから
+チャットに decision/transition 本文を貼るだけの軽い確認や静的 `export --html` はレビュー提示としては
+不十分——`export --html` は hash ベースの深リンク自体は file:// でも動くが（DESIGN §7.3）、file:// パスは
+共有可能な URL にならず、Adopt/Reject の書込 API（`POST /api/decision` 等）は server-mode 限定で export
+では使えない（DESIGN §7.2）。対象タグ・関連 transition・decision 履歴の文脈込みで人が理解してから
 adopt/reject できることが目的。深リンクの route 一覧は [pmem スキル](../pmem/SKILL.md) の `pmem view` 節へ。
 
 ## いつ使うか
