@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -121,5 +122,54 @@ func TestCLI_TxRenameRewriteRefsAppliesReplace(t *testing.T) {
 	got := readSourceFile(t, dir, "handler.go")
 	if got != "// see T-login-submit for the flow\n" {
 		t.Fatalf("tx rename rewrite, got %q", got)
+	}
+}
+
+// TestCLI_TagRenamePartialSourceFailureStaysCommittedAndReportsNonZero covers
+// the handoff's non-atomic-failure acceptance criterion at the CLI layer
+// (not just internal/refs): the `.pmem` rename must succeed and stick even
+// when source rewriting can't write one of the files, the command must
+// exit non-zero to signal that, and `pmem refs rewrite --apply` must be
+// able to finish the job afterward (idempotently) once the obstruction is
+// removed.
+func TestCLI_TagRenamePartialSourceFailureStaysCommittedAndReportsNonZero(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("directory permission semantics differ on windows")
+	}
+	dir := t.TempDir()
+	setupAuthFixture(t, dir)
+	writeSourceFile(t, dir, "locked/handler.go", "// see req.auth here\n")
+
+	lockedDir := filepath.Join(dir, "locked")
+	if err := os.Chmod(lockedDir, 0o555); err != nil {
+		t.Fatalf("Chmod: %v", err)
+	}
+	t.Cleanup(func() { os.Chmod(lockedDir, 0o755) })
+
+	out, err := run(t, dir, "tag", "rename", "req.auth", "req.authn", "--rewrite-refs")
+	if err == nil {
+		t.Fatalf("expected non-zero exit when source rewrite fails, got success:\n%s", out)
+	}
+
+	// The `.pmem` rename itself must have committed regardless.
+	list := mustRun(t, dir, "tag", "list")
+	if strings.Contains(list, "req.auth\t") || !strings.Contains(list, "req.authn") {
+		t.Fatalf("expected .pmem rename to stay committed despite source-rewrite failure, got:\n%s", list)
+	}
+
+	os.Chmod(lockedDir, 0o755)
+	retryOut := mustRun(t, dir, "refs", "rewrite", "req.auth", "req.authn", "--apply")
+	if !strings.Contains(retryOut, "書き換えました") {
+		t.Fatalf("expected retry via `pmem refs rewrite --apply` to finish the job, got:\n%s", retryOut)
+	}
+	got := readSourceFile(t, dir, "locked/handler.go")
+	if got != "// see req.authn here\n" {
+		t.Fatalf("expected retry to complete the rewrite, got %q", got)
+	}
+
+	// A further retry is idempotent (nothing left to rewrite).
+	idemOut := mustRun(t, dir, "refs", "rewrite", "req.auth", "req.authn", "--apply")
+	if !strings.Contains(idemOut, "見つかりませんでした") {
+		t.Fatalf("expected idempotent no-op on second retry, got:\n%s", idemOut)
 	}
 }
