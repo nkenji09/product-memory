@@ -332,6 +332,7 @@ pmem config get|set <key> [<value>]                        # facetKinds / tagKin
 
 # 語彙
 pmem vocab add <condition|action|effect> <id> --label <l> [--kind <k>] [--owner <l>]
+pmem vocab edit <id> [--label <l>] [--description <d>|--desc-file <f>|--edit]  # label/description のみ更新（--label は空不可）
 pmem vocab rm <id> [--category <c>]                        # 未参照限定
 pmem vocab tag <id> --add <tagId>… [--rm <tagId>…]        # 語彙にタグ（遷移が継承）
 pmem vocab rename <id> --to <newId> [--rewrite-refs] [--no-refs]   # 参照も一括更新。ソースの旧 id 残存は既定で dry-run 表示（§8.5）
