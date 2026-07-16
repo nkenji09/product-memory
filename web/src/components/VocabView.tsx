@@ -468,7 +468,7 @@ export function VocabView({
       {/* drawer-resize: 左レールの横幅リサイズ。tag/spec の BrowseView と同じ
           Resizer/RAIL_WIDTH（CSS var・localStorage・clamp・narrow 非表示）を
           共有し、語彙ページだけ配線漏れだったのを是正して一様に効かせる。 */}
-      <Resizer config={RAIL_WIDTH} direction="rail" className="pmem-resizer--rail" />
+      <Resizer config={RAIL_WIDTH} direction="rail" className="scholia-resizer--rail" />
       <main class="browse-main">
         <div class="browse-main-head">
           <h1>

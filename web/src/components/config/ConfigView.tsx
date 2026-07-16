@@ -107,7 +107,7 @@ export function ConfigView() {
           <h1>{t.config.heading}</h1>
           <p class="dim">
             {t.config.introBefore}
-            <code>.pmem/config.json</code>
+            <code>.scholia/config.json</code>
             {t.config.introAfter}
           </p>
         </div>
@@ -140,9 +140,9 @@ export function ConfigView() {
             <span class="config-readonly-title">{t.config.readonlyTitle}</span>
           </div>
           <span class="dim">
-            <code>pmem export --html</code>
+            <code>scholia export --html</code>
             {t.config.readonlyBannerMid}
-            <code>pmem view</code>
+            <code>scholia view</code>
             {t.config.readonlyBannerSuffix}
           </span>
         </div>
@@ -243,7 +243,7 @@ export function ConfigView() {
           </div>
           <p class="config-field-desc dim">
             {t.config.fields.port.descriptionBefore}
-            <code>pmem view</code>
+            <code>scholia view</code>
             {t.config.fields.port.descriptionAfter}
           </p>
           {editable ? (
@@ -280,11 +280,11 @@ export function ConfigView() {
             <input
               class="config-port-input config-wide-input"
               value={draft.productName}
-              placeholder="pmem"
+              placeholder="scholia"
               onInput={(e) => update({ productName: (e.target as HTMLInputElement).value })}
             />
           ) : (
-            <span class="config-port-readonly">{draft.productName || 'pmem'}</span>
+            <span class="config-port-readonly">{draft.productName || 'scholia'}</span>
           )}
         </div>
         <div class="config-field">
@@ -340,15 +340,15 @@ export function ConfigView() {
         </div>
         <p class="dim config-readonly-desc">
           {t.config.sections.readonlyMeta.descBefore}
-          <code>pmem config</code>
+          <code>scholia config</code>
           {t.config.sections.readonlyMeta.descMid}
-          <code>pmem kind</code>
+          <code>scholia kind</code>
           {t.config.sections.readonlyMeta.descAfter}
         </p>
         <div class="config-ro-row">
           <span class="config-ro-label">{t.config.schemaVersionLabel}</span>
-          <span class="config-field-mono">pmemVersion</span>
-          <span class="config-ro-value">{remote.pmemVersion}</span>
+          <span class="config-field-mono">schemaVersion</span>
+          <span class="config-ro-value">{remote.schemaVersion}</span>
         </div>
         <div class="config-ro-vocab">
           <span class="config-ro-vocab-title">

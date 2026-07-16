@@ -62,7 +62,7 @@ export function ProposalCard({ txId }: Props) {
   const { vocabById, tagById, vocabLabel, tagName } = useLookups();
 
   // Refetch when the drawer's focus lands on a (possibly different)
-  // transition, so a `.pmem/` edit made just before opening the drawer
+  // transition, so a `.scholia/` edit made just before opening the drawer
   // shows up without a manual reload — no polling beyond this.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(refresh, [txId]);

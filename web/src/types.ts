@@ -43,7 +43,7 @@ export interface Decision {
 
 // POST /api/decision body（change-cockpit-design-v3.md §1/§8.5・採用フロー）。
 // commits は採用時点では常に空 — 着地（人が commit）後に
-// `pmem decision add-commit` で追記される後工程（本 P4 の実装範囲外）。
+// `scholia decision add-commit` で追記される後工程（本 P4 の実装範囲外）。
 export interface DecisionPostBody {
   on: string;
   why: string;
@@ -95,7 +95,7 @@ export interface DisplayConfig {
 }
 
 export interface Config {
-  pmemVersion: number;
+  schemaVersion: number;
   kinds: Kinds;
   tagKinds: string[];
   facetKinds: string[];
@@ -236,8 +236,8 @@ export interface TransitionSearchDoc {
 
 // diff-viz types (§2 of change-cockpit-design-v2.md) — mirror
 // internal/diff.Result 1:1 (JSON field names, additive-only optional
-// fields). This is a server-mode-only surface: `pmem export --html` never
-// bakes diff data into PmemStaticData, so api.getDiff() always hits
+// fields). This is a server-mode-only surface: `scholia export --html` never
+// bakes diff data into ScholiaStaticData, so api.getDiff() always hits
 // `GET /api/diff` and any caller must not invoke it when isStaticMode
 // (the former CompareView did this; P2's comment-drawer diff card will).
 export interface DiffChange<T> {
@@ -302,7 +302,7 @@ export interface DiffResult {
 // AI コメント配送（change-cockpit-design-v3.md §8.4）— `GET /api/reviews` が
 // 返す read-only サイドカー。internal/review.Review の JSON shape と 1:1。
 // static export には焼き込まない（本単位のスコープ外・§8.4/handoff 参照）ため
-// PmemStaticData には含まれない。
+// ScholiaStaticData には含まれない。
 export interface ReviewRecordRef {
   type: 'transition' | 'vocab' | 'tag';
   id: string;
@@ -382,11 +382,11 @@ export interface FlowReport {
   scope: FlowScopeDisclosure;
 }
 
-// PmemStaticData is what `pmem export --html` bakes into
-// `window.__PMEM_STATIC__` — the same shapes the live /api/* endpoints
+// ScholiaStaticData is what `scholia export --html` bakes into
+// `window.__SCHOLIA_STATIC__` — the same shapes the live /api/* endpoints
 // return, precomputed for every input the SPA's read-only views can ask for
 // (§7). See web/src/api.ts for how this replaces fetch() in static mode.
-export interface PmemStaticData {
+export interface ScholiaStaticData {
   config: Config;
   facets: FacetsResponse;
   traceability: TraceabilityResponse;

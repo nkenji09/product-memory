@@ -4,7 +4,7 @@
    "tens of KB" threshold — small enough to embed rather than fall back
    to a system mono stack). Source: JetBrains Mono v2.304 (OFL-1.1),
    subset with fonttools pyftsubset. No CDN, no network fetch at
-   runtime — self-contained for pmem export --html (file://).
+   runtime — self-contained for scholia export --html (file://).
    --lm-font-mono lists it first; the system-mono fallback stack still
    applies for any glyph outside this subset. */
 

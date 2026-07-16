@@ -15,7 +15,7 @@ import { useEffect, useRef } from 'preact/hooks';
 // height and the window is what actually scrolls (its overflow-y:auto never
 // engages). Scroll-to-card deep links already rely on this via
 // scrollIntoView — this hook saves/restores the same window scrollY.
-const KEY_PREFIX = 'pmem-scroll-';
+const KEY_PREFIX = 'scholia-scroll-';
 
 function readSaved(view: string): number | null {
   try {

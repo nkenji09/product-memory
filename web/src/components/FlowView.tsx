@@ -24,7 +24,7 @@ interface Props {
 // the SVG DOM and attach a real click handler to each mapped node (opening
 // #/browse/tx/<id> in a new tab — see the click-wiring code below) before
 // inserting it.
-// Diagram source is built from .pmem-derived ids only (never free text), so
+// Diagram source is built from .scholia-derived ids only (never free text), so
 // no untrusted HTML reaches mermaid regardless.
 
 // Build a flowchart definition plus a token→transitionId map for the clickable
@@ -132,7 +132,7 @@ function buildDiagram(
     // 結果 collapses to ONE clickable node per transition occurrence — not
     // one per effect (user feedback: showing every effect's full sentence
     // made the diagram noisy; the full given/then text is still available
-    // via `pmem flow`, so the diagram only needs a link, not the content).
+    // via `scholia flow`, so the diagram only needs a link, not the content).
     // 結果 nodes are always green (user feedback: node-color overrides for
     // subset-shadow/overlap read as "this is broken", but neither is an
     // error — they're simply undefined *priority*). Both relationships are
@@ -278,7 +278,7 @@ function buildDiagram(
   // cell) is deliberately NOT drawn as an edge — user feedback: with several
   // transitions contending in the same cell, the resulting dotted-line mesh
   // made the diagram "極端に見づらい" (extremely hard to read). The same
-  // information is still always available via `pmem flow`/`pmem gaps`.
+  // information is still always available via `scholia flow`/`scholia gaps`.
 
   // No classDef color declarations here — mermaid's classDef style-value
   // grammar rejects CSS functions like var()/color-mix() (only plain
@@ -575,7 +575,7 @@ export function FlowView({ actionId }: Props) {
         // 01KXN6G0R4DSXEVV86K8W0CZYW amending T-viewer-action-flow-render's
         // then to mermaid-only): the fine print went unread in the viewer,
         // and the same req.action-flow.scope-honesty text is still always
-        // available via `pmem flow`/`pmem gaps` for AI/CLI use. A one-line
+        // available via `scholia flow`/`scholia gaps` for AI/CLI use. A one-line
         // caveat below the legend still stands in for scope-honesty at
         // viewer granularity (review MAJOR-A) — see flow-scope-caveat below.
         // Edges carry no repeated per-edge text label (every subset-shadow
@@ -625,7 +625,7 @@ export function FlowView({ actionId }: Props) {
           {/* scope-honesty（req.action-flow.scope-honesty）を viewer 側で
               果たす一行 caveat（レビュー MAJOR-A 対応・ユーザー承認済み
               方針）。フルの scope-disclosure（保証の外を多行で開示）は
-              CLI（`pmem flow`/`pmem gaps`）側の役目のまま — viewer は
+              CLI（`scholia flow`/`scholia gaps`）側の役目のまま — viewer は
               決定木だけを見た読者に「宣言軸＝完全な区別集合」という
               false confidence を与えないための最小限の一文で足りる。 */}
           <p class="flow-scope-caveat">{t.flow.scopeCaveat}</p>

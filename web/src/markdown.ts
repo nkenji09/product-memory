@@ -14,8 +14,8 @@
 // input as HTML. So: user-authored text can only ever become plain escaped
 // text, a highlight.js span around escaped text, or one of the literal tags
 // this module writes. This ships as part of the Vite bundle (no CDN
-// dependency), so it renders identically in `pmem view` and in the
-// self-contained `pmem export --html` output.
+// dependency), so it renders identically in `scholia view` and in the
+// self-contained `scholia export --html` output.
 //
 // Fenced ```mermaid blocks are rendered as `<pre class="mermaid">` holding
 // the escaped-but-unrendered diagram source; `Markdown.tsx` turns those into

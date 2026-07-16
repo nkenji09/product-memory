@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 
-// Hash-based routing so Back/Forward work in both `pmem view` (served over
-// HTTP) and a `pmem export --html` file opened via file:// or a plain static
+// Hash-based routing so Back/Forward work in both `scholia view` (served over
+// HTTP) and a `scholia export --html` file opened via file:// or a plain static
 // file server. History.pushState is unreliable on file:// in some browsers;
 // assigning `location.hash` is not — it always both updates the visible URL
 // and pushes a browser history entry, with no server round-trip, which is

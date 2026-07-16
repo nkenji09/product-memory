@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
 
 // Viewer-local display preferences (theme/font scale) — pure presentation,
-// no bearing on the .pmem record model, so this lives outside the
+// no bearing on the .scholia record model, so this lives outside the
 // api.ts/types.ts data layer entirely. Persisted so it survives both
-// `pmem view` and a `pmem export --html` reload, per the same localStorage
+// `scholia view` and a `scholia export --html` reload, per the same localStorage
 // approach comments (#18) uses.
 //
 // Density and accent-color used to be user-facing switches too (G-5 of
@@ -20,7 +20,7 @@ export interface ViewerSettings {
   fontScale: number;
 }
 
-const STORAGE_KEY = 'pmem-viewer-settings-v1';
+const STORAGE_KEY = 'scholia-viewer-settings-v1';
 const DEFAULTS: ViewerSettings = { theme: 'light', fontScale: 1 };
 const FONT_MIN = 0.85;
 const FONT_MAX = 1.5;

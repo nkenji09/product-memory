@@ -71,7 +71,7 @@ export function Resizer({ config, direction, className }: Props) {
 
   return (
     <div
-      class={`pmem-resizer${active ? ' pmem-resizer-active' : ''}${className ? ` ${className}` : ''}`}
+      class={`scholia-resizer${active ? ' scholia-resizer-active' : ''}${className ? ` ${className}` : ''}`}
       onPointerDown={onPointerDown}
       role="separator"
       aria-orientation="vertical"

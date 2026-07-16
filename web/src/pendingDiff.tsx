@@ -15,7 +15,7 @@ const BASE_REF = 'main';
 
 interface PendingDiff {
   ready: boolean;
-  /** Why the diff isn't available, or null when it is. 'static' = pmem
+  /** Why the diff isn't available, or null when it is. 'static' = scholia
       export --html (no server, no other ref to compare against — same
       constraint as every other api.ts getter). 'error' = server mode but
       the fetch failed (e.g. `main` doesn't resolve). Either way this must

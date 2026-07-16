@@ -3,7 +3,7 @@
    content (decision 01KXN6G0R4DSXEVV86K8W0CZYW amended
    T-viewer-action-flow-render's then to mermaid-only — the matrix/
    scope-disclosure text sections that used to sit alongside it went unread;
-   the same text is still always available via `pmem flow`/`pmem gaps`). */
+   the same text is still always available via `scholia flow`/`scholia gaps`). */
 
 .flow-view {
   padding: var(--sp-6) var(--sp-4) var(--sp-8);
@@ -150,7 +150,7 @@
    (still green) nodes instead of node-color overrides — a red/amber
    override used to read as "this result is broken", when in fact both
    results stay legitimate; only their relative priority is undefined (and
-   .pmem has no field to declare one). mermaid's own classDef can't express
+   .scholia has no field to declare one). mermaid's own classDef can't express
    var() colors (its style grammar rejects CSS functions), so
    `class <node> <name>` in the diagram source only attaches plain SVG
    classes — the actual colors live here, in real CSS, which supports var()
