@@ -280,6 +280,91 @@ func TestAnalyze_OverlapExcludesPairsAlreadyExplainedBySubsetShadow(t *testing.T
 	}
 }
 
+// TestAnalyze_OverlapSurvivesWhenOnlyOnePairIsSubsetShadow reproduces the
+// #39 follow-up major fix: a cell covered by 3+ transitions where exactly
+// one pair (A⊊B) is a subset-shadow and a third transition C is
+// incomparable to both must still report the real, unexplained A↔C and
+// B↔C ambiguity. Before the fix, dropping a transition whenever *any* one
+// of its pairs was a shadow erased both A and B from the cell, leaving only
+// C — fewer than 2 transitions — so the cell's overlap silently vanished
+// even though world(a1, cond.x, cond.y) fires A, B, and C together.
+func TestAnalyze_OverlapSurvivesWhenOnlyOnePairIsSubsetShadow(t *testing.T) {
+	tags := []model.Tag{
+		{ID: "axis.a", Name: "a", Kind: "axis", Total: true},
+	}
+	vocab := []model.VocabEntry{
+		condVocab("cond.a1", "axis.a"), condVocab("cond.a2", "axis.a"),
+		condVocab("cond.x"),
+		condVocab("cond.y"),
+	}
+	txs := []model.Transition{
+		{ID: "T-A", Action: "act.a", Given: []string{"cond.a1"}, Then: []string{"eff.a"}},
+		{ID: "T-B", Action: "act.a", Given: []string{"cond.a1", "cond.x"}, Then: []string{"eff.b"}},
+		{ID: "T-C", Action: "act.a", Given: []string{"cond.y"}, Then: []string{"eff.c"}},
+	}
+	snap, ix := buildAnalyzeFixture(txs, vocab, tags)
+
+	r := Analyze(snap, ix, "act.a")
+
+	if len(r.SubsetShadows) != 1 || r.SubsetShadows[0].Subset != "T-A" || r.SubsetShadows[0].Superset != "T-B" {
+		t.Fatalf("expected T-A ⊊ T-B subset-shadow, got %+v", r.SubsetShadows)
+	}
+
+	var cellOverlap *Overlap
+	for i, o := range r.Overlaps {
+		if o.Cell["axis.a"] == "cond.a1" {
+			cellOverlap = &r.Overlaps[i]
+		}
+	}
+	if cellOverlap == nil {
+		t.Fatalf("expected overlap for cell axis.a=cond.a1 (A↔C and B↔C unexplained by the A⊊B shadow), got %+v", r.Overlaps)
+	}
+	set := map[string]bool{}
+	for _, id := range cellOverlap.Transitions {
+		set[id] = true
+	}
+	if !set["T-A"] || !set["T-B"] || !set["T-C"] {
+		t.Fatalf("expected overlap to include T-A, T-B, T-C, got %+v", cellOverlap.Transitions)
+	}
+}
+
+// TestAnalyze_SubsetShadowDetectsEmptyGivenAsProperSubset reproduces the
+// #39 follow-up minor fix: isProperSubset used to short-circuit to false
+// whenever the candidate subset's given was empty, missing that the empty
+// set fires in every world and is therefore a proper subset of any
+// non-empty given — a remainder-less transition with no given shadows every
+// other transition of the action. Equal (both empty) given sets must still
+// be excluded as not proper.
+func TestAnalyze_SubsetShadowDetectsEmptyGivenAsProperSubset(t *testing.T) {
+	txs := []model.Transition{
+		{ID: "T-always", Action: "act.a", Given: nil, Then: []string{"eff.a"}},
+		{ID: "T-x", Action: "act.a", Given: []string{"cond.x"}, Then: []string{"eff.b"}},
+	}
+	snap, ix := buildAnalyzeFixture(txs, nil, nil)
+
+	r := Analyze(snap, ix, "act.a")
+	if len(r.SubsetShadows) != 1 {
+		t.Fatalf("SubsetShadows = %+v, want exactly 1", r.SubsetShadows)
+	}
+	got := r.SubsetShadows[0]
+	if got.Subset != "T-always" || got.Superset != "T-x" {
+		t.Fatalf("SubsetShadows[0] = %+v, want Subset=T-always Superset=T-x", got)
+	}
+}
+
+func TestAnalyze_SubsetShadowIgnoresTwoEmptyGivenSets(t *testing.T) {
+	txs := []model.Transition{
+		{ID: "T-1", Action: "act.a", Given: nil, Then: []string{"eff.a"}},
+		{ID: "T-2", Action: "act.a", Given: nil, Then: []string{"eff.b"}},
+	}
+	snap, ix := buildAnalyzeFixture(txs, nil, nil)
+
+	r := Analyze(snap, ix, "act.a")
+	if len(r.SubsetShadows) != 0 {
+		t.Fatalf("two empty-given transitions are equal, not proper-subset: got %+v", r.SubsetShadows)
+	}
+}
+
 func TestAnalyze_ProductCellsAreBoundedNotTwoToTheN(t *testing.T) {
 	// 3 axes with 2 values each => 2*2*2 = 8 cells, never 2^(number of
 	// individual conditions used, which here is 6) and never counting
