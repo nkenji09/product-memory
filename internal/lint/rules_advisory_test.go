@@ -131,6 +131,91 @@ func TestUnusedVocabInfo(t *testing.T) {
 	}
 }
 
+func TestExclusiveViolationRedAndGreen(t *testing.T) {
+	axis := model.Tag{ID: "axis.mode", Name: "mode", Kind: "axis", Total: true}
+	vocab := []model.VocabEntry{
+		{ID: "cond.check", Category: model.CategoryCondition, Label: "check", Tags: []string{"axis.mode"}},
+		{ID: "cond.apply", Category: model.CategoryCondition, Label: "apply", Tags: []string{"axis.mode"}},
+	}
+
+	red := store.Snapshot{
+		Tags:  []model.Tag{axis},
+		Vocab: vocab,
+		Transitions: []model.Transition{
+			{ID: "T-1", Action: "act.a", Given: []string{"cond.check", "cond.apply"}, Then: []string{"eff.a"}},
+		},
+	}
+	got := checkExclusiveViolation(red)
+	if len(got) != 1 || got[0].Target != "T-1" {
+		t.Fatalf("expected exclusive-violation for T-1 (same axis, 2 values in one given), got %+v", got)
+	}
+	if got[0].Severity != SeverityWarn {
+		t.Fatalf("exclusive-violation must be warn severity, got %s", got[0].Severity)
+	}
+
+	green := store.Snapshot{
+		Tags:  []model.Tag{axis},
+		Vocab: vocab,
+		Transitions: []model.Transition{
+			{ID: "T-1", Action: "act.a", Given: []string{"cond.check"}, Then: []string{"eff.a"}},
+			{ID: "T-2", Action: "act.a", Given: []string{"cond.apply"}, Then: []string{"eff.b"}},
+		},
+	}
+	if got := checkExclusiveViolation(green); hasRule(got, "exclusive-violation") {
+		t.Fatalf("did not expect exclusive-violation when each given pins at most one axis value, got %+v", got)
+	}
+}
+
+func TestExclusiveViolationNoAxisTagsIsNoOp(t *testing.T) {
+	snap := store.Snapshot{
+		Transitions: []model.Transition{
+			{ID: "T-1", Action: "act.a", Given: []string{"cond.a", "cond.b"}, Then: []string{"eff.a"}},
+		},
+	}
+	if got := checkExclusiveViolation(snap); len(got) != 0 {
+		t.Fatalf("expected no findings without any axis tag declared, got %+v", got)
+	}
+}
+
+func TestComplementMissingRedAndGreen(t *testing.T) {
+	red := store.Snapshot{
+		Tags: []model.Tag{{ID: "axis.mode", Name: "mode", Kind: "axis", Total: true}},
+		Vocab: []model.VocabEntry{
+			{ID: "cond.check", Category: model.CategoryCondition, Label: "check", Tags: []string{"axis.mode"}},
+		},
+	}
+	got := checkComplementMissing(red)
+	if len(got) != 1 || got[0].Target != "axis.mode" {
+		t.Fatalf("expected complement-missing for axis.mode (only 1 materialized value), got %+v", got)
+	}
+	if got[0].Severity != SeverityWarn {
+		t.Fatalf("complement-missing must be warn severity, got %s", got[0].Severity)
+	}
+
+	green := store.Snapshot{
+		Tags: []model.Tag{{ID: "axis.mode", Name: "mode", Kind: "axis", Total: true}},
+		Vocab: []model.VocabEntry{
+			{ID: "cond.check", Category: model.CategoryCondition, Label: "check", Tags: []string{"axis.mode"}},
+			{ID: "cond.apply", Category: model.CategoryCondition, Label: "apply", Tags: []string{"axis.mode"}},
+		},
+	}
+	if got := checkComplementMissing(green); hasRule(got, "complement-missing") {
+		t.Fatalf("did not expect complement-missing once 2 values are materialized, got %+v", got)
+	}
+}
+
+func TestComplementMissingIgnoresNonTotalAxis(t *testing.T) {
+	snap := store.Snapshot{
+		Tags: []model.Tag{{ID: "axis.mode", Name: "mode", Kind: "axis", Total: false}},
+		Vocab: []model.VocabEntry{
+			{ID: "cond.check", Category: model.CategoryCondition, Label: "check", Tags: []string{"axis.mode"}},
+		},
+	}
+	if got := checkComplementMissing(snap); hasRule(got, "complement-missing") {
+		t.Fatalf("non-total axis must not trigger complement-missing, got %+v", got)
+	}
+}
+
 func TestAdvisoryRulesDoNotAffectHasError(t *testing.T) {
 	snap := store.Snapshot{
 		Config: model.DefaultConfig(),
