@@ -46,6 +46,8 @@ var Rules = []Rule{
 	{Name: "ref-freshness", Severity: SeverityWarn, Check: checkRefFreshness},
 	{Name: "decision-coverage", Severity: SeverityInfo, Check: checkDecisionCoverage},
 	{Name: "unused-vocab", Severity: SeverityInfo, Check: checkUnusedVocab},
+	{Name: "exclusive-violation", Severity: SeverityWarn, Check: checkExclusiveViolation},
+	{Name: "complement-missing", Severity: SeverityWarn, Check: checkComplementMissing},
 }
 
 // Run は全ルールを実行し、検出結果を返す。

@@ -12,7 +12,7 @@ import (
 
 func newTagCreateCmd() *cobra.Command {
 	var name, kind, desc, descFile, color, ref string
-	var editDesc bool
+	var editDesc, total bool
 	var parents []string
 	var asJSON bool
 	cmd := &cobra.Command{
@@ -88,6 +88,7 @@ func newTagCreateCmd() *cobra.Command {
 				Description: descValue,
 				Color:       color,
 				Ref:         ref,
+				Total:       total,
 			}
 			if err := s.SaveTag(t); err != nil {
 				return err
@@ -110,6 +111,7 @@ func newTagCreateCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&editDesc, "edit", false, "$EDITOR で説明を入力する（--desc/--desc-file と排他）")
 	cmd.Flags().StringVar(&color, "color", "", "表示色")
 	cmd.Flags().StringVar(&ref, "ref", "", "参照 URL")
+	cmd.Flags().BoolVar(&total, "total", false, "kind=axis タグ向け: 軸の値のうち必ず1つが真であるべきか（#39・§3.4）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "作成したレコードを JSON で出力する")
 	return cmd
 }

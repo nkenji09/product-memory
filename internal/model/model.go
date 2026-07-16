@@ -41,6 +41,12 @@ type Tag struct {
 	Description string   `json:"description,omitempty"`
 	Color       string   `json:"color,omitempty"`
 	Ref         string   `json:"ref,omitempty"`
+	// Total is meaningful only for kind=="axis" tags (#39 action-flow):
+	// true means the axis's declared values are meant to partition every
+	// world (exactly one value should hold), which is what makes a missing
+	// value a sound gap (L-total). Additive/omitempty — irrelevant to any
+	// other tag kind and absent from existing tag files.
+	Total bool `json:"total,omitempty"`
 }
 
 func (t Tag) GetID() string { return t.ID }
