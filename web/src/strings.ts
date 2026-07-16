@@ -52,7 +52,7 @@ const ja = {
   home: {
     tagline: '記録を、読みたくなる形で。',
     intro:
-      'product-memory は、プロダクトの意思決定・要件・振る舞いを原子（遷移）として記録し、構造は派生（query）で見るためのツールです。',
+      'scholia は、プロダクトの意思決定・要件・振る舞いを原子（遷移）として記録し、構造は派生（query）で見るためのツールです。',
     tagCount: (n: number) => `${n} 件`,
     traceabilityHeading: '要件トレーサビリティ',
     goTraceability: '要件を読む',
@@ -219,7 +219,7 @@ const ja = {
     replyDelete: '返信を削除',
     replyAdd: '返信',
     gotoLocation: '位置へ移動',
-    copyDocTitle: '# product-memory ビューア — レビューコメント',
+    copyDocTitle: '# scholia ビューア — レビューコメント',
     copyTaskLine: (title: string) => `タスク: ${title}`,
     copyIntro: (n: number) =>
       `以下の ${n} 件のコメントに基づき、該当箇所を修正してください（[ページ] は特定のカードに紐づかない、そのビュー全体への指摘です）。`,
@@ -408,7 +408,7 @@ const en: Strings = {
   home: {
     tagline: 'Records, in a form worth reading.',
     intro:
-      'product-memory records product decisions, requirements, and behavior as atoms (transitions), and lets you view structure as derived queries.',
+      'scholia records product decisions, requirements, and behavior as atoms (transitions), and lets you view structure as derived queries.',
     tagCount: (n) => `${n} tags`,
     traceabilityHeading: 'Requirement traceability',
     goTraceability: 'View requirements',
@@ -526,7 +526,7 @@ const en: Strings = {
     replyDelete: 'Delete reply',
     replyAdd: 'Reply',
     gotoLocation: 'Go to location',
-    copyDocTitle: '# product-memory viewer — review comments',
+    copyDocTitle: '# scholia viewer — review comments',
     copyTaskLine: (title) => `Task: ${title}`,
     copyIntro: (n) =>
       `Please fix the following ${n} comment(s) at their respective locations ([Page] items aren't tied to a specific card — they're feedback on the whole view).`,
