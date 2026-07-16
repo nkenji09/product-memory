@@ -11,7 +11,7 @@ import (
 
 func newTagEditCmd() *cobra.Command {
 	var name, kind, desc, descFile, color, ref string
-	var editDesc bool
+	var editDesc, total bool
 	var parents []string
 	var asJSON bool
 	cmd := &cobra.Command{
@@ -85,6 +85,9 @@ func newTagEditCmd() *cobra.Command {
 			if cmd.Flags().Changed("ref") {
 				t.Ref = ref
 			}
+			if cmd.Flags().Changed("total") {
+				t.Total = total
+			}
 
 			if err := s.SaveTag(t); err != nil {
 				return err
@@ -111,6 +114,7 @@ func newTagEditCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&editDesc, "edit", false, "$EDITOR で説明を入力する（--desc/--desc-file と排他）")
 	cmd.Flags().StringVar(&color, "color", "", "表示色（空指定で解除）")
 	cmd.Flags().StringVar(&ref, "ref", "", "参照 URL（空指定で解除）")
+	cmd.Flags().BoolVar(&total, "total", false, "kind=axis タグ向け: 軸の値のうち必ず1つが真であるべきか（#39・§3.4）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "更新後のレコードを JSON で出力する")
 	return cmd
 }
