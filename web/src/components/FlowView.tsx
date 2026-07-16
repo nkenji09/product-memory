@@ -36,17 +36,23 @@ function sanitize(id: string): string {
 // transition nodes. Gap nodes are non-clickable (there is no transition to
 // link to — a total-gap is *missing* coverage) so they carry no map entry.
 //
-// Layout: a layered 前提(given)→きっかけ(transition)→結果(then) graph, not one
-// combined text box per transition. mermaid's dagre layout ranks a TD
-// flowchart by graph distance from the roots — given-condition nodes have no
-// incoming edges (roots, rank at top) and then/effect nodes have no outgoing
-// edges (sinks, rank at the bottom) — so 結果 nodes consistently collect at
-// the bottom without any manual positioning. Only the middle きっかけ
-// (transition) nodes are clickable → #/browse/tx/<id>; their color reuses
-// the app's existing きっかけ/前提/結果 grammar (--t-act/--t-giv/--t-then, the
-// same tokens SpecCard's slot labels use) so a clickable step reads as
-// "action-colored" consistently with the rest of the UI, not a diagram-only
-// convention.
+// Layout: a layered 前提(given)→結果(then) graph. Each transition routes
+// through an unlabeled junction node (small dot, not clickable, not a
+// separate visible "step") purely so mermaid can group that transition's
+// given/then together and so subset-shadow edges have somewhere to anchor —
+// a transition has no human label of its own (only its bare `T-xxx` id),
+// and showing that id as if it were a meaningful step read as noise (user
+// feedback: "Transition のステップは表示の必要がない"). Instead 結果(then)
+// nodes themselves are the clickable link → #/browse/tx/<id> ("結果のステップを
+// Transition へのリンクに"): every occurrence of an effect is its own node
+// scoped to the transition that produced it (NOT deduped across
+// transitions, unlike 前提), because a single click target must resolve to
+// exactly one transition — two different transitions producing the
+// "same" effect id would be ambiguous if they shared one node. mermaid's
+// dagre layout still ranks a TD flowchart by graph distance from the roots
+// (given-condition nodes, no incoming edges) down to the sinks (then/effect
+// nodes, no outgoing edges), so 結果 nodes consistently collect at the
+// bottom without manual positioning.
 function buildDiagram(report: FlowReport, label: (id: string) => string): { def: string; txByToken: Map<string, string> } {
   const lines: string[] = ['flowchart TD'];
   const txByToken = new Map<string, string>();
@@ -58,28 +64,17 @@ function buildDiagram(report: FlowReport, label: (id: string) => string): { def:
 
   const esc = (s: string) => s.replace(/"/g, "'");
   const condToken = (id: string) => 'c_' + sanitize(id);
-  const effToken = (id: string) => 'e_' + sanitize(id);
 
   const seenCond = new Set<string>();
-  const seenEff = new Set<string>();
 
   for (const row of report.matrix.rows ?? []) {
-    const token = 'tx_' + sanitize(row.transitionId);
-    txByToken.set(token, row.transitionId);
-    lines.push(`  ${token}["${esc(row.transitionId)}"]`);
+    const hub = 'tx_' + sanitize(row.transitionId);
+    // Unlabeled junction — a small dot (mermaid circle shape), not part of
+    // txByToken (not clickable itself; see header comment).
+    lines.push(`  ${hub}((" "))`);
+    lines.push(`  class ${hub} txHub`);
 
-    // One `class` statement per class name — mermaid's flowchart `class`
-    // directive embeds a comma-joined list ("txNode,overlapNode") as a
-    // single literal SVG class token rather than splitting it into separate
-    // space-separated classes, so a comma-joined list silently never matches
-    // any CSS selector. Separate statements avoid that trap.
-    const classes: string[] = ['txNode'];
-    if (overlapTx.has(row.transitionId)) classes.push('overlapNode');
-    if (subsetSubset.has(row.transitionId)) classes.push('subsetNode');
-    if (subsetSuperset.has(row.transitionId)) classes.push('supersetNode');
-    for (const c of classes) lines.push(`  class ${token} ${c}`);
-
-    // 前提(given) → きっかけ(transition): each given-condition node feeds this
+    // 前提(given) → junction: each given-condition node feeds this
     // transition. An unconditional transition (no given) simply has no
     // incoming edge — it's already a root, which is correct (no precondition
     // to wait on).
@@ -89,32 +84,44 @@ function buildDiagram(report: FlowReport, label: (id: string) => string): { def:
         seenCond.add(ct);
         // Parallelogram (mermaid's `[/"text"/]` shape) for 前提 — the
         // conventional flowchart shape for a precondition/input, distinct
-        // from the rectangular きっかけ/結果 nodes.
+        // from the rectangular 結果 nodes.
         lines.push(`  ${ct}[/"${esc(label(g))}"/]`);
         lines.push(`  class ${ct} condNode`);
       }
-      lines.push(`  ${ct} --> ${token}`);
+      lines.push(`  ${ct} --> ${hub}`);
     }
 
-    // きっかけ(transition) → 結果(then): each effect node this transition
-    // produces. Shared effects across transitions collapse onto one node
-    // (same id → same token), which also visually surfaces reuse.
+    // junction → 結果(then): one node per (transition, effect) — not
+    // deduped across transitions, since each is this specific transition's
+    // clickable link target (see header comment on the ambiguity that would
+    // create if shared).
+    let ei = 0;
     for (const e of row.then ?? []) {
-      const et = effToken(e);
-      if (!seenEff.has(et)) {
-        seenEff.add(et);
-        lines.push(`  ${et}["${esc(label(e))}"]`);
-        lines.push(`  class ${et} effNode`);
-      }
-      lines.push(`  ${token} --> ${et}`);
+      const et = hub + '_e' + ei++;
+      txByToken.set(et, row.transitionId);
+      lines.push(`  ${et}["${esc(label(e))}"]`);
+
+      // One `class` statement per class name — mermaid's flowchart `class`
+      // directive embeds a comma-joined list as a single literal SVG class
+      // token rather than splitting it into separate space-separated
+      // classes, so a comma-joined list silently never matches any CSS
+      // selector. Separate statements avoid that trap.
+      const classes: string[] = ['effNode'];
+      if (overlapTx.has(row.transitionId)) classes.push('overlapNode');
+      if (subsetSubset.has(row.transitionId)) classes.push('subsetNode');
+      if (subsetSuperset.has(row.transitionId)) classes.push('supersetNode');
+      for (const c of classes) lines.push(`  class ${et} ${c}`);
+
+      lines.push(`  ${hub} --> ${et}`);
     }
   }
 
   // subset-shadow: a one-directional dotted edge superset → subset (proven
   // multi-fire: any world satisfying superset's given also fires subset).
-  // No per-edge text label — every subset-shadow edge means the same thing,
-  // so a repeated label is just noise; the single-arrowhead direction plus
-  // the legend under the diagram carry the meaning instead.
+  // Anchored on the junctions (still meaningful graph nodes even though
+  // unlabeled). No per-edge text label — every subset-shadow edge means the
+  // same thing, so a repeated label is just noise; the single-arrowhead
+  // direction plus the legend under the diagram carry the meaning instead.
   for (const s of report.subsetShadows ?? []) {
     const subset = 'tx_' + sanitize(s.subset);
     const superset = 'tx_' + sanitize(s.superset);
@@ -126,9 +133,9 @@ function buildDiagram(report: FlowReport, label: (id: string) => string): { def:
   // dense criss-cross that overwhelms the diagram (user feedback during
   // #39 dogfood verification). Overlap is still sound signal, but it's
   // surfaced two other ways instead: the amber overlapNode border/fill on
-  // every contending transition (`class` assignment above), and the full
-  // per-cell detail in the scope-disclosure section's 重なり list below —
-  // the diagram stays a readable given→transition→then graph plus the rarer
+  // every contending transition's 結果 nodes (`class` assignment above), and
+  // the full per-cell detail in the scope-disclosure section's 重なり list
+  // below — the diagram stays a readable given→then graph plus the rarer
   // subset-shadow edges only.
 
   // total-gaps: a distinct, non-clickable "missing coverage" marker node per
@@ -145,8 +152,8 @@ function buildDiagram(report: FlowReport, label: (id: string) => string): { def:
   // literals: hex colors, NUM/UNIT, etc.), so it can't express the app's
   // themed custom properties. `class <node> <name>` above still attaches
   // each name as a plain SVG class with no built-in style; the actual
-  // colors (reusing the app's きっかけ/前提/結果 grammar, light/dark aware) live
-  // in flow.css targeting those class names directly — real CSS supports
+  // colors (reusing the app's 前提/結果 grammar, light/dark aware) live in
+  // flow.css targeting those class names directly — real CSS supports
   // var() natively, mermaid's DSL doesn't.
 
   return { def: lines.join('\n'), txByToken };
@@ -447,10 +454,7 @@ export function FlowView({ actionId, onGoToTransition }: Props) {
                 <span class="flow-legend-swatch" style={{ color: 'var(--t-giv)' }} /> {t.flow.given}
               </span>
               <span>
-                <span class="flow-legend-swatch" style={{ color: 'var(--t-act)' }} /> {t.flow.legendClickable}
-              </span>
-              <span>
-                <span class="flow-legend-swatch" style={{ color: 'var(--t-then)' }} /> {t.flow.result}
+                <span class="flow-legend-swatch" style={{ color: 'var(--t-then)' }} /> {t.flow.legendClickable}
               </span>
               <span>
                 <span class="flow-legend-swatch" style={{ color: 'var(--lm-warning)' }} /> {t.flow.legendOverlap}

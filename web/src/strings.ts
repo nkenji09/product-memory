@@ -118,7 +118,7 @@ const ja = {
     diagramNoTransitions: '（描画する遷移がありません）',
     diagramError: '図の描画に失敗しました。',
     // 凡例。矢印は同じ意味の繰り返しラベルを持たせず、ここで一括して説明する。
-    legendClickable: 'きっかけ（クリックで遷移詳細へ）',
+    legendClickable: '結果（クリックで遷移詳細へ）',
     zoomIn: '拡大',
     zoomOut: '縮小',
     zoomReset: 'リセット',
@@ -462,7 +462,7 @@ const en: Strings = {
     diagramHeading: (actionLabel: string) => `Diagram: ${actionLabel} (click a node for the transition detail)`,
     diagramNoTransitions: '(no transitions to draw)',
     diagramError: 'Failed to render the diagram.',
-    legendClickable: 'Trigger (click for the transition detail)',
+    legendClickable: 'Result (click for the transition detail)',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     zoomReset: 'Reset',
