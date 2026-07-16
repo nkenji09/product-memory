@@ -441,6 +441,14 @@ func totalGaps(axes []Axis, txs []model.Transition) []TotalGap {
 // overlaps reports cells covered by 2+ transitions, excluding pairs already
 // explained by a proven SubsetShadow (req.action-flow.axis-gaps' 重なり is
 // "宣言軸に相対的に sound", distinct from and non-duplicative of subset-shadow).
+//
+// Exclusion is decided per PAIR, not per transition: a transition dropped
+// from one shadow pair can still carry a real, unexplained ambiguity against
+// a third transition in the same cell (e.g. A⊊B but C is incomparable to
+// both — A↔C and B↔C are real ambiguities the subset relation does not
+// explain). Dropping a whole transition whenever *any* one of its pairs is a
+// shadow would silently erase that remaining ambiguity, so the fix reports
+// every transition that appears in at least one non-shadow pair.
 func overlaps(cells []Cell, shadows []SubsetShadow) []Overlap {
 	shadowPair := make(map[[2]string]bool, len(shadows)*2)
 	for _, s := range shadows {
@@ -453,25 +461,26 @@ func overlaps(cells []Cell, shadows []SubsetShadow) []Overlap {
 		if len(cell.Transitions) < 2 {
 			continue
 		}
-		var unexplained []string
-		for i, a := range cell.Transitions {
-			explainedAway := false
-			for j, b := range cell.Transitions {
-				if i == j {
+		involved := make(map[string]bool)
+		for i := 0; i < len(cell.Transitions); i++ {
+			for j := i + 1; j < len(cell.Transitions); j++ {
+				a, b := cell.Transitions[i], cell.Transitions[j]
+				if shadowPair[[2]string{a, b}] {
 					continue
 				}
-				if shadowPair[[2]string{a, b}] {
-					explainedAway = true
-					break
-				}
-			}
-			if !explainedAway {
-				unexplained = append(unexplained, a)
+				involved[a] = true
+				involved[b] = true
 			}
 		}
-		if len(unexplained) >= 2 {
-			out = append(out, Overlap{Cell: cell.Values, Transitions: unexplained})
+		if len(involved) < 2 {
+			continue
 		}
+		unexplained := make([]string, 0, len(involved))
+		for t := range involved {
+			unexplained = append(unexplained, t)
+		}
+		sort.Strings(unexplained)
+		out = append(out, Overlap{Cell: cell.Values, Transitions: unexplained})
 	}
 	return out
 }
