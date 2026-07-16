@@ -128,6 +128,31 @@ var disclosureBoilerplate = []string{
 	"acknowledged-remainder が宣言されている場合、その受け皿は coverage に数えません（別枠報告）。",
 }
 
+// GapsReport is `pmem gaps <action>`'s focused JSON shape — the same fields
+// WriteGapsText prints (subset-shadow・抜け・重なり・scope-disclosure),
+// omitting the full matrix/axes/cells/remainder `pmem flow` shows
+// (req.action-flow.axis-gaps: same analysis, holes-only surface).
+type GapsReport struct {
+	Action        string          `json:"action"`
+	ActionLabel   string          `json:"actionLabel"`
+	SubsetShadows []SubsetShadow  `json:"subsetShadows,omitempty"`
+	TotalGaps     []TotalGap      `json:"totalGaps,omitempty"`
+	Overlaps      []Overlap       `json:"overlaps,omitempty"`
+	Scope         ScopeDisclosure `json:"scope"`
+}
+
+// Gaps projects a Report down to its GapsReport view.
+func (r Report) Gaps() GapsReport {
+	return GapsReport{
+		Action:        r.Action,
+		ActionLabel:   r.ActionLabel,
+		SubsetShadows: r.SubsetShadows,
+		TotalGaps:     r.TotalGaps,
+		Overlaps:      r.Overlaps,
+		Scope:         r.Scope,
+	}
+}
+
 // Analyze builds the Report for one action id (req.action-flow). It never
 // emits a bare "no gaps": Scope is always populated.
 func Analyze(snap *store.Snapshot, ix *index.Index, actionID string) Report {
