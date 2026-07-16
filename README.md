@@ -61,6 +61,25 @@ go install github.com/nkenji09/product-memory/cmd/pmem@latest
 Prebuilt binaries (darwin/linux/windows × amd64/arm64) are also available from GitHub Releases — on Windows, use `go install` or grab the release zip directly.
 The viewer SPA is embedded into the binary via `//go:embed`, so a single `pmem` binary runs both the CLI and the viewer.
 
+## Updating
+
+If you installed a release binary (via `install.sh` or a manual download) on darwin/linux, `pmem` can update itself in place:
+
+```sh
+pmem update            # download latest release, verify checksum, replace the running binary
+pmem update --check    # report whether an update is available, without downloading or replacing
+```
+
+Other install methods update the same way you installed:
+
+```sh
+go install github.com/nkenji09/product-memory/cmd/pmem@latest   # go install
+npm i -g product-memory@latest                                  # npm
+curl -fsSL https://raw.githubusercontent.com/nkenji09/product-memory/main/packaging/install.sh | sh  # install.sh, re-run
+```
+
+On Windows, `pmem update` reports that self-replace isn't possible and points to the same options above.
+
 ## Quickstart
 
 This walks through the minimal flow: create `.pmem/`, add vocabulary, tags, and a transition one at a time, and record a decision.
