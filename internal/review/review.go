@@ -105,9 +105,9 @@ func Get(scholiaDir, id string) (Review, error) {
 // Delete removes scholiaDir/reviews/<id>.json. It errors if the review doesn't
 // exist (cond.review-exists) — adopt/reject call this only after the
 // decision it's being folded into has already been saved (§8.4/#35
-// T-review-adopt/-reject: append-decision then delete-review, in that
+// tx.review.adopt/-reject: append-decision then delete-review, in that
 // order, so a proposal's why is never lost); rm calls it directly as the
-// escape hatch (T-cli-review-rm: delete with no decision left behind).
+// escape hatch (tx.cli.review-rm: delete with no decision left behind).
 func Delete(scholiaDir, id string) error {
 	if err := os.Remove(path(scholiaDir, id)); err != nil {
 		if os.IsNotExist(err) {

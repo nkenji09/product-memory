@@ -16,7 +16,7 @@ interface Reviews {
       しない（この Provider に依存しないため）。 */
   unavailable: 'static' | 'error' | null;
   reviews: Review[];
-  // 昇格元コメント掃除（#35・T-review-adopt/-reject）: DELETE /api/reviews/
+  // 昇格元コメント掃除（#35・tx.review.adopt/-reject）: DELETE /api/reviews/
   // {id} が成功した直後、再フェッチを待たずローカル state から即座に
   // 落とす — useComments.tsx の merged comment list からその場で消える
   // （pendingDiff.tsx の refresh 系と違い、削除は id 単位で分かっているので

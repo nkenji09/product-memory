@@ -29,8 +29,8 @@ export interface Route {
       comment-panel "位置へ移動" on vocab comments (2026-07-11 コメント拡張4件). */
   vocabId?: string;
   /** Action id whose given→then flow is shown (#/flow/<action>,
-      T-viewer-action-flow-render). Opened in a separate tab from the spec
-      card's action kebab (T-viewer-action-flow-link) — a standalone route,
+      tx.viewer.action-flow-render). Opened in a separate tab from the spec
+      card's action kebab (tx.viewer.action-flow-link) — a standalone route,
       same "focus id in the path" shape as spec/vocab above. */
   actionId?: string;
   /** BrowseView's search state (query/kindFacet/filters), carried as a query

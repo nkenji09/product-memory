@@ -110,8 +110,8 @@ export function CommentPanel({ onGoto }: Props) {
     }
   };
 
-  // 採用/却下（change-cockpit-design-v3.md §8.5・P4／#35 T-review-adopt/
-  // -reject・T-comment-adopt/-reject）: どのコメントを採用/却下中かの
+  // 採用/却下（change-cockpit-design-v3.md §8.5・P4／#35 tx.review.adopt/
+  // -reject・tx.comment.adopt/-reject）: どのコメントを採用/却下中かの
   // ローカル UI 状態。why の下書きは POST 成功まで確定しない（P-1: 未コミッ
   // トの下書き合成）ので useComments 側の state ではなくここに置く。adopt
   // と reject は「decision 昇格＋昇格元コメント削除」という同じ束ね操作で、

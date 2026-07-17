@@ -102,9 +102,9 @@ const ja = {
     result: FLOW_RESULT_JA,
     noResult: '（結果なし）',
     noGiven: '無条件（前提なし）',
-    // action の ⋮ メニュー項目（T-viewer-action-flow-link）。別タブでフロー図を開く。
+    // action の ⋮ メニュー項目（tx.viewer.action-flow-link）。別タブでフロー図を開く。
     menuShowFlow: 'フロー図を表示',
-    // #/flow/<action> ビュー（T-viewer-action-flow-render）。マトリクス／
+    // #/flow/<action> ビュー（tx.viewer.action-flow-render）。マトリクス／
     // scope-disclosure のテキスト節は viewer から削除済み（decision
     // 01KXN6G0R4DSXEVV86K8W0CZYW・#39 フォローアップ）— 同じ情報は
     // `scholia flow`/`scholia gaps` で引き続き見られる。図がこのビューの唯一の
@@ -134,7 +134,7 @@ const ja = {
     // 一行 caveat（レビュー MAJOR-A 対応）。CLI（`scholia flow`/`scholia gaps`）の
     // フル scope-disclosure ほど詳しくする必要はなく、「宣言軸＝完全な区別
     // 集合」と読者に誤読させない最小限の注意書きで足りる、というのが
-    // decision の骨子（why は T-viewer-action-flow-render 側に記録）。
+    // decision の骨子（why は tx.viewer.action-flow-render 側に記録）。
     scopeCaveat: '※ この図は宣言軸のみに基づく整理です。網羅は保証しません（全量は scholia flow）',
   },
   // BROWSE(タグ/仕様) — 旧 Browse(3ペイン)/TagsView(ツリー)/SpecView を検索
@@ -253,7 +253,7 @@ const ja = {
     newTransitionButton: '新規 仕様を提案',
     newTransitionActionUnset: '（未選択）',
     newTransitionIdLabel: 'id（新規識別子）',
-    newTransitionIdPlaceholder: '例: T-lint-check',
+    newTransitionIdPlaceholder: '例: tx.lint.check',
     newTransitionIdDuplicate: (id: string) => `id "${id}" は既に存在します。別の id を指定してください`,
     newTransitionCreateButton: '作成',
     newTransitionCreating: '作成中…',
@@ -277,7 +277,7 @@ const ja = {
     adoptedBadge: '採用済み',
     adoptedWhyHeading: '採用された why（decision）',
     adoptedNote: 'この提案は decision として記録されました（commits[] は空）。commit 後は `scholia decision add-commit <id> <hash>` で結線してください。',
-    // 却下（#35・T-review-reject/T-comment-reject）— 採用と対称の束ね操作。
+    // 却下（#35・tx.review.reject/tx.comment.reject）— 採用と対称の束ね操作。
     // decision として記録した上で昇格元コメントを削除する点は採用と同じ。
     rejectButton: '却下',
     rejectWhyLabel: '却下理由（decision として記録されます）',
@@ -573,7 +573,7 @@ const en: Strings = {
     newTransitionButton: '+ Propose a new transition',
     newTransitionActionUnset: '(not selected)',
     newTransitionIdLabel: 'id (new identifier)',
-    newTransitionIdPlaceholder: 'e.g. T-lint-check',
+    newTransitionIdPlaceholder: 'e.g. tx.lint.check',
     newTransitionIdDuplicate: (id) => `id "${id}" already exists — pick a different id`,
     newTransitionCreateButton: 'Create',
     newTransitionCreating: 'Creating…',

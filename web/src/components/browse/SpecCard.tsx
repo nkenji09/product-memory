@@ -41,7 +41,7 @@ function SpecAffordanceMenu({ onFilter, detailHref, flowHref }: { onFilter: () =
     { key: 'filter', label: t.browse.menuAddFilter, icon: 'plus', onSelect: onFilter },
     { key: 'open', label: t.browse.menuOpenLink, icon: 'external-link', href: detailHref },
   ];
-  // action-scoped only (T-viewer-action-flow-link): a third item that opens
+  // action-scoped only (tx.viewer.action-flow-link): a third item that opens
   // #/flow/<action> in a new tab. Present at the action call site alone.
   if (flowHref) items.push({ key: 'flow', label: t.flow.menuShowFlow, icon: 'git-fork', href: flowHref });
   return <KebabMenu triggerLabel={t.browse.menuTrigger} items={items} />;

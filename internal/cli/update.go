@@ -69,7 +69,7 @@ func newUpdateCmd() *cobra.Command {
 func runUpdate(cmd *cobra.Command, checkOnly bool) error {
 	out := cmd.OutOrStdout()
 
-	// T-update-guide-source: source/go install 由来は自己置換しない。
+	// tx.update.guide-source: source/go install 由来は自己置換しない。
 	if isSourceInstall() {
 		fmt.Fprintln(out, "scholia は go install（source）経由の導入のため、自己更新できません。")
 		fmt.Fprintln(out, "以下のコマンドで更新してください:")
@@ -77,7 +77,7 @@ func runUpdate(cmd *cobra.Command, checkOnly bool) error {
 		return nil
 	}
 
-	// T-update-guide-windows: 実行中の .exe は上書きできない。
+	// tx.update.guide-windows: 実行中の .exe は上書きできない。
 	if updateGOOS == "windows" {
 		fmt.Fprintln(out, "Windows では実行中の scholia.exe を自己置換できません。")
 		fmt.Fprintln(out, "以下のいずれかで更新してください:")
@@ -93,7 +93,7 @@ func runUpdate(cmd *cobra.Command, checkOnly bool) error {
 	}
 	upToDate := normalizeTag(current) == normalizeTag(latest)
 
-	// T-update-check: --check は取得・置換せず可否だけ報告する。
+	// tx.update.check: --check は取得・置換せず可否だけ報告する。
 	if checkOnly {
 		if upToDate {
 			fmt.Fprintf(out, "現在版 %s は最新です。\n", current)
@@ -103,13 +103,13 @@ func runUpdate(cmd *cobra.Command, checkOnly bool) error {
 		return nil
 	}
 
-	// T-update-already-latest
+	// tx.update.already-latest
 	if upToDate {
 		fmt.Fprintf(out, "既に最新版です（%s）。\n", current)
 		return nil
 	}
 
-	// T-update-self-replace: 取得→checksum 検証→自己置換→報告。
+	// tx.update.self-replace: 取得→checksum 検証→自己置換→報告。
 	archive := archiveFileName(updateGOOS, updateGOARCH)
 	archiveData, err := downloadReleaseAsset(archive)
 	if err != nil {

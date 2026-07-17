@@ -12,7 +12,7 @@ import (
 // これらはリリースビルド時に goreleaser が ldflags(-X)で上書きする。
 // 変数パスは .goreleaser.yaml の -X github.com/nkenji09/scholia/internal/cli.<name> と厳密一致させること。
 // 既定値 "dev"（version）／空（commit・date）のままなら未注入とみなし、
-// runtime/debug.ReadBuildInfo に fallback する（model: T-version-report-buildinfo）。
+// runtime/debug.ReadBuildInfo に fallback する（model: tx.version.report-buildinfo）。
 var (
 	version = "dev"
 	commit  = ""
@@ -30,9 +30,9 @@ type versionInfo struct {
 
 // resolveVersionInfo は版の解決順を実装する（decision: req.release-versioning）：
 //
-//	(a) ldflags 注入された version が既定値 "dev" 以外ならそれを最優先（T-version-report-injected）
+//	(a) ldflags 注入された version が既定値 "dev" 以外ならそれを最優先（tx.version.report-injected）
 //	(b) 未注入なら runtime/debug.ReadBuildInfo() の Main.Version（go install …@vX の
-//	    module 版や "(devel)"）に fallback（T-version-report-buildinfo）
+//	    module 版や "(devel)"）に fallback（tx.version.report-buildinfo）
 //	(c) いずれも無ければ "dev"
 //
 // commit/date も未注入時は build info の vcs.revision / vcs.time で補う。

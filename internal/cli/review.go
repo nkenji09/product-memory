@@ -16,7 +16,7 @@ import (
 // （read-only オーバーレイ・§8.4）。「AI は提案時に必ずコメントを付ける」を
 // viewer 上で成立させるための CLI 入口 — viewer 自身はレビューを書かない
 // （G-3 は反転しない）。adopt/reject/rm は削除のみ扱う書込（§35: decision
-// 昇格＋昇格元コメント掃除・T-review-adopt/-reject/T-cli-review-rm）。
+// 昇格＋昇格元コメント掃除・tx.review.adopt/-reject/tx.cli.review-rm）。
 func newReviewCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "review",
@@ -151,14 +151,14 @@ func newReviewListCmd() *cobra.Command {
 	return cmd
 }
 
-// newReviewAdoptCmd は `scholia review adopt <id>`（T-review-adopt）。review の
+// newReviewAdoptCmd は `scholia review adopt <id>`（tx.review.adopt）。review の
 // 内容を「採用」decision に昇格し（review 本文を why の素材に）、その後に
 // review を削除する — 順序固定（先に昇格＝why を失わない、後で削除＝掃除）。
 func newReviewAdoptCmd() *cobra.Command {
 	return newReviewDecideCmd(reviewDecideAdopt)
 }
 
-// newReviewRejectCmd は `scholia review reject <id>`（T-review-reject）。
+// newReviewRejectCmd は `scholia review reject <id>`（tx.review.reject）。
 // 昇格経路と掃除は adopt と同一 — decision の why（不採用・理由）だけが異なる。
 func newReviewRejectCmd() *cobra.Command {
 	return newReviewDecideCmd(reviewDecideReject)
@@ -176,9 +176,9 @@ const (
 // differing only in verb/short text and the default why when --why is
 // omitted (adopt: review 本文そのまま／reject: 却下である旨を前置き).
 func newReviewDecideCmd(kind reviewDecideKind) *cobra.Command {
-	verb, shortDesc := "adopt", "AI 提案コメント(review)を採用し、decision に昇格した上で review を削除する（T-review-adopt）"
+	verb, shortDesc := "adopt", "AI 提案コメント(review)を採用し、decision に昇格した上で review を削除する（tx.review.adopt）"
 	if kind == reviewDecideReject {
-		verb, shortDesc = "reject", "AI 提案コメント(review)を却下し、decision に昇格した上で review を削除する（T-review-reject）"
+		verb, shortDesc = "reject", "AI 提案コメント(review)を却下し、decision に昇格した上で review を削除する（tx.review.reject）"
 	}
 
 	var why, changed, ref string
@@ -255,14 +255,14 @@ func newReviewDecideCmd(kind reviewDecideKind) *cobra.Command {
 	return cmd
 }
 
-// newReviewRmCmd は `scholia review rm <id>`（T-cli-review-rm・escape hatch）。
+// newReviewRmCmd は `scholia review rm <id>`（tx.cli.review-rm・escape hatch）。
 // decision を残さず review だけを削除する — review.Delete 自体が
 // cond.review-exists（存在しなければエラー）を満たす。
 func newReviewRmCmd() *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "rm <id>",
-		Short: "review を decision を残さず削除する（escape hatch・T-cli-review-rm）",
+		Short: "review を decision を残さず削除する（escape hatch・tx.cli.review-rm）",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]

@@ -36,9 +36,9 @@ type staticData struct {
 	SearchCorpus     []index.TransitionSearchDoc       `json:"searchCorpus"`
 	Lint             lintPayload                       `json:"lint"`
 	Spec             map[string]SpecReport             `json:"spec"`
-	// Flow mirrors GET /api/flow/<action> (T-viewer-action-flow-render),
+	// Flow mirrors GET /api/flow/<action> (tx.viewer.action-flow-render),
 	// baked per distinct action id actually used by a transition — the only
-	// action ids the SpecCard kebab (T-viewer-action-flow-link) can ever
+	// action ids the SpecCard kebab (tx.viewer.action-flow-link) can ever
 	// link to, same "bake what the SPA can request" rule as
 	// transitionsByTag/spec above.
 	Flow map[string]flow.Report `json:"flow"`

@@ -859,7 +859,7 @@
   border-radius: var(--r-md);
 }
 
-/* 却下（#35・T-review-reject/T-comment-reject）— 採用と対称。束ね操作
+/* 却下（#35・tx.review.reject/tx.comment.reject）— 採用と対称。束ね操作
    （decision 昇格＋昇格元コメント削除）は同一で、色味だけ success→error に
    変える。フォーム内部（label/input/actions/error）は .comment-adopt-form-*
    をそのまま流用する（構造は同じ・枠の色だけここで変える）。 */

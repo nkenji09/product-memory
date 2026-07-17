@@ -37,6 +37,20 @@
     "action": "act.",
     "effect": "eff."
   },
+  "idPolicy": {
+    "transition": "tx.",
+    "vocab": {
+      "action": "act.",
+      "condition": "cond.",
+      "effect": "eff."
+    },
+    "tagByKind": {
+      "axis": "axis.",
+      "concern": "concern.",
+      "requirement": "req.",
+      "subject": "subject."
+    }
+  },
   "roots": [],
   "viewer": {
     "port": 4577

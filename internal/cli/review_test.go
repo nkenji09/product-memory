@@ -160,7 +160,7 @@ func setupReviewFixture(t *testing.T, dir string) (reviewID string) {
 	return added.ID
 }
 
-// T-review-adopt: 昇格（decision 作成）→ 削除の順序で行われ、review の本文が
+// tx.review.adopt: 昇格（decision 作成）→ 削除の順序で行われ、review の本文が
 // decision の why に載る。
 func TestCLI_ReviewAdopt(t *testing.T) {
 	dir := t.TempDir()
@@ -196,7 +196,7 @@ func TestCLI_ReviewAdopt(t *testing.T) {
 	}
 }
 
-// T-review-reject: adopt と同じ昇格＋掃除だが why に却下である旨が前置きされる。
+// tx.review.reject: adopt と同じ昇格＋掃除だが why に却下である旨が前置きされる。
 func TestCLI_ReviewReject(t *testing.T) {
 	dir := t.TempDir()
 	id := setupReviewFixture(t, dir)
@@ -240,7 +240,7 @@ func TestCLI_ReviewAdopt_WhyOverride(t *testing.T) {
 	}
 }
 
-// T-cli-review-rm: escape hatch — decision を残さず review だけ消える。
+// tx.cli.review-rm: escape hatch — decision を残さず review だけ消える。
 func TestCLI_ReviewRm(t *testing.T) {
 	dir := t.TempDir()
 	id := setupReviewFixture(t, dir)

@@ -20,7 +20,7 @@ func registerReviewsRoute(mux *http.ServeMux, s *store.Store) {
 // subdirectories and never sees reviews/). This is a read-only route; the
 // viewer never writes (creates) a review — G-3 is not reversed. DELETE below
 // is the one write this file has: it only ever removes an overlay comment
-// the frontend has already folded into a decision (§35 T-review-adopt/
+// the frontend has already folded into a decision (§35 tx.review.adopt/
 // -reject cleanup step), never adds or edits one.
 func getReviewsHandler(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +41,7 @@ type deleteReviewResponse struct {
 }
 
 // deleteReviewHandler serves DELETE /api/reviews/{id}: the cleanup half of
-// adopt/reject (§35 T-review-adopt/T-review-reject — eff.storage.
+// adopt/reject (§35 tx.review.adopt/tx.review.reject — eff.storage.
 // delete-review, called by the frontend only after its POST /api/decision
 // has already succeeded, so a proposal's why is never lost). Server-mode
 // only, like every other viewer write (§7 narrow rule) — a static export

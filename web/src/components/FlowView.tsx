@@ -41,7 +41,7 @@ interface Props {
 // axis's branch reads as conditioned on that axis even when it never
 // declared that precondition — user feedback after `T-update-already-
 // latest` (no platform given) appeared under the windows branch alongside
-// `T-update-guide-windows` (which genuinely requires windows): "その軸を
+// `tx.update.guide-windows` (which genuinely requires windows): "その軸を
 // 気にしないなら別の木になるべき". At each leaf, every covering transition
 // gets its own tail: any given condition NOT covered by a declared axis
 // ("free"/don't-care, report.scope.undeclaredGiven) becomes a non-branching
@@ -190,9 +190,9 @@ function buildDiagram(
     // it skips straight to its own first-pinned axis and gets its own
     // sibling diamond there instead. User feedback: a transition nested
     // inside an axis's Yes/No branch reads as "conditioned on that axis"
-    // even when it never declared that condition (`T-update-already-latest`
+    // even when it never declared that condition (`tx.update.already-latest`
     // has no platform given, yet appeared under the windows branch
-    // alongside `T-update-guide-windows`, which genuinely requires
+    // alongside `tx.update.guide-windows`, which genuinely requires
     // windows) — "その軸を気にしないなら別の木になるべき". So a hub can now
     // fan out into MULTIPLE sibling diamonds (one per axis some pending
     // transition's first-pinned axis actually is), not just one.
@@ -578,7 +578,7 @@ export function FlowView({ actionId }: Props) {
         // Mermaid diagram (rendered by the effect above) is this view's main
         // content — the multi-line matrix/scope-disclosure text sections
         // that used to sit alongside it were removed (decision
-        // 01KXN6G0R4DSXEVV86K8W0CZYW amending T-viewer-action-flow-render's
+        // 01KXN6G0R4DSXEVV86K8W0CZYW amending tx.viewer.action-flow-render's
         // then to mermaid-only): the fine print went unread in the viewer,
         // and the same req.action-flow.scope-honesty text is still always
         // available via `scholia flow`/`scholia gaps` for AI/CLI use. A one-line

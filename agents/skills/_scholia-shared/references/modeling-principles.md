@@ -98,7 +98,7 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 ## 4. 命名（衝突回避と可読性）
 
 - **desc / label は markdown で書ける**：prop 名やコマンドは `` `code` ``、強調は `**bold**` を使って読みやすくする。ただし長文をベタ書きしない（短さは §5 の原則）。
-- **transition id = `tx.<Component>.<name>`**（例 `tx.UISampleRangeInput.clear`）。`tx.input-*` のような総称は他コンポとファイル名衝突する。意図的な共有だけ `tx.shared.*`。
+- **transition id の prefix は `config.idPolicy` が正本**（宣言があると新規 id は保存時に強制される・P3 の reject 経由。既存 id と rename は対象外）。ポリシーを決めるときの指針：`tx.<Component>.<name>`（例 `tx.UISampleRangeInput.clear`）のような**主題名入りの prefix はファイル名衝突を避ける**（`tx.input-*` のような総称は他コンポと同名になりやすい／意図的な共有だけ `tx.shared.*`）。一方で総称 prefix（`T-` 等）を採る store もある。どちらが正かは store ごとに違うので、**迷ったら既存レコードの並びでなく `config.idPolicy` を見る**（他プロジェクトは自 config で別 prefix を宣言してよい）。
 - **vocab id は実装同一性で粒度を決める**：**独立実装は最初から `<eff|act>.<Owner>.<name>`（＝主題名で命名）が既定**。plain / 総称名（`eff.self.apply-size` 等）にすると、**プロジェクト全体 store では別主題が同名の独立実装を足したとき id 衝突→意図せず共有→主題横断の false-impact** を生む（size/blur/focus/status/loading 等の汎用挙動は必ず被る）。だから片主題専用でも owner 名で作る。plain id にしてよいのは**実装が共通と判明した共有**だけ（例: wrapper が inner を embed して同一コードを呼ぶ → owner=inner 名にして wrapper がそれを参照する）。「per-component で作り、共通と分かったら共通化」がルール。
 - **label**：action（きっかけ）は **「〜したとき」のトリガー表現**（例 `API setValue() を実行したとき`）。メソッドシグネチャの羅列にしない — `spec` の `WHEN 〜 THEN 〜` が読めなくなる。effect（結果）は**起きる事実**（`終了入力へフォーカスを送る`）。
   - ※ label / owner を変える CLI は無い（`vocab edit` は description のみ）。後から直すなら JSON の当該フィールドを直接編集。

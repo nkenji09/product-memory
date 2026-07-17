@@ -27,20 +27,30 @@ func dogfoodSnapshot(t *testing.T) store.Snapshot {
 	return snap
 }
 
-// dangling-id: 真ヒット 1 件（偽陽性ゼロ）。素朴実装は 8 件中 7 件が偽陽性に
-// なる実データ（族 glob `T-comment-*`・プレースホルダ `T-xxx`/`req.foobar`・
-// kind 族 `eff.log`）を、除外3種 (E1)(E2)(E3) が全て畳むことを固定する。
+// dangling-id: 真ヒット 1 件（偽陽性ゼロ）。素朴実装は偽陽性が多発する実データ
+// （族 glob `T-comment-*`・プレースホルダ `req.foobar`・kind 族 `eff.log`）を、
+// 除外3種 (E1)(E2)(E3) が全て畳むことを固定する。
+//
+// フェーズ2 の retrofit（#45・決定①）で store が全面改名され、prefix 候補集合が
+// 入れ替わった。旧真ヒット（decision 01KXM9X0… の changed 内 `T-viewer-adopt-
+// comment-removed`）は、既存レコードから `T-` prefix が推定されなくなったため
+// id 様トークンとして認識されなくなった。代わって config.idPolicy が `tx.` を
+// 宣言したことで、decision 01KXFEXG… の changed 内のコード式 `tx.action`
+// （`vocabLabelById.get(tx.action)`）が新たに tx. prefix の id 様トークンとして
+// 引っかかる。これは append-only の判断欄位に元から書かれたコード断片で是正
+// 不能ゆえ acknowledge-only の真ヒット扱い（コメント冒頭の「retrofit で実測が
+// 変わったら追随する」方針どおり更新した実測値）。
 func TestDogfoodDanglingIDHasZeroFalsePositives(t *testing.T) {
 	snap := dogfoodSnapshot(t)
 	findings := checkDanglingID(snap)
 
-	// 素朴実装の偽陽性 7 件（kit-bundle2-retrofit-findings.md §7）が
-	// 1 件も finding にならないこと。
+	// 素朴実装の偽陽性（kit-bundle2-retrofit-findings.md §7）が 1 件も finding に
+	// ならないこと。改名後は同 decision の why の T- 系トークンは prefix 候補から
+	// 落ちて消えるが、E1/E2/E3 で畳むべきパターンは引き続き finding にしない。
 	falsePositiveRecords := []string{
 		"01KXM9VN3FPGE5C2APBTNRWGHA",        // why: T-comment-*（E1）
 		"req.evaluate-change.adopt-cleanup", // desc: `T-comment-*`（E1）
 		"01KXEVDGYNB32K3WXKMV8Z4RVW",        // changed: T-skills-install-*（E1）
-		"01KXFEXG01RS00RHAVS3TMP25Y",        // why: T-xxx（E2）
 		"01KXJ3JEKNGHAF4XHGM8WV9N90",        // why: req.foobar・req.foo-bar（E2）
 		"01KXFK6V81TEDF3340AFGA08WG",        // why: eff.log（E3）
 	}
@@ -56,8 +66,8 @@ func TestDogfoodDanglingIDHasZeroFalsePositives(t *testing.T) {
 		t.Fatalf("真ヒット 1 件（偽陽性ゼロ）のはずが %d 件: %+v", len(findings), findings)
 	}
 	f := findings[0]
-	if f.Target != "01KXM9X0E21T5C6W1HKKDZWM91" || f.TargetType != "decision" ||
-		f.Field != "changed" || f.Quote != "T-viewer-adopt-comment-removed" || !f.AcknowledgeOnly {
+	if f.Target != "01KXFEXG01RS00RHAVS3TMP25Y" || f.TargetType != "decision" ||
+		f.Field != "changed" || f.Quote != "tx.action" || !f.AcknowledgeOnly {
 		t.Fatalf("真ヒットの内容が想定と違う: %+v", f)
 	}
 }

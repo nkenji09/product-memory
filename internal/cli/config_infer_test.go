@@ -108,7 +108,7 @@ func TestConfigInferIDPolicyDogfood(t *testing.T) {
 		t.Fatalf("json decode: %v", err)
 	}
 	want := model.IDPolicy{
-		Transition: "T-",
+		Transition: "tx.",
 		Vocab:      map[string]string{"condition": "cond.", "action": "act.", "effect": "eff."},
 		TagByKind:  map[string]string{"axis": "axis.", "concern": "concern.", "requirement": "req.", "subject": "subject."},
 	}

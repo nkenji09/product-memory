@@ -15,7 +15,7 @@ func withInjected(t *testing.T, v, c, d string) {
 	t.Cleanup(func() { version, commit, date = ov, oc, od })
 }
 
-// 注入版が最優先されること（T-version-report-injected）。
+// 注入版が最優先されること（tx.version.report-injected）。
 func TestResolveVersionInfo_InjectedWins(t *testing.T) {
 	withInjected(t, "v9.9.9", "abc1234", "2026-07-14T00:00:00Z")
 
@@ -40,7 +40,7 @@ func TestResolveVersionInfo_InjectedWins(t *testing.T) {
 }
 
 // 未注入（version=dev）でも版はクラッシュせず・空にならないこと
-// （T-version-report-buildinfo: ReadBuildInfo fallback、無ければ dev）。
+// （tx.version.report-buildinfo: ReadBuildInfo fallback、無ければ dev）。
 func TestResolveVersionInfo_FallbackNeverEmpty(t *testing.T) {
 	withInjected(t, "dev", "", "")
 
