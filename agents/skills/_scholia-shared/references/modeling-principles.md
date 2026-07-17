@@ -51,9 +51,53 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 
 ---
 
-## 3. 命名（衝突回避と可読性）
+## 3. 軸の見つけ方 — 型でなく action から／投影と遷移の境界
 
-- **desc / label は markdown で書ける**：prop 名やコマンドは `` `code` ``、強調は `**bold**` を使って読みやすくする。ただし長文をベタ書きしない（短さは §4 の原則）。
+「どの状態を axis（状態次元・`kind="axis"`）にするか」の線引き。過剰に軸を切ると分析が薄まり、切り足りないと gap を見逃す。
+
+### concept と axis の関係
+
+- **concept（横断タグ）= 複数 subject が共有する横断的な族/trait**。共有不変条件(decision)と member の家であり、本質は *横断* と *ルールの家*（フィールドの袋ではない）。どの観点で横断するかは §1 の「横断の観点」で決める。
+- **axis（`kind="axis"`）= 状態次元**。互いに排他な condition 値（enum 的・ちょうど 1 つが真）が **transition の `given`** に載り、action の結果(`then`)を分岐させる。`scholia flow`/`gaps` の網羅検査の単位（DESIGN §3.4）。
+- **関係**: 1 concept は **0..N 個の axis** を持つ。**結果(effect)は axis に直結せず、transition が `given`→`then` で繋ぐ**（前提=condition／結果=effect の分離＝§4 命名の原則と接続）。
+- ※ §1 で言う「横断の観点＝軸」は concept タグを束ねる *観点* のこと。本節の axis（`kind="axis"`・状態次元）とは別語義（「軸」の多義は DESIGN §3.4 の用語注も参照）。
+
+### 軸は「型」でなく action から見つける
+
+- ❌ 誤り: 「enum 型フィールド＝全部 axis」。全 `status`/`loading` を軸化すると過剰粒度になる。
+- ✅ 正: axis は「その値で **action の観測可能な結果が変わる** 状態」。各 action で「結果(`then`)が排他状態で分岐するか？」を問うて探す。prop 名（`status`/`loading` 等）で pre-classify しない（分岐するかは次節の判定次第）。
+
+### 投影(projection) と 遷移(transition) の境界（最重要）
+
+「状態→見た目」を細かく効果化すると（例 `status=error → apply-error-class`）どの rendering も軸候補に見えてしまう。線引き:
+
+- **transition が扱うのは「action が起こす、忘れうる・順序がある・副作用(emit)を持つ状態変化」だけ。**
+- **rendering／導出（view = f(state)）は transition に載せない**——状態の投影であり、現在状態からいつでも再生成できる。
+
+**判定（1 問）**: *その効果は「今の状態だけからいつでも再生成できるか」？*
+
+- **YES → 投影**。軸にしない。「全 enum 値に対応する見た目があるか」という完全性は**型の exhaustiveness（型検査）の仕事**であって、軸の網羅検査の仕事ではない。
+- **NO → 遷移**（"emit が発火した" は現在状態から再生成できない）。その状態を gate する condition は軸候補。
+
+**この線引きが恣意的でない理由**: `scholia flow`/`gaps` が出す signal（coverage の抜け・subset-shadow・順序）は「忘れうる・順序がある・副作用のある結果」にしか働かない。投影は total-by-enum・無順序・無副作用なので、軸化しても cell が増えるだけで signal はゼロ——分析を薄めるだけになる。
+
+- 例: `status=error → 赤スタイルを当てる` は**投影**（軸にしない）。`error 状態で入力 → 値をリセットして `change` を emit する` は**遷移**（軸候補）。
+
+### 軸化前の罠 2 つ
+
+1. **冪等 no-op**: ある値で観測可能な変化が起きない no-op なら、それは条件で分岐しない無条件効果であって軸ではない。
+2. **所有/因果**: 状態が消費側（別コンポ）の所有で、subject は validity を emit するだけなら、その状態は subject の軸ではない（軸は状態を所有して分岐する owner のもの）。
+
+### 既存規律との接続
+
+- **既に別 action に割れている排他値**（`open`/`close` 等）は軸にしない——偽の L-total（抜け）を生む。同じ outcome に落ちる値は束ねる。
+- **no-op 側を持つ 2 値軸は `total=false`**（DESIGN §8 lint の `complement-missing`／既存の axis-gaps 系 decision と整合。詳細は DESIGN §3.4 の #40）。
+
+---
+
+## 4. 命名（衝突回避と可読性）
+
+- **desc / label は markdown で書ける**：prop 名やコマンドは `` `code` ``、強調は `**bold**` を使って読みやすくする。ただし長文をベタ書きしない（短さは §5 の原則）。
 - **transition id = `tx.<Component>.<name>`**（例 `tx.UISampleRangeInput.clear`）。`tx.input-*` のような総称は他コンポとファイル名衝突する。意図的な共有だけ `tx.shared.*`。
 - **vocab id は実装同一性で粒度を決める**：**独立実装は最初から `<eff|act>.<Owner>.<name>`（＝主題名で命名）が既定**。plain / 総称名（`eff.self.apply-size` 等）にすると、**プロジェクト全体 store では別主題が同名の独立実装を足したとき id 衝突→意図せず共有→主題横断の false-impact** を生む（size/blur/focus/status/loading 等の汎用挙動は必ず被る）。だから片主題専用でも owner 名で作る。plain id にしてよいのは**実装が共通と判明した共有**だけ（例: wrapper が inner を embed して同一コードを呼ぶ → owner=inner 名にして wrapper がそれを参照する）。「per-component で作り、共通と分かったら共通化」がルール。
 - **label**：action（きっかけ）は **「〜したとき」のトリガー表現**（例 `API setValue() を実行したとき`）。メソッドシグネチャの羅列にしない — `spec` の `WHEN 〜 THEN 〜` が読めなくなる。effect（結果）は**起きる事実**（`終了入力へフォーカスを送る`）。
@@ -68,7 +112,7 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 
 ---
 
-## 4. desc と decision の役割分担
+## 5. desc と decision の役割分担
 
 - **desc = 決定を反映した「最新の状態」を分かりやすく**。使い方コード例・図・文脈は持ち込むが、採用判断が決着した箇所は現在形に書く（`[ ]` を残さない）。
 - **decision = 意思決定・修正履歴（append-only）**。「何が・なぜ・いつ変わったか」はここ。**desc に決定メモをベタ書きしない**（仕様が更新されたら desc を最新形に直し、履歴は decision に append）。
@@ -78,7 +122,7 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 
 ---
 
-## 5. 派生ビューで見る（保存しない・全部 query）
+## 6. 派生ビューで見る（保存しない・全部 query）
 
 分類のために vocab へタグを撒かない。**コンポ別の語彙一覧は「コンポ →（その遷移）→ vocab を `kind` で束ねる」導出**で見る（vocab に requirement/component タグを付けると遷移が誤継承し、requirement-gap も masking する）。共有 vocab は該当する全コンポの導出ビューに正しく現れる。vocab を分類したいだけなら軸は `category × kind`（全 vocab が必ず持つ）。
 
@@ -86,7 +130,7 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 
 ---
 
-## 6. 完了ゲート（lint の読み方）
+## 7. 完了ゲート（lint の読み方）
 
 `scholia lint` の `requirement-gap` を潰し切る。**残ってよい gap は次の 3 種だけで、各々に decision が付いていること**:
 
