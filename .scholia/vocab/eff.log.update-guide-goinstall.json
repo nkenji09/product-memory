@@ -1,0 +1,7 @@
+{
+  "id": "eff.log.update-guide-goinstall",
+  "category": "effect",
+  "label": "自己置換せず、go install …/cmd/scholia@latest での更新手順を案内する",
+  "kind": "log",
+  "owner": "scholia-core"
+}

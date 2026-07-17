@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nkenji09/product-memory/internal/store"
-	webdist "github.com/nkenji09/product-memory/web"
+	"github.com/nkenji09/scholia/internal/store"
+	webdist "github.com/nkenji09/scholia/web"
 )
 
-// NewHandler builds the HTTP handler for `pmem view`: the JSON API under
+// NewHandler builds the HTTP handler for `scholia view`: the JSON API under
 // /api/ plus the embedded SPA (with client-side-routing fallback to
 // index.html) for everything else.
 func NewHandler(s *store.Store) (http.Handler, error) {

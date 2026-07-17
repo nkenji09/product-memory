@@ -687,7 +687,7 @@ export function BrowseView({
         indexItems={indexItems}
         suggestions={suggestions}
       />
-      <Resizer config={RAIL_WIDTH} direction="rail" className="pmem-resizer--rail" />
+      <Resizer config={RAIL_WIDTH} direction="rail" className="scholia-resizer--rail" />
       <main class="browse-main">
         <div class="browse-main-head">
           <h1>

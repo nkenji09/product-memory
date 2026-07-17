@@ -1,0 +1,9 @@
+{
+  "id": "act.user.decide",
+  "category": "action",
+  "label": "scholia decide を実行",
+  "kind": "user",
+  "tags": [
+    "concern.traceability"
+  ]
+}

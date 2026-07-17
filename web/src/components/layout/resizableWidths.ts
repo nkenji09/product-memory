@@ -10,16 +10,16 @@ export interface ResizableWidthConfig {
 }
 
 export const RAIL_WIDTH: ResizableWidthConfig = {
-  cssVar: '--pmem-rail-width',
-  storageKey: 'pmem-rail-width',
+  cssVar: '--scholia-rail-width',
+  storageKey: 'scholia-rail-width',
   min: 200,
   max: 600,
   defaultWidth: 300,
 };
 
 export const COMMENT_PANEL_WIDTH: ResizableWidthConfig = {
-  cssVar: '--pmem-comment-width',
-  storageKey: 'pmem-comment-width',
+  cssVar: '--scholia-comment-width',
+  storageKey: 'scholia-comment-width',
   min: 280,
   max: 640,
   defaultWidth: 400,

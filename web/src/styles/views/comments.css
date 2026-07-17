@@ -1,6 +1,6 @@
 /* Comments (#18) — slide-over summary panel + composer. Volatile/local
    info (localStorage only), so it's deliberately styled lighter than the
-   .pmem record cards it annotates (no elevated shadow, plain border). */
+   .scholia record cards it annotates (no elevated shadow, plain border). */
 
 .comment-backdrop {
   position: fixed;
@@ -14,7 +14,7 @@
   top: 56px;
   bottom: 0;
   right: 0;
-  width: min(92%, var(--pmem-comment-width, 400px));
+  width: min(92%, var(--scholia-comment-width, 400px));
   /* Explicit, not implicit `auto` (#20 drawerscroll fix — same root cause
      as .browse-rail-narrow in browse.css): without this, the panel grows
      to fit its content instead of being clipped to the viewport, leaving
@@ -30,7 +30,7 @@
 }
 
 /* drawer-resize (依頼C-3): 幅リサイズは PC 表示のみ対象。narrow
-   (drawer.tsx の BREAKPOINT=860px と合わせる) では --pmem-comment-width を
+   (drawer.tsx の BREAKPOINT=860px と合わせる) では --scholia-comment-width を
    無視し、従来通りの 92%/max400px 挙動に固定する。 */
 @media (max-width: 860px) {
   .comment-panel {

@@ -1,7 +1,7 @@
 /* Page chrome: header/nav and the pane grids views sit in. View-internal
    content styling lives in styles/views/*.css instead. */
 
-/* Header — matches the design's actual markup (pmem-viewer.dc.html's
+/* Header — matches the design's actual markup (scholia-viewer.dc.html's
    <header>): sticky, logo mark + wordmark, a segmented-pill nav with
    icons, and a right-hand cluster of icon-only controls (font-size ±,
    theme toggle, comments, settings). Extended with a Vocab nav slot the

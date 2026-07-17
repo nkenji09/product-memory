@@ -10,7 +10,7 @@ import { api } from '../../api';
 import type { Review, Decision } from '../../types';
 
 // Comments (#18) — volatile, per-browser annotations. Deliberately NOT part
-// of the .pmem record model: everything here lives only in localStorage
+// of the .scholia record model: everything here lives only in localStorage
 // (never git, never the Go backend), exactly per
 // claude-design-request-comments.md's "フロントエンド完結・localStorage の
 // み" constraint — extending this file must never add a fetch/API call. This
@@ -30,7 +30,7 @@ import type { Review, Decision } from '../../types';
 // #27 Phase2-2b (task drawer): comments are namespaced by `taskId` — a
 // lightweight client-only Task concept (id/title/createdAt), NOT a branch
 // or commit (design doc change-cockpit-design-v2.md §0/§3). Deliberately a
-// field on CommentRecord rather than a separate `pmem-comments-v1::<id>`
+// field on CommentRecord rather than a separate `scholia-comments-v1::<id>`
 // storage key (the design doc offers both as equivalent) — this keeps the
 // single STORAGE_KEY/load/persist path from #18 unchanged and makes the
 // legacy-comment migration a one-line addition to the existing additive
@@ -101,7 +101,7 @@ export interface DisplayComment extends CommentRecord {
   source: 'local' | 'ai';
 }
 
-const REVIEW_BINDINGS_STORAGE_KEY = 'pmem-review-bindings-v1';
+const REVIEW_BINDINGS_STORAGE_KEY = 'scholia-review-bindings-v1';
 
 // §8.3: a thin overlay binding each AI review to the task it was first seen
 // under — reviews carry no taskId of their own (they're read-only sidecars),
@@ -171,9 +171,9 @@ interface CommentsValue {
   saveNewTask: () => void;
 }
 
-const STORAGE_KEY = 'pmem-comments-v1';
-const TASKS_STORAGE_KEY = 'pmem-tasks-v1';
-const ACTIVE_TASK_STORAGE_KEY = 'pmem-active-task-v1';
+const STORAGE_KEY = 'scholia-comments-v1';
+const TASKS_STORAGE_KEY = 'scholia-tasks-v1';
+const ACTIVE_TASK_STORAGE_KEY = 'scholia-active-task-v1';
 const CommentsContext = createContext<CommentsValue | null>(null);
 
 function newId(prefix: string): string {
@@ -318,7 +318,7 @@ export function CommentsProvider({ children }: { children: ComponentChildren }) 
   const [reviewBindings, setReviewBindings] = useState<ReviewBindings>({});
   // 採用（§8.5・P4／#27 P5b fix-back）: decisionId が付いたコメント/AI
   // レビューの、確定 why を表示するためのキャッシュ。decision 自体の正本は
-  // .pmem/decisions/ のまま（採用直後は cacheDecision で POST 応答を直接
+  // .scholia/decisions/ のまま（採用直後は cacheDecision で POST 応答を直接
   // 投入し、reload 後は下の consider() で GET /api/rules?tx=|tag= から
   // 読み直す。§7.10「原子を保存し構造は derive」と同じ流儀）。
   const [decisionCache, setDecisionCache] = useState<Record<string, Decision>>({});
@@ -360,7 +360,7 @@ export function CommentsProvider({ children }: { children: ComponentChildren }) 
 
   // 採用済みコメント/AI レビュー（decisionId 付き）の why を復元する
   // （reload 後の「採用済み」表示・P4／#27 P5b fix-back で tag へ拡張）。
-  // decision の正本は .pmem/decisions/ のみ・localStorage には複製しない。
+  // decision の正本は .scholia/decisions/ のみ・localStorage には複製しない。
   // レコードごとに 1 回だけ GET /api/rules?tx=|tag= を叩き（既存 read-only
   // エンドポイント・新規追加なし）、返ってきた decisions を id で引ける
   // ようキャッシュする。同じレコードを何度も叩かないよう
@@ -522,8 +522,8 @@ export function CommentsProvider({ children }: { children: ComponentChildren }) 
   };
 
   // 採用/却下（§8.5・P4／#35 T-review-adopt/-reject）: AI 提案コメント
-  // （read-only サイドカー）の decision 結線は pmem-review-bindings-v1 側に
-  // 置く（本文自体は AI が書いた .pmem/reviews/ のまま・viewer からは変更
+  // （read-only サイドカー）の decision 結線は scholia-review-bindings-v1 側に
+  // 置く（本文自体は AI が書いた .scholia/reviews/ のまま・viewer からは変更
   // できない）。CommentPanel は decision 昇格（POST /api/decision）が成功
   // した直後にこれを呼んでから DELETE /api/reviews/{id} を叩く — 削除が
   // 失敗しても decisionId は残るので、その review は以後「昇格済み」表示

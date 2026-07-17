@@ -5,7 +5,7 @@ import type {
   FacetsResponse,
   FlowReport,
   LintResult,
-  PmemStaticData,
+  ScholiaStaticData,
   SearchResult,
   SpecReport,
   Tag,
@@ -26,15 +26,15 @@ class ApiError extends Error {}
 
 declare global {
   interface Window {
-    __PMEM_STATIC__?: PmemStaticData;
+    __SCHOLIA_STATIC__?: ScholiaStaticData;
   }
 }
 
-// `pmem export --html` bakes this in as an inline <script> (see
+// `scholia export --html` bakes this in as an inline <script> (see
 // internal/render/export.go) so a static export can serve every read-only
 // view without a server. Its presence is exactly what distinguishes a
-// static export from a `pmem view`-served page.
-const staticData: PmemStaticData | undefined = window.__PMEM_STATIC__;
+// static export from a `scholia view`-served page.
+const staticData: ScholiaStaticData | undefined = window.__SCHOLIA_STATIC__;
 
 export const isStaticMode = !!staticData;
 
@@ -67,13 +67,13 @@ function query(params: Record<string, string | undefined>): string {
 }
 
 // runStaticSearch mirrors internal/index.Search's per-candidate substring
-// test over the baked corpus (window.__PMEM_STATIC__.searchCorpus) instead
+// test over the baked corpus (window.__SCHOLIA_STATIC__.searchCorpus) instead
 // of hitting GET /api/search. The corpus itself — which candidates exist
 // per transition (effective tags, vocab labels, kind) — is derived once in
 // Go (index.SearchCorpus, the same function Search() itself uses); only the
 // trivial "does this query substring occur" test is re-run here per
 // keystroke.
-function runStaticSearch(data: PmemStaticData, q: string): SearchResult {
+function runStaticSearch(data: ScholiaStaticData, q: string): SearchResult {
   const query = q.trim().toLowerCase();
   const result: SearchResult = { transitions: [], matchedOn: {} };
   if (!query) return result;
@@ -96,7 +96,7 @@ function runStaticSearch(data: PmemStaticData, q: string): SearchResult {
   return result;
 }
 
-function staticTraceability(data: PmemStaticData, kind?: string): TraceabilityResponse {
+function staticTraceability(data: ScholiaStaticData, kind?: string): TraceabilityResponse {
   if (!kind) return data.traceability;
   return {
     kinds: [kind],
@@ -192,12 +192,12 @@ export const api = {
   // いたが撤去（change-cockpit-design-v3.md §5 P1）、後続 P2 で Transition の
   // コメントドロワーから pending diff 表示に再利用する想定で温存。static
   // export はビルド時点の1スナップショットしか持たず ref/head 比較の材料
-  // （他の ref の .pmem/ ツリー）が無いため、常に静的モード非対応（他の
+  // （他の ref の .scholia/ ツリー）が無いため、常に静的モード非対応（他の
   // api.* と同じ流儀で弾く）。
   getDiff: (params: { ref?: string; head?: string }) =>
     staticData ? staticUnavailable(DICTS[loadLang()].api.diff) : request<DiffResult>('/api/diff' + query(params)),
 
-  // AI コメント配送（change-cockpit-design-v3.md §8.4）— `.pmem/reviews/` の
+  // AI コメント配送（change-cockpit-design-v3.md §8.4）— `.scholia/reviews/` の
   // read-only サイドカーを返す。getDiff と同流儀: static export はその場限りの
   // 1スナップショットで、AI review は焼き込み対象外（§8.4 「本単位ではやらな
   // い」）なので常に静的モード非対応。人コメント（localStorage）の経路には

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nkenji09/product-memory/internal/index"
-	"github.com/nkenji09/product-memory/internal/model"
-	"github.com/nkenji09/product-memory/internal/store"
+	"github.com/nkenji09/scholia/internal/index"
+	"github.com/nkenji09/scholia/internal/model"
+	"github.com/nkenji09/scholia/internal/store"
 )
 
 func registerTransitionRoutes(mux *http.ServeMux, s *store.Store) {
@@ -24,7 +24,7 @@ type transitionsResponse struct {
 }
 
 // buildTransitionsResponse is shared by the live handler and the static
-// export bake (§7 pmem export --html); callers are responsible for
+// export bake (§7 scholia export --html); callers are responsible for
 // validating facet/tagID/kind beforehand (the live handler does this via
 // HTTP 400s, the export bake only ever passes ids it already knows exist).
 func buildTransitionsResponse(ix *index.Index, facet, tagID, kind string) transitionsResponse {
@@ -98,10 +98,10 @@ type deleteTransitionResponse struct {
 // (提案)」write (§8.8 P5・M-5「削除」・G-1′ 拡張). Removes only the
 // transition's own working-tree file (store.RemoveTransitionUnlinked —
 // uncommitted, never touches git), refusing with 409 if any decision still
-// targets it (that would otherwise leave `pmem lint`'s decision-target rule
+// targets it (that would otherwise leave `scholia lint`'s decision-target rule
 // — error severity — pointing at a dangling reference; see
 // RemoveTransitionUnlinked's doc comment for why this doesn't cascade the
-// way `pmem tx rm` does).
+// way `scholia tx rm` does).
 func deleteTransitionHandler(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")

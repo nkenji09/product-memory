@@ -3,13 +3,13 @@
    reference these vars only; no raw hex/px outside this file.
 
    Values are adopted from the Claude Design return
-   (/tmp/pmem-design-reference/pmem-viewer.dc.html) with two deliberate
+   (/tmp/scholia-design-reference/scholia-viewer.dc.html) with two deliberate
    deviations, both to keep this phase visually identical to the pre-refactor
    viewer (no visual regression):
      - --fs-base stays 14px (design used 15px) — the old viewer's body text
        was 14px and several rules size off it via `em`, so bumping the base
        would cascade a ~7% resize everywhere.
-     - --lm-success-strong is a pmem-only addition (Compare's diff-added
+     - --lm-success-strong is a scholia-only addition (Compare's diff-added
        needs a darker-than-flat success color; the design's success token
        set only has a "weak" variant, not a "strong" one).
    Dark theme is wired up here via [data-theme='dark'] on <html>/root — see

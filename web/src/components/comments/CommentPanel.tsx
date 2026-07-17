@@ -157,7 +157,7 @@ export function CommentPanel({ onGoto }: Props) {
       if (c.source === 'ai') {
         // bindReviewDecision を先に呼んでおく — 直後の DELETE が失敗しても
         // decisionId は残るので、その review は「昇格済み」表示のまま留まり
-        // 二重に decision を作られない（削除は再操作/`pmem review rm` 等で
+        // 二重に decision を作られない（削除は再操作/`scholia review rm` 等で
         // 後追いできる）。
         bindReviewDecision(c.id, decision.id);
         await api.deleteReview(c.id);
@@ -190,7 +190,7 @@ export function CommentPanel({ onGoto }: Props) {
   // §8.8 P5 vocab/tag: the same derive generalizes by recordType — only the
   // Set it consults changes (transition/vocab/tag each has its own pending-
   // diff Set from usePendingDiff()); 'page' comments never qualify (a page
-  // isn't a .pmem record with a diff).
+  // isn't a .scholia record with a diff).
   // #32 A是正: 「pending change」は changed だけでなく added（main に無い
   // 新規レコード）も含む — ProposalCard/RecordDiffCard 側が added を
   // after-only で描画できるようになったのに合わせ、ここで added* Set も見る。
@@ -214,7 +214,7 @@ export function CommentPanel({ onGoto }: Props) {
     <>
       <div class="comment-backdrop" onClick={closePanel} />
       <aside class="comment-panel">
-        <Resizer config={COMMENT_PANEL_WIDTH} direction="panel" className="pmem-resizer--panel" />
+        <Resizer config={COMMENT_PANEL_WIDTH} direction="panel" className="scholia-resizer--panel" />
         <div class="comment-panel-head">
           <span class="comment-panel-title">
             <Icon name="message-filled" size={14} /> {t.comments.panelTitle} <span class="comment-panel-count">{comments.length}</span>

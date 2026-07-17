@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/nkenji09/product-memory/internal/diff"
+	"github.com/nkenji09/scholia/internal/diff"
 )
 
 func newDiffCmd() *cobra.Command {
@@ -37,7 +37,7 @@ func newDiffCmd() *cobra.Command {
 			}
 
 			if result.BaselineMissing {
-				fmt.Fprintf(cmd.ErrOrStderr(), "注記: %s にベースライン（.pmem）が見つかりません。初回とみなし、現在の全レコードを新規(added)として表示します。\n", result.Ref)
+				fmt.Fprintf(cmd.ErrOrStderr(), "注記: %s にベースライン（.scholia）が見つかりません。初回とみなし、現在の全レコードを新規(added)として表示します。\n", result.Ref)
 			}
 
 			if asJSON {

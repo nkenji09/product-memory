@@ -12,8 +12,8 @@ const EMPTY_TAG_KIND_LABELS: Record<string, string> = {};
 // a specific field within it is empty. Kept here (not scattered across
 // Header.tsx/HomeView.tsx) so there is exactly one place that decides what
 // "unset" means.
-const DEFAULT_PRODUCT_NAME = 'pmem';
-const DEFAULT_SUBTITLE = 'product-memory';
+const DEFAULT_PRODUCT_NAME = 'scholia';
+const DEFAULT_SUBTITLE = 'scholia';
 
 // Internal record ids (T-mfa-verify, tag/vocab ids) are the join keys the
 // UI navigates by, but v2 feedback was explicit: people reading the viewer
@@ -42,10 +42,10 @@ interface Lookups {
       touches one function. */
   tagKindLabel: (kind: string | undefined) => string;
   /** Header's product name: config.display.productName, falling back to
-      "pmem" (2026-07-11 tweaks5 §2). */
+      "scholia" (2026-07-11 tweaks5 §2). */
   productName: string;
   /** Header's subtitle: the live config.branch (current git branch),
-      falling back to "product-memory" when the project isn't a git repo,
+      falling back to "scholia" when the project isn't a git repo,
       HEAD is detached, or git failed (2026-07-11 tweaks5 §2). */
   headerSubtitle: string;
   /** HOME's tagline: config.display.tagline, falling back to the built-in

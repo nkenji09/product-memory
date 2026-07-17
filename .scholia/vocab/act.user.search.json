@@ -1,0 +1,6 @@
+{
+  "id": "act.user.search",
+  "category": "action",
+  "label": "scholia search を実行",
+  "kind": "user"
+}

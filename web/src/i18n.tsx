@@ -9,11 +9,11 @@ export type { Lang, Strings };
 // UI-chrome language switch — mirrors settings.ts's theme/font-scale
 // persistence pattern exactly (localStorage key, load-once default, no
 // browser-language auto-detect per user instruction: explicit toggle only).
-// Default is Japanese when unset. Works identically under `pmem view`
-// (server) and a `pmem export --html` file:// export since it never touches
+// Default is Japanese when unset. Works identically under `scholia view`
+// (server) and a `scholia export --html` file:// export since it never touches
 // the network — same reasoning as settings.ts's own doc comment.
 
-const STORAGE_KEY = 'pmem-lang';
+const STORAGE_KEY = 'scholia-lang';
 const DEFAULT_LANG: Lang = 'ja';
 
 function isLang(v: unknown): v is Lang {

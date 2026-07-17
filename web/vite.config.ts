@@ -13,7 +13,7 @@ export default defineConfig({
   build: {
     // Vite's dynamic-import preload helper would otherwise insert
     // <link rel="modulepreload"> (or a CSS preload) for a lazily-imported
-    // chunk's own static deps before running it. `pmem export --html`
+    // chunk's own static deps before running it. `scholia export --html`
     // inlines every reachable chunk into one self-contained file with no
     // sibling assets at all (see internal/render/export.go) — those preload
     // fetches would only ever 404 there. Disabling this keeps every dynamic
@@ -29,7 +29,7 @@ export default defineConfig({
     // isn't just a wasted request offline: resolving its URL against
     // import.meta.url throws synchronously for a chunk loaded from a Blob
     // URL (see internal/render/export_bundle.go), which would otherwise
-    // break that diagram type's lazy load entirely under `pmem export
+    // break that diagram type's lazy load entirely under `scholia export
     // --html`.
     cssCodeSplit: false,
   },

@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import { useBodyScrollLock } from './scrollLock';
 
 // Off-canvas rail / sticky-rail responsive state (design reference
-// pmem-viewer.dc.html: componentDidMount's `this.mql`, ~line 640, and the
+// scholia-viewer.dc.html: componentDidMount's `this.mql`, ~line 640, and the
 // railStyle/showBackdrop/showFilterToggle wiring around lines 866/972-980).
 // A single context because the breakpoint crossing and the drawer's open
 // state need to be seen by both Header (the 絞り込み toggle button) and

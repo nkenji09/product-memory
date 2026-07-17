@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/nkenji09/product-memory/internal/index"
-	"github.com/nkenji09/product-memory/internal/model"
-	"github.com/nkenji09/product-memory/internal/store"
+	"github.com/nkenji09/scholia/internal/index"
+	"github.com/nkenji09/scholia/internal/model"
+	"github.com/nkenji09/scholia/internal/store"
 )
 
 func registerFacetRoutes(mux *http.ServeMux, s *store.Store) {
@@ -26,7 +26,7 @@ type facetsResponse struct {
 }
 
 // buildFacetsResponse is shared by the live handler and the static export
-// bake (§7 pmem export --html) so both serialize the same derived tree.
+// bake (§7 scholia export --html) so both serialize the same derived tree.
 func buildFacetsResponse(snap store.Snapshot, ix *index.Index) facetsResponse {
 	return facetsResponse{
 		FacetKinds: snap.Config.FacetKinds,

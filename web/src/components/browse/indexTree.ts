@@ -5,11 +5,11 @@ import type { IndexItem } from './BrowseRail';
 // Collapse state for the 見出し index, persisted per facet so a reload
 // restores which subtrees are folded (依頼1). Stores the set of *collapsed*
 // keys, so the default (empty) is "all expanded". Pure localStorage, no
-// bearing on the .pmem model — same private-mode-tolerant pattern as
+// bearing on the .scholia model — same private-mode-tolerant pattern as
 // settings.ts. Shared by the tag facet (BrowseView) and the tag-folder
 // index used by the spec/vocab facets (依頼C-1) so all three restore folds
 // the same way, each under its own facet key.
-export const COLLAPSE_KEY_PREFIX = 'pmem-browse-collapse-';
+export const COLLAPSE_KEY_PREFIX = 'scholia-browse-collapse-';
 
 export function loadCollapsed(facet: string): Set<string> {
   try {
@@ -35,14 +35,14 @@ export function saveCollapsed(facet: string, ids: Set<string>): void {
 // （req.comfortable-viewer.vocab-tree-mode）。選択は再訪時に保つよう localStorage
 // へ永続する — 既存の折りたたみ永続（loadCollapsed/saveCollapsed・
 // eff.state.section-visibility 系）と同じ private-mode 耐性の流儀で、モデル
-// （.pmem）には一切触れない純 UI 状態。
+// （.scholia）には一切触れない純 UI 状態。
 //
 // 既定は『文脈』（モードB）: vocab は消費 transition の下でこそ意味を持つ、という
 // faceted-nav の見方を初回体験の既定に据える（decide: 既定索引モードを『文脈』に）。
 // category×kind（モードA=『分類』）は置換ではなく明示切替で残る追加レンズ。
 // localStorage に保存値があればそれを優先し、未保存/不正値のときだけ文脈へ落とす。
 export type VocabIndexMode = 'category-kind' | 'transition';
-const INDEX_MODE_KEY = 'pmem-vocab-index-mode';
+const INDEX_MODE_KEY = 'scholia-vocab-index-mode';
 
 export function loadIndexMode(): VocabIndexMode {
   try {

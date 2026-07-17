@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nkenji09/product-memory/internal/diff"
-	"github.com/nkenji09/product-memory/internal/flow"
-	"github.com/nkenji09/product-memory/internal/lint"
-	"github.com/nkenji09/product-memory/internal/render"
-	"github.com/nkenji09/product-memory/internal/store"
+	"github.com/nkenji09/scholia/internal/diff"
+	"github.com/nkenji09/scholia/internal/flow"
+	"github.com/nkenji09/scholia/internal/lint"
+	"github.com/nkenji09/scholia/internal/render"
+	"github.com/nkenji09/scholia/internal/store"
 )
 
 func registerDerivedRoutes(mux *http.ServeMux, s *store.Store) {
@@ -19,7 +19,7 @@ func registerDerivedRoutes(mux *http.ServeMux, s *store.Store) {
 }
 
 // getFlowHandler is the live handler for T-viewer-action-flow-render — it
-// shares flow.Analyze with `pmem flow`/`pmem gaps` (analysis logic is
+// shares flow.Analyze with `scholia flow`/`scholia gaps` (analysis logic is
 // finalized by #39, not touched here). An unknown action id is not an error:
 // flow.Analyze returns a Report with an empty matrix, so the frontend can
 // render "この action を持つ遷移はありません" instead of the route crashing
@@ -62,7 +62,7 @@ type lintResponse struct {
 }
 
 // buildLintResponse is shared by the live handler and the static export bake
-// (§7 pmem export --html).
+// (§7 scholia export --html).
 func buildLintResponse(snap store.Snapshot) lintResponse {
 	findings := lint.Run(snap)
 	if findings == nil {

@@ -14,7 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/nkenji09/product-memory/internal/viewer"
+	"github.com/nkenji09/scholia/internal/viewer"
 )
 
 // isLocalHost reports whether host is a loopback-only bind address — the
@@ -88,7 +88,7 @@ func newViewCmd() *cobra.Command {
 			if host == "127.0.0.1" {
 				displayHost = "localhost"
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "pmem view: http://%s:%d\n", displayHost, resolvedPort)
+			fmt.Fprintf(cmd.OutOrStdout(), "scholia view: http://%s:%d\n", displayHost, resolvedPort)
 
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer stop()

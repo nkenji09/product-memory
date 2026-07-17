@@ -5,9 +5,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/nkenji09/product-memory/internal/index"
-	"github.com/nkenji09/product-memory/internal/model"
-	"github.com/nkenji09/product-memory/internal/store"
+	"github.com/nkenji09/scholia/internal/index"
+	"github.com/nkenji09/scholia/internal/model"
+	"github.com/nkenji09/scholia/internal/store"
 )
 
 func condVocab(id string, tags ...string) model.VocabEntry {
@@ -205,7 +205,7 @@ func TestAnalyze_FlagshipUpdateReconstructionSurfacesKnownOverlap(t *testing.T) 
 		condVocab("cond.update-up-to-date", "axis.status"),
 		condVocab("cond.update-available", "axis.status"),
 	}
-	// Given sets copied verbatim from .pmem/transitions/T-update-*.json —
+	// Given sets copied verbatim from .scholia/transitions/T-update-*.json —
 	// deliberately under-qualified (not the design doc's fully-qualified
 	// sub-cube rewrite), to prove the tool needs no re-authoring to catch it.
 	txs := []model.Transition{
@@ -255,7 +255,7 @@ func TestAnalyze_FlagshipUpdateReconstructionSurfacesKnownOverlap(t *testing.T) 
 	}
 
 	// This fixture materializes cond.update-apply as a vocab entry (unlike
-	// the real .pmem, where it does not exist at all yet — see
+	// the real .scholia, where it does not exist at all yet — see
 	// axis.update.mode.json's description). With it materialized, the flow
 	// engine's L-total signal correctly fires: mode is total=true and no
 	// real update transition's given ever names cond.update-apply — the

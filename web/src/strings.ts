@@ -3,7 +3,7 @@ import type { TagSource } from './types';
 // UI chrome copy (headings, buttons, empty states, labels) for BOTH
 // languages the viewer supports. Data values (vocab label / tag name·
 // description / decision text / requirement prose) never come from here —
-// they're rendered as stored in `.pmem/`, unmodified regardless of
+// they're rendered as stored in `.scholia/`, unmodified regardless of
 // language. `ja`/`en` below must share the exact same shape (`en` is typed
 // as `Strings = typeof ja`) so a missing translation is a compile error,
 // not a silent fallback. i18n.tsx's `useT()` picks the active one; `DICTS`
@@ -52,7 +52,7 @@ const ja = {
   home: {
     tagline: '記録を、読みたくなる形で。',
     intro:
-      'product-memory は、プロダクトの意思決定・要件・振る舞いを原子（遷移）として記録し、構造は派生（query）で見るためのツールです。',
+      'scholia は、プロダクトの意思決定・要件・振る舞いを原子（遷移）として記録し、構造は派生（query）で見るためのツールです。',
     tagCount: (n: number) => `${n} 件`,
     traceabilityHeading: '要件トレーサビリティ',
     goTraceability: '要件を読む',
@@ -107,7 +107,7 @@ const ja = {
     // #/flow/<action> ビュー（T-viewer-action-flow-render）。マトリクス／
     // scope-disclosure のテキスト節は viewer から削除済み（decision
     // 01KXN6G0R4DSXEVV86K8W0CZYW・#39 フォローアップ）— 同じ情報は
-    // `pmem flow`/`pmem gaps` で引き続き見られる。図がこのビューの唯一の
+    // `scholia flow`/`scholia gaps` で引き続き見られる。図がこのビューの唯一の
     // コンテンツ。
     viewTitle: (label: string) => `${label} のフロー`,
     loading: '読み込み中…',
@@ -121,7 +121,7 @@ const ja = {
     // 点線の辺自体に付くラベル（buildDiagram 参照）。結果ノードは色を持たず
     // 辺のラベルのみで関係を表現する（両方の結果とも正常な遷移で、赤枠に
     // すると「壊れている」に見えるとの指摘を反映）。優先順位を定義する
-    // 仕組みは .pmem に存在しないため「優先順位未定義」という、決められるのに
+    // 仕組みは .scholia に存在しないため「優先順位未定義」という、決められるのに
     // 決めていないかのような表現は使わない。
     coOccur: '同時に発生',
     legendSubsetShadow: '点線(片矢印)＝同時に発生する組み合わせ',
@@ -131,11 +131,11 @@ const ja = {
     gapLabel: '未定義',
     legendGap: '赤＝未定義（この前提を明示的に持つ遷移がない）',
     // scope-honesty（req.action-flow.scope-honesty）を viewer 側で果たす
-    // 一行 caveat（レビュー MAJOR-A 対応）。CLI（`pmem flow`/`pmem gaps`）の
+    // 一行 caveat（レビュー MAJOR-A 対応）。CLI（`scholia flow`/`scholia gaps`）の
     // フル scope-disclosure ほど詳しくする必要はなく、「宣言軸＝完全な区別
     // 集合」と読者に誤読させない最小限の注意書きで足りる、というのが
     // decision の骨子（why は T-viewer-action-flow-render 側に記録）。
-    scopeCaveat: '※ この図は宣言軸のみに基づく整理です。網羅は保証しません（全量は pmem flow）',
+    scopeCaveat: '※ この図は宣言軸のみに基づく整理です。網羅は保証しません（全量は scholia flow）',
   },
   // BROWSE(タグ/仕様) — 旧 Browse(3ペイン)/TagsView(ツリー)/SpecView を検索
   // レール＋カード一覧の1つの型に統合した画面（.concierge/decision.md A-2）。
@@ -219,7 +219,7 @@ const ja = {
     replyDelete: '返信を削除',
     replyAdd: '返信',
     gotoLocation: '位置へ移動',
-    copyDocTitle: '# product-memory ビューア — レビューコメント',
+    copyDocTitle: '# scholia ビューア — レビューコメント',
     copyTaskLine: (title: string) => `タスク: ${title}`,
     copyIntro: (n: number) =>
       `以下の ${n} 件のコメントに基づき、該当箇所を修正してください（[ページ] は特定のカードに紐づかない、そのビュー全体への指摘です）。`,
@@ -276,7 +276,7 @@ const ja = {
     adoptConfirm: '採用を確定',
     adoptedBadge: '採用済み',
     adoptedWhyHeading: '採用された why（decision）',
-    adoptedNote: 'この提案は decision として記録されました（commits[] は空）。commit 後は `pmem decision add-commit <id> <hash>` で結線してください。',
+    adoptedNote: 'この提案は decision として記録されました（commits[] は空）。commit 後は `scholia decision add-commit <id> <hash>` で結線してください。',
     // 却下（#35・T-review-reject/T-comment-reject）— 採用と対称の束ね操作。
     // decision として記録した上で昇格元コメントを削除する点は採用と同じ。
     rejectButton: '却下',
@@ -323,7 +323,7 @@ const ja = {
     readonlyTitle: '閲覧専用（静的版）',
     readonlyBannerMid: ' で書き出した1ファイル版です。編集・保存するには ',
     readonlyBannerSuffix: ' でサーバを起動してください。',
-    savedMessage: '保存しました — .pmem/config.json に書き込みました',
+    savedMessage: '保存しました — .scholia/config.json に書き込みました',
     portInvalid: (current: string) => `ポートは 1〜65535 の整数で入力してください（現在: ${current}）`,
     portEmptyWord: '空',
     sections: {
@@ -347,7 +347,7 @@ const ja = {
         description: '要件トレーサビリティ（充足 gap 検出）の対象にする種類。通常 requirement のみ。',
       },
       port: { label: '待受ポート', descriptionBefore: 'ローカルサーバ（', descriptionAfter: '）が待ち受けるポート。1〜65535 の整数。' },
-      productName: { label: '製品名', description: 'ヘッダー左上に表示する製品名。空欄なら既定の「pmem」を使います。' },
+      productName: { label: '製品名', description: 'ヘッダー左上に表示する製品名。空欄なら既定の「scholia」を使います。' },
       tagline: { label: 'タグライン', description: '概要（HOME）画面の見出し。空欄なら既定文言を使います。' },
       intro: { label: 'イントロ文', description: '概要（HOME）画面の説明文。空欄なら既定文言を使います。' },
     },
@@ -361,9 +361,9 @@ const ja = {
     vocabKindsHeading: '語彙の種別（category ごと）',
     undefinedMarker: '（未定義）',
   },
-  // api.ts の静的版（pmem export --html）フォールバックエラー文言。
+  // api.ts の静的版（scholia export --html）フォールバックエラー文言。
   api: {
-    unavailable: (what: string) => `${what}は静的版（pmem export --html）では利用できません`,
+    unavailable: (what: string) => `${what}は静的版（scholia export --html）では利用できません`,
     configEdit: 'config の編集',
     transitionsByFacetKind: 'facet/kind での遷移一覧',
     transitionsForTag: (tag: string) => `tag ${tag} の遷移一覧`,
@@ -408,7 +408,7 @@ const en: Strings = {
   home: {
     tagline: 'Records, in a form worth reading.',
     intro:
-      'product-memory records product decisions, requirements, and behavior as atoms (transitions), and lets you view structure as derived queries.',
+      'scholia records product decisions, requirements, and behavior as atoms (transitions), and lets you view structure as derived queries.',
     tagCount: (n) => `${n} tags`,
     traceabilityHeading: 'Requirement traceability',
     goTraceability: 'View requirements',
@@ -455,7 +455,7 @@ const en: Strings = {
     legendSubsetShadow: 'Dotted line (one-way) = fires together',
     gapLabel: 'Undefined',
     legendGap: 'Red = undefined (no transition explicitly requires this)',
-    scopeCaveat: '※ This diagram reflects declared axes only. Coverage is not guaranteed (see `pmem flow` for the full picture).',
+    scopeCaveat: '※ This diagram reflects declared axes only. Coverage is not guaranteed (see `scholia flow` for the full picture).',
   },
   browse: {
     searchPlaceholder: 'Search by keyword or tag',
@@ -526,7 +526,7 @@ const en: Strings = {
     replyDelete: 'Delete reply',
     replyAdd: 'Reply',
     gotoLocation: 'Go to location',
-    copyDocTitle: '# product-memory viewer — review comments',
+    copyDocTitle: '# scholia viewer — review comments',
     copyTaskLine: (title) => `Task: ${title}`,
     copyIntro: (n) =>
       `Please fix the following ${n} comment(s) at their respective locations ([Page] items aren't tied to a specific card — they're feedback on the whole view).`,
@@ -551,7 +551,7 @@ const en: Strings = {
     adoptConfirm: 'Confirm adoption',
     adoptedBadge: 'Adopted',
     adoptedWhyHeading: 'Adopted why (decision)',
-    adoptedNote: 'This proposal was recorded as a decision (commits[] is empty). After committing, link it with `pmem decision add-commit <id> <hash>`.',
+    adoptedNote: 'This proposal was recorded as a decision (commits[] is empty). After committing, link it with `scholia decision add-commit <id> <hash>`.',
     rejectButton: 'Reject',
     rejectWhyLabel: 'Rejection reason (will be recorded as a decision)',
     rejectConfirm: 'Confirm rejection',
@@ -611,7 +611,7 @@ const en: Strings = {
     readonlyTitle: 'Read-only (static export)',
     readonlyBannerMid: ' is a single-file export. To edit and save, start the server with ',
     readonlyBannerSuffix: '.',
-    savedMessage: 'Saved — written to .pmem/config.json',
+    savedMessage: 'Saved — written to .scholia/config.json',
     portInvalid: (current) => `Port must be an integer between 1 and 65535 (current: ${current})`,
     portEmptyWord: 'empty',
     sections: {
@@ -635,7 +635,7 @@ const en: Strings = {
         description: 'The kinds tracked for requirement traceability (satisfied/gap detection). Usually just requirement.',
       },
       port: { label: 'Listen port', descriptionBefore: 'The port the local server (', descriptionAfter: ') listens on. An integer from 1–65535.' },
-      productName: { label: 'Product name', description: 'The product name shown at the top-left of the header. Blank uses the built-in "pmem".' },
+      productName: { label: 'Product name', description: 'The product name shown at the top-left of the header. Blank uses the built-in "scholia".' },
       tagline: { label: 'Tagline', description: "The HOME screen's headline. Blank uses the built-in copy." },
       intro: { label: 'Intro text', description: "The HOME screen's description text. Blank uses the built-in copy." },
     },
@@ -650,7 +650,7 @@ const en: Strings = {
     undefinedMarker: '(undefined)',
   },
   api: {
-    unavailable: (what) => `${what} is not available in the static export (pmem export --html)`,
+    unavailable: (what) => `${what} is not available in the static export (scholia export --html)`,
     configEdit: 'editing config',
     transitionsByFacetKind: 'transition list by facet/kind',
     transitionsForTag: (tag) => `transition list for tag ${tag}`,

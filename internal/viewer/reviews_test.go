@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/nkenji09/product-memory/internal/review"
+	"github.com/nkenji09/scholia/internal/review"
 )
 
-// GET /api/reviews は .pmem/reviews/ に書かれたレビューを read-only で返す（§8.4）。
+// GET /api/reviews は .scholia/reviews/ に書かれたレビューを read-only で返す（§8.4）。
 func TestGetReviews(t *testing.T) {
 	h, s := newTestHandler(t)
 
