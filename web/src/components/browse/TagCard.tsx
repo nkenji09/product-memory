@@ -32,6 +32,7 @@ interface Props {
   onSelectParent: (tagId: string) => void;
   onSelectChild: (tagId: string) => void;
   onSelectSpec: (txId: string) => void;
+  onSelectVocab: (vocabId: string) => void;
 }
 
 function dedupeDecisions(decisions: Decision[]): Decision[] {
@@ -45,7 +46,7 @@ function dedupeDecisions(decisions: Decision[]): Decision[] {
   return out;
 }
 
-export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilterSelf, onSelectParent, onSelectChild, onSelectSpec }: Props) {
+export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilterSelf, onSelectParent, onSelectChild, onSelectSpec, onSelectVocab }: Props) {
   const t = useT();
   const { tagKindLabel } = useLookups();
   const { changedTagIds } = usePendingDiff();
@@ -128,7 +129,9 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
       {/* H3: 関連語彙（このタグを直接持つ vocab）。関連仕様の"上"・常時開き
           （ユーザー明示「開閉できなくて良い」＝CollapsibleSection ではなく素の
           card-section）。各行は category バッジ（きっかけ/前提/結果）＋kind
-          （api/prop/user 等）＋ラベルで VocabCard の vocab 行を踏襲。 */}
+          （api/prop/user 等）＋ラベルで VocabCard の vocab 行を踏襲。すぐ下の
+          関連仕様行（HashLink→#/vocab/<id>）と同じく語彙カードへのリンクにする
+          （related-vocab-row-linkable）。 */}
       {relatedVocab.length > 0 && (
         <div class="card-section">
           <div class="card-section-heading-row">
@@ -138,13 +141,13 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
           </div>
           <div class="tag-card-spec-list">
             {relatedVocab.map((v) => (
-              <div key={v.id} class="tag-card-vocab-row" title={v.id}>
+              <HashLink key={v.id} href={routeHash({ view: 'vocab', vocabId: v.id })} class="tag-card-vocab-row" onNavigate={() => onSelectVocab(v.id)} title={v.id}>
                 <Chip color={kindColor(v.category)}>
                   <Icon name={CATEGORY_ICON[v.category]} size={12} /> {t.vocab.categoryLabel(v.category)}
                 </Chip>
                 {v.kind && <span class="vocab-card-kind dim">{v.kind}</span>}
                 <span class="tag-card-vocab-label">{v.label}</span>
-              </div>
+              </HashLink>
             ))}
           </div>
         </div>
