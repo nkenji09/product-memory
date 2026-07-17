@@ -84,7 +84,13 @@ function buildDiagram(
   const undeclared = new Set(report.scope?.undeclaredGiven ?? []);
   const rowById = new Map((report.matrix.rows ?? []).map((r) => [r.transitionId, r]));
 
-  const esc = (s: string) => s.replace(/"/g, "'");
+  // mermaid 11.x's lexer treats a backtick inside a `"..."` label as the
+  // start of a markdown-string token and fails to parse it (unlike `()`,
+  // which passes through unescaped) — a vocab label containing inline
+  // code (`` `foo` ``) broke the entire diagram. Swapped for a visually
+  // close lookalike (U+2019) rather than stripped, so the label stays
+  // readable.
+  const esc = (s: string) => s.replace(/"/g, "'").replace(/`/g, '’');
   let counter = 0;
   const nextId = (prefix: string) => `${prefix}${counter++}`;
 
