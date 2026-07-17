@@ -611,8 +611,9 @@
   overflow-wrap: anywhere;
 }
 
-/* H3: 関連語彙の行（category バッジ＋kind＋ラベル）。tag-card-spec-row を
-   踏襲しつつ非クリックなので hover 強調は付けない。 */
+/* H3: 関連語彙の行（category バッジ＋kind＋ラベル）。関連仕様と同じくリンク
+   （<a href> via HashLink）なので tag-card-spec-row とスタイルを揃える
+   （related-vocab-row-linkable）。 */
 .tag-card-vocab-row {
   display: flex;
   align-items: center;
@@ -623,6 +624,11 @@
   padding: 9px var(--sp-3);
   text-align: left;
   color: var(--lm-text);
+  text-decoration: none;
+}
+
+.tag-card-vocab-row:hover {
+  border-color: var(--lm-border-strong);
 }
 
 .tag-card-vocab-label {

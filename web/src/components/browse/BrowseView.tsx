@@ -495,6 +495,7 @@ export function BrowseView({
               onSelectParent={scrollOrGoToTag}
               onSelectChild={scrollOrGoToTag}
               onSelectSpec={onGoToSpec}
+              onSelectVocab={onGoToVocab}
             />
           );
         })}
