@@ -1,5 +1,5 @@
 {
-  "id": "tx.viewer.vocab-menu-open-detail",
+  "id": "tx.viewer.menu-open-detail",
   "action": "act.user.select-menu-open-link",
   "given": [],
   "then": [
@@ -7,6 +7,7 @@
   ],
   "tags": [
     "req.comfortable-viewer.deep-linking",
+    "subject.viewer.tags",
     "subject.viewer.vocab"
   ]
 }

@@ -132,7 +132,7 @@ func TestDogfoodAdvisoryRuleCounts(t *testing.T) {
 		"prose-ref":             0,
 		"why-file-line":         4,
 		"axis-without-decision": 0,
-		"duplicate-atom":        5,
+		"duplicate-atom":        0, // フェーズ2 の duplicate merge（決定⑩）で 5グループ13遷移→5 に統合済み
 		"dangling-id":           1,
 		"dead-doc-ref":          19, // design-options 系 16＋.concierge 系 2＋tweaks3 系 1
 	}

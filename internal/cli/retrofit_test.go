@@ -172,8 +172,9 @@ func TestRetrofitRuleFilterAndUnknownRule(t *testing.T) {
 	}
 }
 
-// dogfood 統合: 実 store の件数（kit-bundle2-retrofit-findings.md の実走値。
-// desc-length は U3 のスコープなので 8 規則ベース＝fixable 27/18・ack 13/13）。
+// dogfood 統合: 実 store の件数（desc-length は U3 のスコープなので 8 規則ベース）。
+// フェーズ2 の duplicate merge（決定⑩）で duplicate-atom 5→0 となり
+// fixable は 27/18 → 22/13 へ追随（ack-only 13/13 は不変）。
 func TestRetrofitDogfoodCounts(t *testing.T) {
 	s, err := store.Discover(".")
 	if err != nil {
@@ -189,8 +190,8 @@ func TestRetrofitDogfoodCounts(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &resp); err != nil {
 		t.Fatalf("json decode: %v", err)
 	}
-	if resp.Fixable.FindingCount != 27 || resp.Fixable.RecordCount != 18 {
-		t.Fatalf("dogfood fixable = %d findings / %d records, want 27/18", resp.Fixable.FindingCount, resp.Fixable.RecordCount)
+	if resp.Fixable.FindingCount != 22 || resp.Fixable.RecordCount != 13 {
+		t.Fatalf("dogfood fixable = %d findings / %d records, want 22/13", resp.Fixable.FindingCount, resp.Fixable.RecordCount)
 	}
 	if resp.AcknowledgeOnly.FindingCount != 13 || resp.AcknowledgeOnly.RecordCount != 13 {
 		t.Fatalf("dogfood acknowledgeOnly = %d findings / %d records, want 13/13", resp.AcknowledgeOnly.FindingCount, resp.AcknowledgeOnly.RecordCount)

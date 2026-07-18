@@ -1,5 +1,5 @@
 {
-  "id": "tx.viewer.tags-menu-filter",
+  "id": "tx.viewer.menu-filter",
   "action": "act.user.select-menu-filter",
   "given": [],
   "then": [
@@ -7,6 +7,7 @@
   ],
   "tags": [
     "req.comfortable-viewer.faceted-nav",
-    "subject.viewer.tags"
+    "subject.viewer.tags",
+    "subject.viewer.vocab"
   ]
 }
