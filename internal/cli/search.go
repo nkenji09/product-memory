@@ -24,7 +24,7 @@ const (
 var searchTypeOrder = []string{searchTypeTag, searchTypeTransition, searchTypeVocab, searchTypeDecision}
 
 // searchMatch is one hit: which record, which field matched, and a snippet
-// around the match（T-cli-search: eff.log.search-matches「id と一致箇所付き」）。
+// around the match（tx.cli.search: eff.log.search-matches「id と一致箇所付き」）。
 type searchMatch struct {
 	Type    string `json:"type"`
 	ID      string `json:"id"`
@@ -38,7 +38,7 @@ type searchOutput struct {
 
 // newSearchCmd は `scholia search` を新設する。id を知らなくても keyword から
 // scholia 記録（tag/transition/vocab/decision）を横断探索する read-only 派生
-// コマンド（decision 01K.. on tag:req.evaluate-change.discovery / T-cli-search）。
+// コマンド（decision 01K.. on tag:req.evaluate-change.discovery / tx.cli.search）。
 // rules/list/diff 同様に in-memory snapshot 上の query であり、何も保存しない。
 func newSearchCmd() *cobra.Command {
 	var types []string

@@ -49,7 +49,7 @@ func sha256Hex(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// T-update-guide-source: version=dev（source/go install 由来）は自己置換せず案内する。
+// tx.update.guide-source: version=dev（source/go install 由来）は自己置換せず案内する。
 func TestUpdate_SourceInstallGuidesGoInstallAndDoesNotReplace(t *testing.T) {
 	withInjected(t, "dev", "", "")
 	withUpdateSeams(t)
@@ -70,7 +70,7 @@ func TestUpdate_SourceInstallGuidesGoInstallAndDoesNotReplace(t *testing.T) {
 	}
 }
 
-// T-update-guide-windows: windows は自己置換せず手動更新を案内する。
+// tx.update.guide-windows: windows は自己置換せず手動更新を案内する。
 func TestUpdate_WindowsGuidesManualAndDoesNotReplace(t *testing.T) {
 	withInjected(t, "v1.0.0", "", "")
 	withUpdateSeams(t)
@@ -88,7 +88,7 @@ func TestUpdate_WindowsGuidesManualAndDoesNotReplace(t *testing.T) {
 	}
 }
 
-// T-update-already-latest: 現在版=最新版なら取得・置換せず「既に最新」を報告する。
+// tx.update.already-latest: 現在版=最新版なら取得・置換せず「既に最新」を報告する。
 func TestUpdate_AlreadyLatestDoesNotDownloadOrReplace(t *testing.T) {
 	withInjected(t, "1.2.3", "", "") // goreleaser の {{.Version}} は v prefix 無し
 	withUpdateSeams(t)
@@ -113,7 +113,7 @@ func TestUpdate_AlreadyLatestDoesNotDownloadOrReplace(t *testing.T) {
 	}
 }
 
-// T-update-check: --check は取得・置換せず可否だけを報告する。
+// tx.update.check: --check は取得・置換せず可否だけを報告する。
 func TestUpdate_CheckFlagReportsWithoutDownloadOrReplace(t *testing.T) {
 	withInjected(t, "1.2.3", "", "")
 	withUpdateSeams(t)
@@ -138,7 +138,7 @@ func TestUpdate_CheckFlagReportsWithoutDownloadOrReplace(t *testing.T) {
 	}
 }
 
-// T-update-check: --check でも既に最新なら「最新」である旨を報告する。
+// tx.update.check: --check でも既に最新なら「最新」である旨を報告する。
 func TestUpdate_CheckFlagReportsUpToDate(t *testing.T) {
 	withInjected(t, "1.2.3", "", "")
 	withUpdateSeams(t)
@@ -155,7 +155,7 @@ func TestUpdate_CheckFlagReportsUpToDate(t *testing.T) {
 	}
 }
 
-// T-update-self-replace: 更新あり→DL→checksum検証→自己置換→新版報告。
+// tx.update.self-replace: 更新あり→DL→checksum検証→自己置換→新版報告。
 func TestUpdate_SelfReplaceDownloadsVerifiesAndReplaces(t *testing.T) {
 	withInjected(t, "1.2.3", "", "")
 	withUpdateSeams(t)

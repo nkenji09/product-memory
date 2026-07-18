@@ -1,0 +1,16 @@
+{
+  "id": "tx.viewer.refocus-settled",
+  "action": "act.user.refocus-record",
+  "given": [
+    "cond.view-settled"
+  ],
+  "then": [
+    "eff.state.settled-refocus"
+  ],
+  "tags": [
+    "req.comfortable-viewer.deep-linking",
+    "subject.viewer.spec",
+    "subject.viewer.tags",
+    "subject.viewer.vocab"
+  ]
+}

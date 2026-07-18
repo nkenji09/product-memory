@@ -1,0 +1,14 @@
+{
+  "id": "tx.viewer.scroll-save",
+  "action": "act.user.leave-view",
+  "given": [],
+  "then": [
+    "eff.state.save-scroll-to-session"
+  ],
+  "tags": [
+    "req.comfortable-viewer.view-state-continuity",
+    "subject.viewer.tags",
+    "subject.viewer.vocab",
+    "subject.viewer.spec"
+  ]
+}

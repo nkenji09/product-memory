@@ -402,7 +402,7 @@ export interface ScholiaStaticData {
   // 要求しうる各 tag id について焼き込む（transitionsByTag と対称）。
   vocabBySubject: Record<string, VocabEntry[]>;
   decisions: Decision[];
-  // T-viewer-action-flow-render, baked per distinct action id used by a
+  // tx.viewer.action-flow-render, baked per distinct action id used by a
   // transition (internal/render/export.go's flowReports) — the only action
   // ids the SpecCard kebab can ever link to.
   flow: Record<string, FlowReport>;

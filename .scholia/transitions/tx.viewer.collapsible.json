@@ -1,0 +1,16 @@
+{
+  "id": "tx.viewer.collapsible",
+  "action": "act.user.toggle-section",
+  "given": [
+    "cond.index-built"
+  ],
+  "then": [
+    "eff.state.section-visibility"
+  ],
+  "tags": [
+    "req.comfortable-viewer.collapsible-section",
+    "subject.viewer.spec",
+    "subject.viewer.tags",
+    "subject.viewer.vocab"
+  ]
+}

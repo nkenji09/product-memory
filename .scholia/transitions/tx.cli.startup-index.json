@@ -1,0 +1,12 @@
+{
+  "id": "tx.cli.startup-index",
+  "action": "act.lifecycle.startup",
+  "given": [],
+  "then": [
+    "eff.state.index-update"
+  ],
+  "tags": [
+    "subject.store",
+    "concern.git-friendliness"
+  ]
+}

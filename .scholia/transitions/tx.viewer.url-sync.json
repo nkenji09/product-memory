@@ -1,0 +1,16 @@
+{
+  "id": "tx.viewer.url-sync",
+  "action": "act.user.change-search",
+  "given": [
+    "cond.view-settled"
+  ],
+  "then": [
+    "eff.state.url-sync"
+  ],
+  "tags": [
+    "req.comfortable-viewer.deep-linking",
+    "subject.viewer.spec",
+    "subject.viewer.tags",
+    "subject.viewer.vocab"
+  ]
+}

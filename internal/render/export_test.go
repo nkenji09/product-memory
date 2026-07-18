@@ -189,7 +189,7 @@ func TestExportHTML_WritesSelfContainedIndexHTML(t *testing.T) {
 		t.Fatalf("baked decisions = %+v, want [d1] (HOME's recent-decisions widget needs this in static exports too)", data.Decisions)
 	}
 
-	// T-viewer-action-flow-render: baked per distinct action id used by a
+	// tx.viewer.action-flow-render: baked per distinct action id used by a
 	// transition (act.user.login, via T-login) — the only action ids the
 	// SpecCard kebab can ever link to.
 	flowReport, ok := data.Flow["act.user.login"]

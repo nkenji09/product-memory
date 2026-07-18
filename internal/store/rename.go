@@ -159,8 +159,8 @@ func (s *Store) RenameTransition(oldID, newID string) (TxRenameResult, error) {
 		BaselineRetargeted: baselineRetargeted}, nil
 }
 
-// TagRenameResult summarizes a `scholia tag rename` (T-tag-rename /
-// T-tag-rename-cascade). RenamedTags maps every old tag id to its new id: the
+// TagRenameResult summarizes a `scholia tag rename` (tx.tag.rename /
+// tx.tag.rename-cascade). RenamedTags maps every old tag id to its new id: the
 // primary rename always, plus (with --cascade) each descendant whose id prefix
 // changed. The Updated* lists name the records whose tag-id references were
 // repointed (the four reference sites the decision on req.record-maintenance
@@ -181,9 +181,9 @@ type TagRenameResult struct {
 }
 
 // RenameTag renames tag oldID to newID and repoints every reference to it,
-// atomically (T-tag-rename). With cascade it also renames the whole parentIds
+// atomically (tx.tag.rename). With cascade it also renames the whole parentIds
 // subtree rooted at oldID by prefix-substituting oldID→newID in each
-// descendant's id (T-tag-rename-cascade). It never mutates any field other
+// descendant's id (tx.tag.rename-cascade). It never mutates any field other
 // than the ids being relabeled — name/kind/desc/color/ref and unrelated
 // parentIds entries survive verbatim.
 //
@@ -227,7 +227,7 @@ func (s *Store) RenameTag(oldID, newID string, cascade bool) (TagRenameResult, e
 
 	// 2. Collision check up front (before any write): reject if any new id
 	//    lands on an existing tag that is not itself being renamed away, or if
-	//    two source ids map to the same new id (T-tag-rename-collision-rejected).
+	//    two source ids map to the same new id (tx.tag.rename-collision-rejected).
 	if err := s.validateTagRenamePlan(plan); err != nil {
 		return TagRenameResult{}, err
 	}

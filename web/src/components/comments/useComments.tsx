@@ -147,7 +147,7 @@ interface CommentsValue {
   setReplyDraft: (commentId: string, text: string) => void;
   addReply: (commentId: string) => void;
   deleteReply: (commentId: string, replyId: string) => void;
-  // 昇格元コメント掃除（#35・T-review-adopt/-reject/T-comment-adopt/-reject）:
+  // 昇格元コメント掃除（#35・tx.review.adopt/-reject/tx.comment.adopt/-reject）:
   // decision 昇格が成功した直後だけ呼ぶ、順序固定の後始末。人コメントは
   // localStorage からの削除（同期・失敗しない）、AI review は DELETE
   // /api/reviews/{id}（非同期・失敗しうる — 失敗時は bindReviewDecision で
@@ -521,7 +521,7 @@ export function CommentsProvider({ children }: { children: ComponentChildren }) 
     });
   };
 
-  // 採用/却下（§8.5・P4／#35 T-review-adopt/-reject）: AI 提案コメント
+  // 採用/却下（§8.5・P4／#35 tx.review.adopt/-reject）: AI 提案コメント
   // （read-only サイドカー）の decision 結線は scholia-review-bindings-v1 側に
   // 置く（本文自体は AI が書いた .scholia/reviews/ のまま・viewer からは変更
   // できない）。CommentPanel は decision 昇格（POST /api/decision）が成功

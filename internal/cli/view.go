@@ -24,7 +24,7 @@ func isLocalHost(host string) bool {
 }
 
 // classifyListenErr turns a net.Listen failure into a user-facing error that
-// states the cause and the next step (§T-view-start-port-in-use). Port
+// states the cause and the next step (§tx.view.start-port-in-use). Port
 // contention gets a specific message; other bind failures (e.g. permission
 // denied on a privileged port) fall back to a generic one.
 func classifyListenErr(err error, port int) error {
@@ -73,7 +73,7 @@ func newViewCmd() *cobra.Command {
 				fmt.Fprintf(cmd.ErrOrStderr(), "⚠️  %s でLANに公開します。設定編集 API（PUT /api/config）も同一ネットワークから到達可能になります。\n", host)
 			}
 			addr := host + ":" + strconv.Itoa(resolvedPort)
-			// 先に bind してから URL を出す（§T-view-start-port-in-use・
+			// 先に bind してから URL を出す（§tx.view.start-port-in-use・
 			// 2026-07-15 decision）。bind 前に出力すると「URL が出た＝起動成功」
 			// に見えた直後に port 使用中で落ちる紛らわしさが生じるため。
 			listener, err := net.Listen("tcp", addr)

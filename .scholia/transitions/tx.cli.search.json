@@ -1,0 +1,15 @@
+{
+  "id": "tx.cli.search",
+  "action": "act.user.search",
+  "given": [
+    "cond.index-built",
+    "cond.search-keyword-given"
+  ],
+  "then": [
+    "eff.log.search-matches"
+  ],
+  "tags": [
+    "req.evaluate-change.discovery",
+    "subject.cli"
+  ]
+}

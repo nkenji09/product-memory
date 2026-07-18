@@ -18,7 +18,7 @@ func registerDerivedRoutes(mux *http.ServeMux, s *store.Store) {
 	mux.HandleFunc("GET /api/flow/{action}", getFlowHandler(s))
 }
 
-// getFlowHandler is the live handler for T-viewer-action-flow-render — it
+// getFlowHandler is the live handler for tx.viewer.action-flow-render — it
 // shares flow.Analyze with `scholia flow`/`scholia gaps` (analysis logic is
 // finalized by #39, not touched here). An unknown action id is not an error:
 // flow.Analyze returns a Report with an empty matrix, so the frontend can

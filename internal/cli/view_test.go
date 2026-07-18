@@ -49,7 +49,7 @@ func TestViewCmd_HostFlagDefaultsToLoopback(t *testing.T) {
 // TestClassifyListenErr_PortInUse drives a real EADDRINUSE by binding the
 // same port twice, then checks the resulting error names the cause (port
 // in use) and the next step (--port / stop the other process), per
-// §T-view-start-port-in-use.
+// §tx.view.start-port-in-use.
 func TestClassifyListenErr_PortInUse(t *testing.T) {
 	first, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

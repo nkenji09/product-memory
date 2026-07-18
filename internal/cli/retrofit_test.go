@@ -172,8 +172,12 @@ func TestRetrofitRuleFilterAndUnknownRule(t *testing.T) {
 	}
 }
 
-// dogfood 統合: 実 store の件数（kit-bundle2-retrofit-findings.md の実走値。
-// desc-length は U3 のスコープなので 8 規則ベース＝fixable 27/18・ack 13/13）。
+// dogfood 統合: 実 store の件数（desc-length は U3 のスコープなので 8 規則ベース）。
+// フェーズ2 増分2.3a の retrofit fixable の desc 浄化（D4-d）で、fixable の
+// derived-value-in-desc 4／stale-tense 7／dead-doc-ref 11 を 13 レコードの desc から
+// 除いて fixable は 22/13 → 0/0 へ追随（ack-only 13/13 は不変）。dead-doc-ref の
+// 総数は 19 → 8（残り 8 は全て decision 判断欄位の design-options/tweaks3/.concierge
+// 参照＝append-only ゆえ acknowledge-only）。
 func TestRetrofitDogfoodCounts(t *testing.T) {
 	s, err := store.Discover(".")
 	if err != nil {
@@ -189,13 +193,13 @@ func TestRetrofitDogfoodCounts(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &resp); err != nil {
 		t.Fatalf("json decode: %v", err)
 	}
-	if resp.Fixable.FindingCount != 27 || resp.Fixable.RecordCount != 18 {
-		t.Fatalf("dogfood fixable = %d findings / %d records, want 27/18", resp.Fixable.FindingCount, resp.Fixable.RecordCount)
+	if resp.Fixable.FindingCount != 0 || resp.Fixable.RecordCount != 0 {
+		t.Fatalf("dogfood fixable = %d findings / %d records, want 0/0", resp.Fixable.FindingCount, resp.Fixable.RecordCount)
 	}
 	if resp.AcknowledgeOnly.FindingCount != 13 || resp.AcknowledgeOnly.RecordCount != 13 {
 		t.Fatalf("dogfood acknowledgeOnly = %d findings / %d records, want 13/13", resp.AcknowledgeOnly.FindingCount, resp.AcknowledgeOnly.RecordCount)
 	}
-	if total := resp.Fixable.ByRule["dead-doc-ref"] + resp.AcknowledgeOnly.ByRule["dead-doc-ref"]; total != 19 {
-		t.Fatalf("dogfood dead-doc-ref total = %d, want 19", total)
+	if total := resp.Fixable.ByRule["dead-doc-ref"] + resp.AcknowledgeOnly.ByRule["dead-doc-ref"]; total != 8 {
+		t.Fatalf("dogfood dead-doc-ref total = %d, want 8", total)
 	}
 }

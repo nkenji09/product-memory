@@ -42,11 +42,11 @@ function writeSaved(view: string, top: number): void {
  * Remembers and restores the window scroll position for one view, keyed per
  * view in sessionStorage.
  *
- * - Save (T-viewer-scroll-save / act.user.leave-view): every scroll is
+ * - Save (tx.viewer.scroll-save / act.user.leave-view): every scroll is
  *   persisted (debounced) so a reload keeps the position, and the last known
  *   position is flushed again on unmount (a view switch) — from a tracked ref,
  *   never re-read at teardown.
- * - Restore (T-viewer-scroll-restore / act.user.enter-view): once `ready`
+ * - Restore (tx.viewer.scroll-restore / act.user.enter-view): once `ready`
  *   flips true (the view's content has loaded and laid out) the saved position
  *   is applied. With no saved position the view is reset to the top — since the
  *   window scroll is shared across views, this stops the previous view's scroll

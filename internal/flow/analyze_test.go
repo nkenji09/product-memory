@@ -209,11 +209,11 @@ func TestAnalyze_FlagshipUpdateReconstructionSurfacesKnownOverlap(t *testing.T) 
 	// deliberately under-qualified (not the design doc's fully-qualified
 	// sub-cube rewrite), to prove the tool needs no re-authoring to catch it.
 	txs := []model.Transition{
-		{ID: "T-update-check", Action: "act.user.update", Given: []string{"cond.update-check-flag"}, Then: []string{"eff.log.update-check-report"}},
-		{ID: "T-update-guide-source", Action: "act.user.update", Given: []string{"cond.install-source-goinstall"}, Then: []string{"eff.log.update-guide-goinstall"}},
-		{ID: "T-update-guide-windows", Action: "act.user.update", Given: []string{"cond.platform-windows"}, Then: []string{"eff.log.update-guide-manual"}},
-		{ID: "T-update-already-latest", Action: "act.user.update", Given: []string{"cond.install-release-binary", "cond.update-up-to-date"}, Then: []string{"eff.log.update-already-latest"}},
-		{ID: "T-update-self-replace", Action: "act.user.update", Given: []string{"cond.install-release-binary", "cond.platform-unix-self-replaceable", "cond.update-available"}, Then: []string{"eff.http.download-release"}},
+		{ID: "tx.update.check", Action: "act.user.update", Given: []string{"cond.update-check-flag"}, Then: []string{"eff.log.update-check-report"}},
+		{ID: "tx.update.guide-source", Action: "act.user.update", Given: []string{"cond.install-source-goinstall"}, Then: []string{"eff.log.update-guide-goinstall"}},
+		{ID: "tx.update.guide-windows", Action: "act.user.update", Given: []string{"cond.platform-windows"}, Then: []string{"eff.log.update-guide-manual"}},
+		{ID: "tx.update.already-latest", Action: "act.user.update", Given: []string{"cond.install-release-binary", "cond.update-up-to-date"}, Then: []string{"eff.log.update-already-latest"}},
+		{ID: "tx.update.self-replace", Action: "act.user.update", Given: []string{"cond.install-release-binary", "cond.platform-unix-self-replaceable", "cond.update-available"}, Then: []string{"eff.http.download-release"}},
 	}
 	snap := &store.Snapshot{
 		Config: model.DefaultConfig(),
@@ -237,7 +237,7 @@ func TestAnalyze_FlagshipUpdateReconstructionSurfacesKnownOverlap(t *testing.T) 
 		for _, id := range o.Transitions {
 			set[id] = true
 		}
-		if set["T-update-guide-windows"] && set["T-update-already-latest"] {
+		if set["tx.update.guide-windows"] && set["tx.update.already-latest"] {
 			foundFlagshipOverlap = true
 			if o.Cell["axis.platform"] != "cond.platform-windows" {
 				t.Fatalf("overlap cell should pin platform=windows, got %+v", o.Cell)

@@ -205,7 +205,7 @@ export const api = {
   // な」は人コメント永続化の制約であり、この別系統 read には適用されない）。
   getReviews: () => (staticData ? staticUnavailable(DICTS[loadLang()].api.reviews) : request<Review[]>('/api/reviews')),
 
-  // 昇格元コメント掃除（#35・T-review-adopt/-reject の後半）— postDecision が
+  // 昇格元コメント掃除（#35・tx.review.adopt/-reject の後半）— postDecision が
   // 成功した後にだけ呼ぶ（先に消すと why を失う）。deleteTransition と同じ
   // 流儀: static export は書込不可なので常に非対応。
   deleteReview: (id: string) => {

@@ -1,0 +1,14 @@
+{
+  "id": "01KXSAG5ZNN6GVKZFPXVZ3FGC6",
+  "target": {
+    "type": "tag",
+    "id": "req.record-maintenance"
+  },
+  "why": "retrofit fixable の desc 浄化を実施。derived-value（軸の値列挙/total）・stale-tense（#39/現状/新設/Level1/rev3/#40 等）・消えた設計文書への引用を13レコードの desc から除き現在形化。意味は保持（軸は次元名・req.action-flow は主張本体・cond.update-apply は check の相補）。axis.update.* の4軸割り rationale は desc に無く要ユーザー記憶ゆえ本増分では復元せず別途扱う。D4-d retrofit の初回適用。",
+  "changed": "axis.update.install/mode/platform/status・req.action-flow（本体＋axis-gaps/scope-honesty/acknowledged-remainder/subset-shadow/visualize）・cond.update-apply・req.evaluate-change.adopt-cleanup・eff.emit.scope-disclosure の desc を浄化。decision 判断欄位は不変。",
+  "ref": "#45 フェーズ2 増分2.3a・D4-d retrofit 適用",
+  "at": "2026-07-18T00:37:26Z",
+  "commits": [
+    "a8865be"
+  ]
+}

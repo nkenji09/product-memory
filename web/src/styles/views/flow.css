@@ -1,7 +1,7 @@
 /* #/flow/<action> — action-scoped flow diagram view
-   (T-viewer-action-flow-render). The mermaid diagram is this view's only
+   (tx.viewer.action-flow-render). The mermaid diagram is this view's only
    content (decision 01KXN6G0R4DSXEVV86K8W0CZYW amended
-   T-viewer-action-flow-render's then to mermaid-only — the matrix/
+   tx.viewer.action-flow-render's then to mermaid-only — the matrix/
    scope-disclosure text sections that used to sit alongside it went unread;
    the same text is still always available via `scholia flow`/`scholia gaps`). */
 
@@ -198,7 +198,7 @@
    <foreignObject> to fit the label at its ORIGINAL (regular) weight, and an
    SVG foreignObject clips overflow by default (unlike normal HTML) — a
    bolder font renders wider than that box and gets silently clipped
-   (observed: "T-update-already-latest" rendering as "...-lates", missing
+   (observed: "tx.update.already-latest" rendering as "...-lates", missing
    its last character, even though the underlying text content was intact).
    overflow:visible on the foreignObject is a defense-in-depth backstop for
    the same failure mode from any other source (e.g. a wider substituted

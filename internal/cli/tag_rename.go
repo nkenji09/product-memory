@@ -14,7 +14,7 @@ func newTagRenameCmd() *cobra.Command {
 	var refsFlags renameRefsFlags
 	cmd := &cobra.Command{
 		Use:   "rename <old-id> <new-id>",
-		Short: "タグを改名し全参照を張り替える（--cascade でサブツリーごと・T-tag-rename）",
+		Short: "タグを改名し全参照を張り替える（--cascade でサブツリーごと・tx.tag.rename）",
 		Long: "タグ <old-id> を <new-id> に改名し、そのタグ id を持つ全参照" +
 			"（他タグの parentIds・遷移の tags・語彙の tags・decision の target）を一括で張り替える。" +
 			"name/kind/desc/color/ref など他フィールドは保持する。\n\n" +
