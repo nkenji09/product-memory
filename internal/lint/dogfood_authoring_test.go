@@ -72,8 +72,10 @@ func TestDogfoodDanglingIDHasZeroFalsePositives(t *testing.T) {
 	}
 }
 
-// dead-doc-ref: design-options 参照型（散逸文書 16 レコード）＋.concierge 系＋
-// tweaks3 系を実 store で検出できること。versioned に解決する参照
+// dead-doc-ref: フェーズ2 増分2.3a の retrofit 適用（D4-d）で、tag/vocab desc の
+// design-options 参照（fixable 11 レコード）は全て desc から除かれた。残る dead-doc-ref
+// は全て decision 判断欄位（why/changed/ref）＝append-only ゆえ acknowledge-only の
+// .concierge 系＋tweaks3 系＋design-options 系 8 件。versioned に解決する参照
 // （DESIGN §N・RELEASING.md 等 20 件超）は誤検出しないこと。
 func TestDogfoodDeadDocRefDetectsDesignOptionsType(t *testing.T) {
 	snap := dogfoodSnapshot(t)
@@ -90,12 +92,9 @@ func TestDogfoodDeadDocRefDetectsDesignOptionsType(t *testing.T) {
 	sort.Strings(fixTargets)
 	sort.Strings(ackTargets)
 
-	wantFix := []string{
-		"axis.update.install", "axis.update.mode", "axis.update.platform", "axis.update.status",
-		"cond.update-apply",
-		"req.action-flow", "req.action-flow.acknowledged-remainder", "req.action-flow.axis-gaps",
-		"req.action-flow.scope-honesty", "req.action-flow.subset-shadow", "req.action-flow.visualize",
-	}
+	// desc 浄化後は fixable な dead-doc-ref はゼロ（tag/vocab の design-options 参照が
+	// 全て除かれた）。
+	wantFix := []string{}
 	sort.Strings(wantFix)
 	wantAck := []string{
 		"01KXFEXG08YT8TB04BR7RA400Q", // tweaks3 §2（本実装の追加発見・真ヒット）
@@ -127,14 +126,14 @@ func TestDogfoodAdvisoryRuleCounts(t *testing.T) {
 		counts[r.Name] = len(r.Check(snap))
 	}
 	want := map[string]int{
-		"derived-value-in-desc": 4,
-		"stale-tense":           7,
+		"derived-value-in-desc": 0, // 増分2.3a の desc 浄化（D4-d）で axis.update.* の派生値列挙を除去し 4→0
+		"stale-tense":           0, // 同上で #39/現状/新設/Level1/rev3/#40 等を除去し 7→0
 		"prose-ref":             0,
 		"why-file-line":         4,
 		"axis-without-decision": 0,
 		"duplicate-atom":        0, // フェーズ2 の duplicate merge（決定⑩）で 5グループ13遷移→5 に統合済み
 		"dangling-id":           1,
-		"dead-doc-ref":          19, // design-options 系 16＋.concierge 系 2＋tweaks3 系 1
+		"dead-doc-ref":          8, // 増分2.3a で tag/vocab desc の design-options 参照 11 を除去し 19→8（残 8 は decision 判断欄位＝append-only）
 	}
 	for rule, n := range want {
 		if counts[rule] != n {
