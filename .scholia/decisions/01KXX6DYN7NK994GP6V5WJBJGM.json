@@ -8,6 +8,9 @@
   "changed": "req.self-update desc から「### 分岐の優先順位（実装ガイド）」節を削除（順序の正本は5遷移の priority 宣言へ移管）／受け入れ基準・スコープ外節: 不変。",
   "ref": "#45 設計合意（2026-07-17）",
   "at": "2026-07-19T12:43:17Z",
+  "commits": [
+    "b1ef61c"
+  ],
   "supersedes": [
     {
       "id": "01KXM2JP2HDGKHPV4HFTW9M8DC",

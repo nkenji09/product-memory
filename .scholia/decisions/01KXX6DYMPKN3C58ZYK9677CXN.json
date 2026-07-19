@@ -8,6 +8,10 @@
   "changed": "overlap 報告: 全件表示→未解決のみ既定表示（異 priority ペアは解決済み・--verbose 開示）／解決済みへの相対性開示文の常時併記／tx.flow.axis-overlap の意味は「未解決 overlap の報告」へ狭まる（given/then の変更は D8 本体の tx.flow.* 改訂リストに従う）。",
   "ref": "#45 設計合意（2026-07-17）",
   "at": "2026-07-19T12:43:17Z",
+  "commits": [
+    "cf353b6",
+    "6e947bf"
+  ],
   "supersedes": [
     {
       "id": "01KXMGH6P1ARSMCS01RX2H5QV0",

@@ -8,6 +8,9 @@
   "changed": "4 decision の「Level2 を別 decision として提案する」計画: 失効／軸4枚・total 宣言・cond.update-apply: 不変／cond.update-apply の位置づけ: materialize 待ち→placeholder 容認（acknowledges decision は別途）。",
   "ref": "#45 設計合意（2026-07-17）",
   "at": "2026-07-19T12:43:16Z",
+  "commits": [
+    "b1ef61c"
+  ],
   "supersedes": [
     {
       "id": "01KXMRBB3PYJZMEXS7JTQQPP8D",

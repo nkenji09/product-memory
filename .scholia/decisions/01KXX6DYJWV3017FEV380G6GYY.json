@@ -8,6 +8,9 @@
   "changed": "「当面棄却」のうち priority 部分の棄却を解除（本文は D8 本体 decision）。否定第一級化の棄却・到達点（軸注釈まで）・product-coverage を網羅と称さない方針は不変。",
   "ref": "#45 設計合意（2026-07-17）",
   "at": "2026-07-19T12:43:16Z",
+  "commits": [
+    "c517bcf"
+  ],
   "supersedes": [
     {
       "id": "01KXMGGD6DS88CHGRJ9GPRBRVX",
