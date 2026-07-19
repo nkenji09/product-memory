@@ -1,0 +1,8 @@
+{
+  "id": "subject.viewer.decisions",
+  "name": "ビューア: 意思決定ブラウズ",
+  "kind": "subject",
+  "parentIds": [
+    "subject.viewer"
+  ]
+}
