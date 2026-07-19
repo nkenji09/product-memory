@@ -9,9 +9,12 @@ interface Props {
   onGoTags: () => void;
   onSelectTag: (tagId: string) => void;
   onSelectTx: (txId: string) => void;
+  /** Jump to the full #/decisions list (D10a) — a "view all" affordance on
+      the recent-decisions card that never existed before this surface did. */
+  onGoDecisions: () => void;
 }
 
-export function HomeView({ onGoTags, onSelectTag, onSelectTx }: Props) {
+export function HomeView({ onGoTags, onSelectTag, onSelectTx, onGoDecisions }: Props) {
   const t = useT();
   const [tags, setTags] = useState<Tag[] | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
@@ -114,6 +117,9 @@ export function HomeView({ onGoTags, onSelectTag, onSelectTx }: Props) {
             <span class="home-card-title">
               <Icon name="gavel" size={15} /> {t.home.recentDecisionsHeading}
             </span>
+            <button type="button" onClick={onGoDecisions}>
+              {t.decisions.viewAll} <Icon name="arrow-right" size={14} />
+            </button>
           </div>
           {recentDecisions.length === 0 ? (
             <p class="dim">{t.home.noDecisions}</p>

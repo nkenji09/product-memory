@@ -18,7 +18,7 @@ import { useEffect, useState } from 'preact/hooks';
 // evaluation moves inline into each Transition's comment drawer instead of
 // living on its own route. `getDiff` (api.ts) and the `/api/diff` backend
 // endpoint stay for that inline reuse (P2) — only this standalone view goes.
-export type ViewName = 'home' | 'browse' | 'vocab' | 'spec' | 'tags' | 'config' | 'flow';
+export type ViewName = 'home' | 'browse' | 'vocab' | 'spec' | 'tags' | 'config' | 'flow' | 'decisions' | 'decision';
 
 export interface Route {
   view: ViewName;
@@ -33,6 +33,10 @@ export interface Route {
       card's action kebab (tx.viewer.action-flow-link) — a standalone route,
       same "focus id in the path" shape as spec/vocab above. */
   actionId?: string;
+  /** Decision to show on the permalink detail page (#/decision/<ulid>,
+      tx.viewer.decision-detail). Same "focus id in the path" shape as
+      spec/vocab/flow above — the ulid is the shareable permalink key. */
+  decisionId?: string;
   /** BrowseView's search state (query/kindFacet/filters), carried as a query
       string appended to the hash path (e.g. #/browse/tag/<id>?q=..&f=..) so
       it composes with the existing path-segment routes above instead of
@@ -50,7 +54,7 @@ export interface Route {
   searchSubject?: string;
 }
 
-const VIEWS: ViewName[] = ['home', 'browse', 'vocab', 'spec', 'tags', 'config', 'flow'];
+const VIEWS: ViewName[] = ['home', 'browse', 'vocab', 'spec', 'tags', 'config', 'flow', 'decisions', 'decision'];
 // HOME is the new landing page (.concierge/decision.md G-2, resolved:
 // default route moves from 'browse' to 'home'). An empty/unknown hash still
 // falls back to DEFAULT_ROUTE below, so bookmarks of `#` or the bare page
@@ -93,6 +97,12 @@ export function parseRoute(hash: string): Route {
     case 'flow':
       if (parts[1]) route.actionId = parts[1];
       break;
+    case 'decision':
+      // #/decision/<ulid> permalink — same single-path-segment focus shape
+      // as spec/vocab/flow above; the ulid rides in the path so the URL is
+      // directly shareable (tx.viewer.decision-detail).
+      if (parts[1]) route.decisionId = parts[1];
+      break;
   }
   if (queryString) {
     // URLSearchParams decodes each value on .get() — plain text (q/k) needs
@@ -132,6 +142,9 @@ export function routeHash(route: Route): string {
       break;
     case 'flow':
       if (route.actionId) seg.push(encodeURIComponent(route.actionId));
+      break;
+    case 'decision':
+      if (route.decisionId) seg.push(encodeURIComponent(route.decisionId));
       break;
   }
   let hash = `#/${seg.join('/')}`;

@@ -195,11 +195,18 @@ export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFi
           <div class="tag-card-spec-list">
             {uses.map((tx) => {
               const label = transitionLabel(tx.id);
+              // 同一 action 複数遷移が同文に潰れる縮退の解消（D10a item 7）: 同じ
+              // action・同じ then を持つ複数遷移は primary/secondary だけでは同文に
+              // 見えるので、区別している given のラベルを dim 接尾で添える（uses は
+              // Transition[] なので given を vocabLabel で解決。TagCard の
+              // satisfied-specs 行と同じ流儀。無条件遷移は given が無く接尾も出ない）。
+              const given = (tx.given || []).map(vocabLabel).filter((g) => !!g);
               return (
                 <HashLink key={tx.id} href={routeHash({ view: 'browse', txId: tx.id })} class="tag-card-spec-row" onNavigate={() => onSelectTx(tx.id)} title={tx.id}>
                   <span class="tag-card-spec-label">
                     {label.primary}
                     {label.secondary && <span class="dim"> {label.secondary}</span>}
+                    {given.length > 0 && <span class="dim tag-card-spec-given"> · {given.join('、')}</span>}
                   </span>
                 </HashLink>
               );
