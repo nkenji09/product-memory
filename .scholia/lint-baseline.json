@@ -3,10 +3,6 @@
   "findings": [
     {
       "rule": "requirement-gap",
-      "target": "req.authoring-advisory"
-    },
-    {
-      "rule": "requirement-gap",
       "target": "req.comfortable-viewer.annotations"
     },
     {
@@ -32,14 +28,6 @@
     {
       "rule": "requirement-gap",
       "target": "req.requirement-traceability.gap-detection"
-    },
-    {
-      "rule": "requirement-gap",
-      "target": "req.standalone"
-    },
-    {
-      "rule": "requirement-gap",
-      "target": "req.write-gate"
     }
   ]
 }

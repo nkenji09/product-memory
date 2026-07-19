@@ -276,9 +276,17 @@ func newLintBaselineUpdateCmd() *cobra.Command {
 
 			var entries []store.BaselineEntry
 			for _, f := range findings {
-				if f.Severity == lint.SeverityWarn {
-					entries = append(entries, store.BaselineEntry{Rule: f.Rule, Target: f.Target})
+				if f.Severity != lint.SeverityWarn {
+					continue
 				}
+				// typed 容認（#45 D6）で畳んだ warn は baseline に載せない——
+				// evaluateCI（lint --ci）が AcknowledgedBy を除外するのと揃える。
+				// 揃えないと acknowledges で解消した gap が baseline に居座り、
+				// stale として報告されるのに update で消えない不整合が起きる。
+				if f.AcknowledgedBy != "" {
+					continue
+				}
+				entries = append(entries, store.BaselineEntry{Rule: f.Rule, Target: f.Target})
 			}
 
 			old, err := s.LoadLintBaseline()
