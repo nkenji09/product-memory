@@ -260,23 +260,43 @@ func Analyze(snap *store.Snapshot, ix *index.Index, actionID string) Report {
 		Matrix:      buildMatrix(txs),
 	}
 
-	remainderIDs, specifics := splitRemainder(txs)
-	for _, id := range remainderIDs {
+	// Two remainder forms are handled differently (#45 D8/amend②):
+	//
+	//   - TAG remainder (RemainderTagID・原型): a declared catch-all with no
+	//     priority. Removed from the "specifics" the direct/axis analysis runs
+	//     over — it is a lowest-priority default, not a source of
+	//     undefined-priority ambiguity, and would otherwise spawn spurious
+	//     subset-shadows via its catch-all given.
+	//
+	//   - DECLARATIVE remainder (all-priority-declared action's tail): a REAL
+	//     transition with a real given whose priority cleanly resolves the
+	//     overlaps it participates in. It is reported separately and exempts
+	//     L-total, but it STAYS in specifics so its evaluation-order resolution
+	//     of overlaps/subset-shadows is not silently erased (the 旗艦
+	//     act.user.update wants all 11 overlaps folded as resolved, not 10 with
+	//     one vanishing because the tail was dropped from the cell).
+	tagRemainderIDs, specifics := splitTagRemainder(txs)
+	declTail, hasDeclarativeRemainder := declarativeRemainderTail(txs)
+	for _, id := range tagRemainderIDs {
 		report.Remainder = append(report.Remainder, Remainder{TransitionID: id})
 	}
-	// #45 D8/amend②: only a DECLARATIVE remainder (the last-evaluated
-	// transition of an action whose transitions ALL declare a priority)
-	// exempts L-total — the remainder receives every otherwise-missing total
-	// axis value. A RemainderTagID-only remainder does NOT exempt L-total
-	// (partial signing must never absorb a real gap into a false "no gaps" —
-	// TestAnalyze_AcknowledgedRemainder… pins this), so the exemption is
-	// gated on the structural full-declaration form, not on remainder presence.
-	_, hasDeclarativeRemainder := declarativeRemainderTail(txs)
+	if hasDeclarativeRemainder {
+		// avoid double-reporting if the tail also carried the tag.
+		alreadyReported := false
+		for _, id := range tagRemainderIDs {
+			if id == declTail {
+				alreadyReported = true
+				break
+			}
+		}
+		if !alreadyReported {
+			report.Remainder = append(report.Remainder, Remainder{TransitionID: declTail})
+		}
+	}
+	hasRemainder := len(report.Remainder) > 0
 
-	// subset-shadow/axis analysis run over "specifics" only — the
-	// acknowledged remainder is a declared lowest-priority catch-all, not a
-	// source of undefined-priority ambiguity, and design says it must never
-	// count toward coverage (req.action-flow.acknowledged-remainder).
+	// subset-shadow/axis analysis run over "specifics" (all transitions minus
+	// any TAG remainder; the declarative remainder stays in).
 	report.SubsetShadows = subsetShadows(specifics)
 
 	conditionUniverse := conditionsInGiven(specifics)
@@ -295,7 +315,7 @@ func Analyze(snap *store.Snapshot, ix *index.Index, actionID string) Report {
 		report.AxesAbsence = AxesAbsenceNoneDeclared
 	}
 
-	report.Scope = buildScope(axes, conditionUniverse, len(remainderIDs) > 0)
+	report.Scope = buildScope(axes, conditionUniverse, hasRemainder)
 
 	// typed 容認（#45 D6）: 対象宛て decision の acknowledges で名指しされた
 	// flow finding を「容認済み」に畳む（AcknowledgedBy を書き込む・消しはしない）。
@@ -410,35 +430,22 @@ func isProperSubset(a, b []string) bool {
 	return true
 }
 
-// splitRemainder separates the action's "acknowledged remainder"
-// transition(s) from the "specifics" the direct/axis analysis runs over — the
-// remainder is reported separately and never counted toward coverage
-// (req.action-flow.acknowledged-remainder). Two declaration forms are honored
-// (#45 D8/amend②):
-//
-//   - RemainderTagID tag — the original convention (互換読み・compat).
-//   - the structurally-last transition (max priority number) of an action
-//     whose transitions ALL declare a priority — the declarative remainder.
-//     Partial declaration does NOT create a remainder (免除は全宣言 action の
-//     最後尾に限る・gap 検出破壊への防衛を保存する).
-//
-// A transition already tagged RemainderTagID is not double-counted if it also
-// happens to be the priority tail.
-func splitRemainder(txs []model.Transition) (remainderIDs []string, specifics []model.Transition) {
-	remainder := make(map[string]bool)
+// splitTagRemainder separates the (at most one, per convention) transition
+// tagged RemainderTagID from the "specifics" the direct/axis analysis runs
+// over — the tag remainder is a lowest-priority catch-all, reported separately
+// and never counted toward coverage (req.action-flow.acknowledged-remainder).
+// The declarative remainder (all-priority tail) is NOT removed here — see the
+// comment in Analyze: it stays in specifics so its priority resolves overlaps.
+func splitTagRemainder(txs []model.Transition) (remainderIDs []string, specifics []model.Transition) {
 	for _, t := range txs {
+		isRemainder := false
 		for _, tagID := range t.Tags {
 			if tagID == RemainderTagID {
-				remainder[t.ID] = true
+				isRemainder = true
 				break
 			}
 		}
-	}
-	if tail, ok := declarativeRemainderTail(txs); ok {
-		remainder[tail] = true
-	}
-	for _, t := range txs {
-		if remainder[t.ID] {
+		if isRemainder {
 			remainderIDs = append(remainderIDs, t.ID)
 		} else {
 			specifics = append(specifics, t)
