@@ -17,8 +17,8 @@ func newDecideCmd() *cobra.Command {
 	var asJSON, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "decide",
-		Short: "意思決定を 1 件記録する（transition か tag に付く・append-only・§3.5）",
-		Long: "意思決定を 1 件記録する（transition か tag に付く・append-only・§3.5）。\n\n" +
+		Short: "意思決定を 1 件記録する（transition・tag・vocab に付く・append-only・§3.5）",
+		Long: "意思決定を 1 件記録する（transition・tag・vocab に付く・append-only・§3.5）。\n\n" +
 			"decision は append-only で保存後の why/changed は直せない。--dry-run で保存せず\n" +
 			"advisory（腐る file:line・消えた文書参照など書き方規律の警告）だけを先にプレビューし、\n" +
 			"ゼロにしてから本番の decide を打つ（#45 U3 の推奨手順）。",
