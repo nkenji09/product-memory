@@ -421,11 +421,14 @@ func TestCompute_RenamePairDoesNotUnlockJudgmentFields(t *testing.T) {
 	}
 }
 
-// 前方互換（P7 supersedes[] 等）: 未知 additive フィールドの追記は decode 層で
-// 無視されるため Changed に現れない＝violation にならない。
+// 前方互換（将来の additive フィールド）: 未知 additive フィールドの追記は
+// decode 層で無視されるため Changed に現れない＝violation にならない。
+// supersedes は #45 D7 で既知フィールドになったため、ここでは「本実装がまだ
+// 知らない架空の将来フィールド」で前方互換の不変条件を守る（supersedes の
+// append-only 分類は TestSupersedesAppendOnly 系が担う）。
 func TestUnknownAdditiveFieldIsIgnoredByDecode(t *testing.T) {
 	var withField, without model.Decision
-	if err := json.Unmarshal([]byte(`{"id":"d1","target":{"type":"tag","id":"req.a"},"why":"w","at":"2026-01-01T00:00:00Z","supersedes":[{"id":"d0","mode":"amend"}]}`), &withField); err != nil {
+	if err := json.Unmarshal([]byte(`{"id":"d1","target":{"type":"tag","id":"req.a"},"why":"w","at":"2026-01-01T00:00:00Z","someFutureP12Field":[{"id":"d0"}]}`), &withField); err != nil {
 		t.Fatal(err)
 	}
 	if err := json.Unmarshal([]byte(`{"id":"d1","target":{"type":"tag","id":"req.a"},"why":"w","at":"2026-01-01T00:00:00Z"}`), &without); err != nil {
