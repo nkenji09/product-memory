@@ -165,3 +165,49 @@ func TestPutConfig_RejectsNonNumericPort(t *testing.T) {
 		t.Fatalf("status = %d, want 400: %s", rec.Code, rec.Body.String())
 	}
 }
+
+// #45 D9 レイヤ5: object 宣言（behaviors/description）を含む tagKinds が、PUT で
+// port だけ変えても保存後に残る（黙って破壊しない）。ConfigView が読み込んだ
+// object をそのまま PUT で返す round-trip 非破壊の Go 側担保。
+func TestPutConfig_PreservesTagKindObjectDeclarations(t *testing.T) {
+	h, s := newTestHandler(t)
+	// object 宣言の tagKinds を種として入れる（axis を behaviors 付きで宣言）。
+	cfg, _ := s.LoadConfig()
+	cfg.TagKinds = []model.KindDecl{
+		{ID: "subject"},
+		{ID: "requirement"},
+		{ID: "axis", Description: "網羅検査の軸", Behaviors: []string{"axis"}},
+	}
+	if err := s.SaveConfig(cfg); err != nil {
+		t.Fatalf("SaveConfig: %v", err)
+	}
+
+	// ConfigView は読み込んだ draft をそのまま PUT する。ここでは object 宣言込みの
+	// tagKinds を渡し port だけ変える。
+	body := []byte(`{"tagKinds":["subject","requirement",{"id":"axis","description":"網羅検査の軸","behaviors":["axis"]}],` +
+		`"facetKinds":["subject","requirement"],"traceabilityKinds":["requirement"],"roots":[],"viewer":{"port":5000}}`)
+	rec := doRequest(t, h, http.MethodPut, "/api/config", body)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+
+	persisted, err := s.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if persisted.Viewer.Port != 5000 {
+		t.Fatalf("port = %d, want 5000", persisted.Viewer.Port)
+	}
+	if !persisted.KindHasBehavior("axis", "axis") {
+		t.Fatalf("axis behavior lost after PUT: %+v", persisted.TagKinds)
+	}
+	var axisDecl *model.KindDecl
+	for i := range persisted.TagKinds {
+		if persisted.TagKinds[i].ID == "axis" {
+			axisDecl = &persisted.TagKinds[i]
+		}
+	}
+	if axisDecl == nil || axisDecl.Description != "網羅検査の軸" {
+		t.Fatalf("axis description lost after PUT: %+v", persisted.TagKinds)
+	}
+}

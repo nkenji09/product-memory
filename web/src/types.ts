@@ -91,8 +91,30 @@ export interface TransitionPostBody {
   tags: string[];
 }
 
+/** KindDecl は kind 宣言 1 件（#45 D9・意味論の宣言制移行）。JSON 上は string
+    （id のみ）または object（id/label/description/behaviors）のいずれでも来る。
+    behaviors は kind の機械的意味論フラグ（現状 "axis" のみ）。tagKinds と
+    kinds.condition がこの union を持つ。 */
+export interface KindDeclObject {
+  id: string;
+  label?: string;
+  description?: string;
+  behaviors?: string[];
+}
+export type KindDecl = string | KindDeclObject;
+
+/** kindDeclId は KindDecl（string|object）から id を取り出す（表示・集合演算用）。 */
+export function kindDeclId(k: KindDecl): string {
+  return typeof k === 'string' ? k : k.id;
+}
+
+/** kindDeclObject は KindDecl の object 部（string 宣言は id のみの object 相当）。 */
+export function kindDeclObject(k: KindDecl): KindDeclObject {
+  return typeof k === 'string' ? { id: k } : k;
+}
+
 export interface Kinds {
-  condition: string[];
+  condition: KindDecl[];
   action: string[];
   effect: string[];
 }
@@ -120,7 +142,9 @@ export interface DisplayConfig {
 export interface Config {
   schemaVersion: number;
   kinds: Kinds;
-  tagKinds: string[];
+  /** #45 D9: tagKinds は (string | KindDeclObject)[] の union。id 表示・集合演算は
+      kindDeclId() を通し、object 宣言（behaviors/description）は round-trip で保全する。 */
+  tagKinds: KindDecl[];
   facetKinds: string[];
   traceabilityKinds: string[];
   idPrefix: IDPrefix;
@@ -140,7 +164,7 @@ export interface Config {
 }
 
 export interface ConfigPatch {
-  tagKinds: string[];
+  tagKinds: KindDecl[];
   facetKinds: string[];
   traceabilityKinds: string[];
   roots: string[];

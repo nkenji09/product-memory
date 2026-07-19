@@ -4,6 +4,7 @@ import { useLookups } from '../lookups';
 import { useDrawer } from '../drawer';
 import { useT } from '../i18n';
 import type { Config, Decision, Transition, VocabEntry } from '../types';
+import { kindDeclId } from '../types';
 import { BrowseRail } from './browse/BrowseRail';
 import type { ConditionChip, KindOption, SuggestionItem } from './browse/BrowseRail';
 import { Resizer } from './layout/Resizer';
@@ -348,7 +349,11 @@ export function VocabView({
   // 索引を category→kind ツリーに（依頼H・vocab-view-p1）: vocab が必ず持つ
   // intrinsic な軸で分類するので、タグ未付与でも未分類にフラットに落ちない。
   // タグは二次的な横断フィルタとして残る（filters/matchesFilter は無改修）。
-  const kindOrder = (category: string): string[] => (config?.kinds as Record<string, string[]> | undefined)?.[category] || [];
+  // #45 D9: kinds.condition は KindDecl[]（object 宣言あり）。id に射影して宣言順を返す。
+  const kindOrder = (category: string): string[] => {
+    const decls = (config?.kinds as Record<string, unknown[]> | undefined)?.[category] || [];
+    return decls.map((d) => kindDeclId(d as string | { id: string }));
+  };
   // モードB（vocab-tree-mode）の scope transitions: グローバルは全 transitions、
   // subject 選択時はその subject 導出の transitions。subject 選択直後で導出が
   // まだ届いていない間（subjectTransitions===null）は「全 vocab が未使用」に見える

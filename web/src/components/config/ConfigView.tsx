@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, isStaticMode } from '../../api';
 import { useT } from '../../i18n';
-import type { Config } from '../../types';
+import type { Config, KindDecl } from '../../types';
+import { kindDeclId } from '../../types';
 import { TokenSetField } from './TokenSetField';
 import { TagKindLabelsField } from './TagKindLabelsField';
 import { Icon } from '../shared/Icon';
 
 interface EditableConfig {
-  tagKinds: string[];
+  // #45 D9: tagKinds は KindDecl[] を丸ごと保持し、object 宣言（behaviors/
+  // description）を round-trip で保全する（port だけ変えて保存しても behaviors が
+  // 消えない）。UI は id で操作し、既存 object 宣言は id 一致で温存する。
+  tagKinds: KindDecl[];
   facetKinds: string[];
   traceabilityKinds: string[];
   roots: string[];
@@ -20,7 +24,7 @@ interface EditableConfig {
 
 function toEditable(cfg: Config): EditableConfig {
   return {
-    tagKinds: [...cfg.tagKinds],
+    tagKinds: cfg.tagKinds.map((k) => (typeof k === 'string' ? k : { ...k })),
     facetKinds: [...cfg.facetKinds],
     traceabilityKinds: [...cfg.traceabilityKinds],
     roots: [...cfg.roots],
@@ -34,6 +38,16 @@ function toEditable(cfg: Config): EditableConfig {
 
 function addUnique(arr: string[], value: string): string[] {
   return arr.includes(value) ? arr : [...arr, value];
+}
+
+// addTagKindID は id を tagKinds に string 宣言で追加する（既存は温存・重複は無視）。
+function addTagKindID(kinds: KindDecl[], value: string): KindDecl[] {
+  return kinds.some((k) => kindDeclId(k) === value) ? kinds : [...kinds, value];
+}
+
+// removeTagKindID は id 一致で tagKinds から除去する（object 宣言も id で判定）。
+function removeTagKindID(kinds: KindDecl[], value: string): KindDecl[] {
+  return kinds.filter((k) => kindDeclId(k) !== value);
 }
 
 export function ConfigView() {
@@ -61,7 +75,10 @@ export function ConfigView() {
 
   const editable = !isStaticMode;
   const dirty = editable && baseline.current !== null && JSON.stringify(draft) !== baseline.current;
-  const tagKindSet = new Set(draft.tagKinds);
+  // TokenSetField/TagKindLabelsField/subset チェックは id で扱う。object 宣言は
+  // id に射影して表示し、値の実体（behaviors 等）は draft.tagKinds に温存する。
+  const tagKindIDs = draft.tagKinds.map(kindDeclId);
+  const tagKindSet = new Set(tagKindIDs);
 
   const update = (patch: Partial<EditableConfig>) => {
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -168,13 +185,13 @@ export function ConfigView() {
           mono="tagKinds"
           icon="tags"
           description={t.config.fields.tagKinds.description}
-          values={draft.tagKinds}
+          values={tagKindIDs}
           editable={editable}
-          onAdd={(v) => update({ tagKinds: addUnique(draft.tagKinds, v) })}
-          onRemove={(v) => update({ tagKinds: draft.tagKinds.filter((x) => x !== v) })}
+          onAdd={(v) => update({ tagKinds: addTagKindID(draft.tagKinds, v) })}
+          onRemove={(v) => update({ tagKinds: removeTagKindID(draft.tagKinds, v) })}
         />
         <TagKindLabelsField
-          tagKinds={draft.tagKinds}
+          tagKinds={tagKindIDs}
           labels={draft.tagKindLabels}
           editable={editable}
           onChange={(kind, label) => update({ tagKindLabels: { ...draft.tagKindLabels, [kind]: label } })}
@@ -363,11 +380,17 @@ export function ConfigView() {
                 {remote.kinds[cat].length === 0 ? (
                   <span class="dim">{t.config.undefinedMarker}</span>
                 ) : (
-                  remote.kinds[cat].map((v) => (
-                    <span key={v} class="config-ro-chip">
-                      {v}
-                    </span>
-                  ))
+                  remote.kinds[cat].map((v) => {
+                    // #45 D9: condition は KindDecl[]（object 宣言あり）。id を表示し、
+                    // description があれば tooltip に出す（kind バッジ tooltip・レイヤ6）。
+                    const id = kindDeclId(v);
+                    const desc = typeof v === 'string' ? undefined : v.description;
+                    return (
+                      <span key={id} class="config-ro-chip" title={desc || undefined}>
+                        {id}
+                      </span>
+                    );
+                  })
                 )}
               </div>
             </div>

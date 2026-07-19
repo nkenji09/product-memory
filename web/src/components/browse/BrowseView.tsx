@@ -5,6 +5,7 @@ import { useLookups } from '../../lookups';
 import { useDrawer } from '../../drawer';
 import { usePendingDiff } from '../../pendingDiff';
 import type { Config, FacetsResponse, FacetTreeNode, SpecReport, Tag, TraceabilityResponse, Transition, TransitionDetail } from '../../types';
+import { kindDeclId } from '../../types';
 import { BrowseRail } from './BrowseRail';
 import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './BrowseRail';
 import { Resizer } from '../layout/Resizer';
@@ -433,7 +434,10 @@ export function BrowseView({
   let body: preact.JSX.Element;
 
   if (facet === 'tags') {
-    kindOptions = config.tagKinds.map((k) => ({ key: k, label: tagKindLabel(k), count: tags.filter((t) => t.kind === k).length }));
+    kindOptions = config.tagKinds.map((decl) => {
+      const k = kindDeclId(decl);
+      return { key: k, label: tagKindLabel(k), count: tags.filter((t) => t.kind === k).length };
+    });
     const order = buildTagOrder(facetsData.roots, tags, kindFacet);
     const visible = order.filter(({ id }) => {
       const t = tagById.get(id);
