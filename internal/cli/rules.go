@@ -18,7 +18,7 @@ type rulesOutput struct {
 
 func newRulesCmd() *cobra.Command {
 	var tagID, txID, facet, sortBy string
-	var asJSON bool
+	var asJSON, current bool
 	cmd := &cobra.Command{
 		Use:   "rules",
 		Short: "対象（tag/transition/facet）に関わる decisions を横断集約する（§3.8）",
@@ -49,6 +49,19 @@ func newRulesCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// 現行性の区分（#45 D7）: mode=supersede で指された decision を失効扱い。
+			// --current はそれらを畳む（保守的に supersede のみ）。
+			superseded := supersededIDs(snap.Decisions)
+			if current {
+				kept := decisions[:0]
+				for _, d := range decisions {
+					if !superseded[d.ID] {
+						kept = append(kept, d)
+					}
+				}
+				decisions = kept
+			}
 			sortDecisions(decisions, sortBy)
 
 			if asJSON {
@@ -56,7 +69,7 @@ func newRulesCmd() *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(rulesOutput{Decisions: decisions})
 			}
-			printRules(cmd, decisions, sortBy)
+			printRules(cmd, decisions, sortBy, superseded)
 			return nil
 		},
 	}
@@ -65,6 +78,7 @@ func newRulesCmd() *cobra.Command {
 	cmd.Flags().StringVar(&facet, "facet", "", "指定 kind を持つ全タグを対象にする")
 	cmd.Flags().StringVar(&sortBy, "sort", "chrono", "並び順（chrono=at昇順・既定 | target=対象ごとにグループ化）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "JSON で出力する")
+	cmd.Flags().BoolVar(&current, "current", false, "失効（mode=supersede で指された）decision を畳んで現行のみ表示する（#45 D7）")
 	return cmd
 }
 
@@ -87,7 +101,7 @@ func sortDecisions(decisions []model.Decision, sortBy string) {
 	})
 }
 
-func printRules(cmd *cobra.Command, decisions []model.Decision, sortBy string) {
+func printRules(cmd *cobra.Command, decisions []model.Decision, sortBy string, superseded map[string]bool) {
 	out := cmd.OutOrStdout()
 	if len(decisions) == 0 {
 		fmt.Fprintln(out, "rules: 該当する decision はありません")
@@ -102,14 +116,36 @@ func printRules(cmd *cobra.Command, decisions []model.Decision, sortBy string) {
 				lastTarget = d.Target
 				first = false
 			}
+			fmt.Fprintf(out, "  [%s]%s\n", d.ID, currencyLabel(d, superseded))
 			printDecisionLine(out, d)
 		}
 		return
 	}
 	for _, d := range decisions {
-		fmt.Fprintf(out, "[%s] %s:%s\n", d.At, d.Target.Type, d.Target.ID)
+		fmt.Fprintf(out, "[%s] %s:%s%s\n", d.At, d.Target.Type, d.Target.ID, currencyLabel(d, superseded))
 		printDecisionLine(out, d)
 	}
+}
+
+// currencyLabel は decision の現行性区分（#45 D7）を表示用に返す:
+// 失効（supersede された）/改訂（何かを amend/exception している現行）/現行。
+func currencyLabel(d model.Decision, superseded map[string]bool) string {
+	if superseded[d.ID] {
+		return " [失効: supersede 済]"
+	}
+	if len(d.Supersedes) > 0 {
+		hasSupersede := false
+		for _, l := range d.Supersedes {
+			if l.SupersedeMode() == model.ModeSupersede {
+				hasSupersede = true
+			}
+		}
+		if hasSupersede {
+			return fmt.Sprintf(" [現行: supersedes %d 件]", len(d.Supersedes))
+		}
+		return fmt.Sprintf(" [改訂(amend/exception): %d 件]", len(d.Supersedes))
+	}
+	return ""
 }
 
 func printDecisionLine(w interface{ Write([]byte) (int, error) }, d model.Decision) {
