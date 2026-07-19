@@ -54,6 +54,10 @@ type MatrixRow struct {
 	TransitionID string   `json:"transitionId"`
 	Given        []string `json:"given"`
 	Then         []string `json:"then"`
+	// Priority は同一 action 内の評価順（#45 D8・additive/omitempty）。nil=未宣言。
+	// viewer が評価順バッジを描くための載せ替え——priority 未宣言 action では
+	// 全 row とも nil で、従来と完全同一の描画になる。
+	Priority *int `json:"priority,omitempty"`
 }
 
 // Matrix is the trust core's visualization: every transition of the action,
@@ -317,7 +321,12 @@ func buildMatrix(txs []model.Transition) Matrix {
 		for _, g := range t.Given {
 			condSet[g] = true
 		}
-		rows = append(rows, MatrixRow{TransitionID: t.ID, Given: append([]string(nil), t.Given...), Then: append([]string(nil), t.Then...)})
+		var prio *int
+		if t.Priority != nil {
+			p := *t.Priority
+			prio = &p
+		}
+		rows = append(rows, MatrixRow{TransitionID: t.ID, Given: append([]string(nil), t.Given...), Then: append([]string(nil), t.Then...), Priority: prio})
 	}
 	conds := make([]string, 0, len(condSet))
 	for c := range condSet {

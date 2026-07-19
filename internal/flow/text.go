@@ -45,7 +45,11 @@ func writeMatrixSection(w io.Writer, r Report) {
 	} else {
 		fmt.Fprintf(w, "条件: %s\n", strings.Join(r.Matrix.Conditions, "、"))
 		for _, row := range r.Matrix.Rows {
-			fmt.Fprintf(w, "  - %s: GIVEN %s THEN %s\n", row.TransitionID, strings.Join(row.Given, " ∧ "), strings.Join(row.Then, " → "))
+			prio := ""
+			if row.Priority != nil {
+				prio = fmt.Sprintf(" [評価順 p%d]", *row.Priority)
+			}
+			fmt.Fprintf(w, "  - %s%s: GIVEN %s THEN %s\n", row.TransitionID, prio, strings.Join(row.Given, " ∧ "), strings.Join(row.Then, " → "))
 		}
 	}
 	fmt.Fprintln(w)
