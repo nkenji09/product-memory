@@ -122,13 +122,19 @@ desc に書かない。正典＝[`../_scholia-shared/references/modeling-princip
    ```
    scholia decide --on transition:<id> --why "<変更の理由>" --changed "<変更内容>" --ref <PR/URL>
    ```
+   - **過去 decision を更新するなら「全文置換か？」を必ず1問確認**（#45 D7）: 全文置換なら `--supersedes <old>:supersede`、
+     除外条項の精緻化なら `--supersedes <old>:amend`（既定）、一般則への意識的例外なら `--supersedes <old>:exception`。
+     既定 amend は「失効させ忘れ」を避けるための保守側——迷ったら旧を生かす。
+   - **意図的に残す gap/finding があるなら型付き容認**（#45 D6）: `--acknowledges <rule>`（rule 全列挙）。性質型要件は
+     `scholia tag edit <id> --fulfillment property` も併せる。
 8. **commit（意味単位）** — `.scholia/` の変更を 1 つの意味単位コミットにまとめる。
-9. **decision に着地 commit を結ぶ**:
+9. **decision に着地 commit を結ぶ（完了ゲート・必須）** — レコードを変更した commit には decision が同伴していること
+   （非同伴は lint `decision-stale` が検出する）:
    ```
    scholia decision add-commit <decisionId> <hash>
    ```
    decide 時点で commit のハッシュが既に分かっているなら、手順 7 で `scholia decide --commit <hash>` として
-   最初から結んでもよい（9 は省略できる）。
+   最初から結んでもよい（9 は省略できる）。未結線の棚卸しは `scholia decision list --unlinked`。
 10. **実装/テスト側へ** — 人が task の diff／コメントをコピーし、scholia の外（コード側）の実装・テスト修正を依頼する。
 
 ## Case 2: Transition の修正
