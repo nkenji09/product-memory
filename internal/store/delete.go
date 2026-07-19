@@ -16,7 +16,11 @@ type RemoveVocabResult struct {
 
 // RemoveVocab deletes a vocab entry, refusing if any transition still
 // references it via action/given/then (§6 "未参照限定" — symmetric with the
-// write-time validation that keeps vocab-ref lint green).
+// write-time validation that keeps vocab-ref lint green), if any other vocab's
+// establishes[] points at it (condition id direct reference・#45 D5), or if any
+// decision targets it (vocab-target decision・#45 D5 — decisions are
+// append-only, so deleting the vocab they point at would leave the
+// decision-target lint rule dangling; same guard as tag/transition removal).
 func (s *Store) RemoveVocab(id string) (RemoveVocabResult, error) {
 	if !s.VocabExists(id) {
 		return RemoveVocabResult{}, fmt.Errorf("vocab %q が見つかりません", id)
@@ -26,17 +30,37 @@ func (s *Store) RemoveVocab(id string) (RemoveVocabResult, error) {
 		return RemoveVocabResult{}, err
 	}
 
+	var decisionRefs []string
+	for _, d := range snap.Decisions {
+		if d.Target.Type == model.DecisionTargetVocab && d.Target.ID == id {
+			decisionRefs = append(decisionRefs, d.ID)
+		}
+	}
+	if len(decisionRefs) > 0 {
+		sort.Strings(decisionRefs)
+		return RemoveVocabResult{}, fmt.Errorf(
+			"vocab %q は %d 件の decision の対象です。decisions は append-only のため削除できません: %s",
+			id, len(decisionRefs), strings.Join(decisionRefs, ", "))
+	}
+
 	var refs []string
 	for _, t := range snap.Transitions {
 		if t.Action == id || containsID(t.Given, id) || containsID(t.Then, id) {
 			refs = append(refs, t.ID)
 		}
 	}
-	if len(refs) > 0 {
+	var establishRefs []string
+	for _, v := range snap.Vocab {
+		if v.ID != id && containsID(v.Establishes, id) {
+			establishRefs = append(establishRefs, v.ID)
+		}
+	}
+	if len(refs) > 0 || len(establishRefs) > 0 {
 		sort.Strings(refs)
+		sort.Strings(establishRefs)
 		return RemoveVocabResult{}, fmt.Errorf(
-			"vocab %q は %d 件の transition から参照されています（未参照になってから rm してください）: %s",
-			id, len(refs), strings.Join(refs, ", "))
+			"vocab %q はまだ参照されています（transition: %s / establishes: %s）。未参照になってから rm してください",
+			id, strings.Join(refs, ", "), strings.Join(establishRefs, ", "))
 	}
 
 	if err := os.Remove(s.vocabPath(id)); err != nil {

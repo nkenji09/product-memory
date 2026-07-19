@@ -15,15 +15,26 @@ type VocabRenameResult struct {
 	OldID              string   `json:"oldId"`
 	NewID              string   `json:"newId"`
 	UpdatedTransitions []string `json:"updatedTransitions"`
+	// UpdatedDecisions は target が oldID を指していた vocab-target decision の id
+	// （追随張替え・#45 D5）。旧実装は「vocab は decision から参照されない」前提で
+	// これを見ていなかったが、vocab-target decision の導入でその前提が壊れたため
+	// 追随する（落とすと rename が decision-target を宙吊りにする）。
+	UpdatedDecisions []string `json:"updatedDecisions,omitempty"`
+	// UpdatedVocab は establishes[] 内に oldID を持っていた他 vocab の id
+	// （追随張替え・#45 D5）。establishes は condition id の直接参照なので、
+	// condition が rename されたら参照側も追随する。
+	UpdatedVocab []string `json:"updatedVocab,omitempty"`
 	// BaselineRetargeted は .scholia/lint-baseline.json 内の target id を追随
 	// 更新したか（baseline 不在・該当なしは false・#45 U4）。
 	BaselineRetargeted bool `json:"baselineRetargeted,omitempty"`
 }
 
 // RenameVocab renames a vocab entry's file and id, then rewrites every
-// transition's action/given/then reference to it (§6). Vocab entries are not
-// referenced by tags or decisions, so transitions are the only other record
-// kind that needs updating.
+// reference to it (§6・#45 D5): transitions' action/given/then, vocab-target
+// decisions' Target.ID, and other vocab entries' establishes[] (condition id
+// direct references). Before #45 D5, vocab was referenced only by transitions;
+// vocab-target decisions and effect.establishes are the two new reference
+// sites this rename must follow so it never leaves a dangling reference.
 func (s *Store) RenameVocab(oldID, newID string) (VocabRenameResult, error) {
 	if newID == "" {
 		return VocabRenameResult{}, fmt.Errorf("newId は必須です")
@@ -82,6 +93,41 @@ func (s *Store) RenameVocab(oldID, newID string) (VocabRenameResult, error) {
 		updated = append(updated, t.ID)
 	}
 
+	// Other vocab's establishes[] referencing the renamed condition id.
+	var updatedVocab []string
+	for _, ov := range snap.Vocab {
+		if ov.ID == oldID || len(ov.Establishes) == 0 {
+			continue
+		}
+		changed := false
+		for i, c := range ov.Establishes {
+			if c == oldID {
+				ov.Establishes[i] = newID
+				changed = true
+			}
+		}
+		if !changed {
+			continue
+		}
+		if err := s.SaveVocab(ov); err != nil {
+			return VocabRenameResult{}, err
+		}
+		updatedVocab = append(updatedVocab, ov.ID)
+	}
+
+	// vocab-target decisions pointing at the renamed vocab.
+	var updatedDecisions []string
+	for _, d := range snap.Decisions {
+		if d.Target.Type != model.DecisionTargetVocab || d.Target.ID != oldID {
+			continue
+		}
+		d.Target.ID = newID
+		if err := s.SaveDecision(d); err != nil {
+			return VocabRenameResult{}, err
+		}
+		updatedDecisions = append(updatedDecisions, d.ID)
+	}
+
 	if err := os.Remove(s.vocabPath(oldID)); err != nil {
 		return VocabRenameResult{}, err
 	}
@@ -90,7 +136,10 @@ func (s *Store) RenameVocab(oldID, newID string) (VocabRenameResult, error) {
 		return VocabRenameResult{}, err
 	}
 	sort.Strings(updated)
+	sort.Strings(updatedVocab)
+	sort.Strings(updatedDecisions)
 	return VocabRenameResult{OldID: oldID, NewID: newID, UpdatedTransitions: updated,
+		UpdatedDecisions: updatedDecisions, UpdatedVocab: updatedVocab,
 		BaselineRetargeted: baselineRetargeted}, nil
 }
 
