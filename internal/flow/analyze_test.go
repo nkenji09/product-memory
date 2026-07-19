@@ -162,6 +162,68 @@ func TestAnalyze_TotalAxisGapWhenAValueNeverAppearsInGiven(t *testing.T) {
 	}
 }
 
+// #45 D6: total-gap の typed 容認——欠落軸タグ宛て decision が total-gap を
+// acknowledge していれば AcknowledgedBy が付く（欠落値 condition 宛てでも同様）。
+func TestAnalyze_TotalGapTypedAcceptance(t *testing.T) {
+	tags := []model.Tag{{ID: "axis.mode", Name: "mode", Kind: "axis", Total: true}}
+	vocab := []model.VocabEntry{condVocab("cond.check", "axis.mode"), condVocab("cond.apply", "axis.mode")}
+	txs := []model.Transition{{ID: "T-check", Action: "act.a", Given: []string{"cond.check"}, Then: []string{"eff.a"}}}
+
+	// 軸タグ宛て decision が total-gap を acknowledge → 容認済み。
+	snap, ix := buildAnalyzeFixture(txs, vocab, tags)
+	snap.Decisions = []model.Decision{
+		{ID: "01AXISACK", Target: model.DecisionTarget{Type: model.DecisionTargetTag, ID: "axis.mode"},
+			Why: "cond.apply は意図した placeholder（rm しない）", At: "2026-01-01T00:00:00Z",
+			Acknowledges: []string{"total-gap"}},
+	}
+	r := Analyze(snap, ix, "act.a")
+	if len(r.TotalGaps) != 1 || r.TotalGaps[0].AcknowledgedBy != "01AXISACK" {
+		t.Fatalf("軸タグ宛て total-gap 容認が畳まれていない: %+v", r.TotalGaps)
+	}
+
+	// 欠落値 condition 宛て decision（vocab target）でも畳む。
+	snap2, ix2 := buildAnalyzeFixture(txs, vocab, tags)
+	snap2.Decisions = []model.Decision{
+		{ID: "01VOCABACK", Target: model.DecisionTarget{Type: model.DecisionTargetVocab, ID: "cond.apply"},
+			Why: "この値は given に出さない", At: "2026-01-01T00:00:00Z",
+			Acknowledges: []string{"total-gap"}},
+	}
+	r2 := Analyze(snap2, ix2, "act.a")
+	if len(r2.TotalGaps) != 1 || r2.TotalGaps[0].AcknowledgedBy != "01VOCABACK" {
+		t.Fatalf("欠落値 condition 宛て total-gap 容認が畳まれていない: %+v", r2.TotalGaps)
+	}
+
+	// 無関係 rule を acknowledge する decision では畳まない。
+	snap3, ix3 := buildAnalyzeFixture(txs, vocab, tags)
+	snap3.Decisions = []model.Decision{
+		{ID: "01OTHER", Target: model.DecisionTarget{Type: model.DecisionTargetTag, ID: "axis.mode"},
+			Why: "別の話", At: "2026-01-01T00:00:00Z", Acknowledges: []string{"overlap"}},
+	}
+	r3 := Analyze(snap3, ix3, "act.a")
+	if len(r3.TotalGaps) != 1 || r3.TotalGaps[0].AcknowledgedBy != "" {
+		t.Fatalf("total-gap を acknowledge しない decision で畳んではいけない: %+v", r3.TotalGaps)
+	}
+}
+
+// #45 D6: subset-shadow の typed 容認——ペアのいずれかの transition 宛て decision
+// が subset-shadow を acknowledge していれば畳む。
+func TestAnalyze_SubsetShadowTypedAcceptance(t *testing.T) {
+	txs := []model.Transition{
+		{ID: "T-general", Action: "act.a", Given: []string{"cond.x"}, Then: []string{"eff.a"}},
+		{ID: "T-specific", Action: "act.a", Given: []string{"cond.x", "cond.y"}, Then: []string{"eff.b"}},
+	}
+	snap, ix := buildAnalyzeFixture(txs, nil, nil)
+	snap.Decisions = []model.Decision{
+		{ID: "01SHADOWACK", Target: model.DecisionTarget{Type: model.DecisionTargetTransition, ID: "T-specific"},
+			Why: "この多重発火は意図的（specific 優先の想定）", At: "2026-01-01T00:00:00Z",
+			Acknowledges: []string{"subset-shadow"}},
+	}
+	r := Analyze(snap, ix, "act.a")
+	if len(r.SubsetShadows) != 1 || r.SubsetShadows[0].AcknowledgedBy != "01SHADOWACK" {
+		t.Fatalf("ペアの transition 宛て subset-shadow 容認が畳まれていない: %+v", r.SubsetShadows)
+	}
+}
+
 func TestAnalyze_NonTotalAxisNeverReportsGap(t *testing.T) {
 	tags := []model.Tag{
 		{ID: "axis.mode", Name: "mode", Kind: "axis", Total: false},

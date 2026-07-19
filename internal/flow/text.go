@@ -49,9 +49,18 @@ func writeMatrixSection(w io.Writer, r Report) {
 func writeSubsetShadowSection(w io.Writer, r Report) {
 	fmt.Fprintf(w, "## subset-shadow（証明可能な重複）: %d 件\n", len(r.SubsetShadows))
 	for _, s := range r.SubsetShadows {
-		fmt.Fprintf(w, "  - %s ⊊ %s: %s が発火する world では %s も必ず発火します（優先順位未定義）\n", s.Subset, s.Superset, s.Superset, s.Subset)
+		fmt.Fprintf(w, "  - %s ⊊ %s: %s が発火する world では %s も必ず発火します（優先順位未定義）%s\n",
+			s.Subset, s.Superset, s.Superset, s.Subset, ackSuffix(s.AcknowledgedBy))
 	}
 	fmt.Fprintln(w)
+}
+
+// ackSuffix は typed 容認（#45 D6）で畳んだ finding に付ける「容認済み」注記。
+func ackSuffix(decisionID string) string {
+	if decisionID == "" {
+		return ""
+	}
+	return fmt.Sprintf("【容認済み: decision %s】", decisionID)
 }
 
 func writeAxesSection(w io.Writer, r Report) {
@@ -83,7 +92,7 @@ func writeAxesSection(w io.Writer, r Report) {
 func writeTotalGapsSection(w io.Writer, r Report) {
 	fmt.Fprintf(w, "## 抜け（L-total・唯一 clean に sound）: %d 件\n", len(r.TotalGaps))
 	for _, g := range r.TotalGaps {
-		fmt.Fprintf(w, "  - 軸 %s: 値 %s を given に持つ遷移が1つもありません\n", g.AxisID, g.Value)
+		fmt.Fprintf(w, "  - 軸 %s: 値 %s を given に持つ遷移が1つもありません%s\n", g.AxisID, g.Value, ackSuffix(g.AcknowledgedBy))
 	}
 	fmt.Fprintln(w)
 }
@@ -91,7 +100,8 @@ func writeTotalGapsSection(w io.Writer, r Report) {
 func writeOverlapsSection(w io.Writer, r Report) {
 	fmt.Fprintf(w, "## 重なり（宣言軸に相対的に sound な ambiguity）: %d 件\n", len(r.Overlaps))
 	for _, o := range r.Overlaps {
-		fmt.Fprintf(w, "  - cell %s: %s が同じ状況を取り合っています（優先順位未定義）\n", formatCell(o.Cell), strings.Join(o.Transitions, "、"))
+		fmt.Fprintf(w, "  - cell %s: %s が同じ状況を取り合っています（優先順位未定義）%s\n",
+			formatCell(o.Cell), strings.Join(o.Transitions, "、"), ackSuffix(o.AcknowledgedBy))
 	}
 	fmt.Fprintln(w)
 }
