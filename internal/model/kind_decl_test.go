@@ -164,3 +164,85 @@ func TestKindHasBehavior(t *testing.T) {
 		t.Fatal("unknown behavior must be false")
 	}
 }
+
+// #45 D9: axis の axis 挙動が declaration の behaviors:["axis"] を読んで解決する
+// （compat fallback＝id=="axis" に依存しない）ことを固定する。旗艦 axis kind を
+// object 宣言（behaviors:["axis"]）にしたときの本来の解決経路。compat fallback を
+// 意図的に無効化した別 id の kind でも declaration だけで true になることで、
+// 「declaration 経由の解決」と「compat による解決」を分離して証明する。
+func TestKindHasBehavior_ResolvesFromDeclarationNotCompat(t *testing.T) {
+	// (1) id=="axis" だが behaviors を明示宣言した object 形。declaration が
+	// あれば明示が勝つ——compat と同じ true だが、経路は declaration。
+	declared := Config{TagKinds: []KindDecl{
+		{ID: "axis", Label: "軸", Description: "状態次元", Behaviors: []string{"axis"}},
+	}}
+	if !declared.KindHasBehavior("axis", "axis") {
+		t.Fatal("axis with explicit behaviors:[axis] must resolve axis via declaration")
+	}
+
+	// (2) compat が効かない別 id（"dim"）でも declaration だけで true。
+	// compat は id=="axis" のときしか効かないので、これが true なのは
+	// 「declaration の behaviors を読んでいる」ことの独立した証拠。
+	aliasOnly := Config{TagKinds: []KindDecl{
+		{ID: "dim", Behaviors: []string{"axis"}},
+	}}
+	if !aliasOnly.KindHasBehavior("dim", "axis") {
+		t.Fatal("alias kind with behaviors:[axis] must resolve via declaration (compat cannot help a non-axis id)")
+	}
+	// compat が効かないことの裏取り: behaviors を宣言しない別 id は false。
+	noDecl := Config{TagKinds: []KindDecl{{ID: "dim"}}}
+	if noDecl.KindHasBehavior("dim", "axis") {
+		t.Fatal("alias kind WITHOUT behaviors must be false (compat only rescues id==axis)")
+	}
+}
+
+// #45 D9: config.tagKinds の混在 union（一部 string・一部 object）が round-trip で
+// 非破壊——bare string の requirement/concern/subject は string のまま、object の
+// axis（behaviors/description）は object のまま。縮退が axis を string に潰さず、
+// 他3つを object に膨らませないことを固定する（旗艦 kind の実データ形を反映）。
+func TestConfigMixedTagKindsRoundTripNonDestructive(t *testing.T) {
+	src := `{"schemaVersion":1,"kinds":{"condition":[],"action":["user"],"effect":["log"]},` +
+		`"tagKinds":["requirement","concern","subject",` +
+		`{"id":"axis","label":"軸","description":"状態次元","behaviors":["axis"]}],` +
+		`"facetKinds":["subject"],"traceabilityKinds":["requirement"],` +
+		`"idPrefix":{"condition":"cond.","action":"act.","effect":"eff."},"roots":[],"viewer":{"port":4577}}`
+	var cfg Config
+	if err := json.Unmarshal([]byte(src), &cfg); err != nil {
+		t.Fatalf("mixed tagKinds must decode: %v", err)
+	}
+	// 復元の中身: 先頭3つは bare（Label/Description/Behaviors 空）・axis は object。
+	if len(cfg.TagKinds) != 4 {
+		t.Fatalf("tagKinds len = %d, want 4", len(cfg.TagKinds))
+	}
+	for _, id := range []string{"requirement", "concern", "subject"} {
+		var d *KindDecl
+		for i := range cfg.TagKinds {
+			if cfg.TagKinds[i].ID == id {
+				d = &cfg.TagKinds[i]
+			}
+		}
+		if d == nil || d.Label != "" || d.Description != "" || len(d.Behaviors) != 0 {
+			t.Fatalf("%s must decode as bare KindDecl, got %+v", id, d)
+		}
+	}
+	if !cfg.KindHasBehavior("axis", "axis") {
+		t.Fatalf("axis object decl must carry axis behavior")
+	}
+
+	// Marshal で混在が保存される: 先頭3つは string 形・axis は object 形。
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(data)
+	if !strings.Contains(s, `"tagKinds":["requirement","concern","subject",{`) {
+		t.Fatalf("mixed tagKinds not round-tripped (string prefix + object axis): %s", s)
+	}
+	if !strings.Contains(s, `"behaviors":["axis"]`) || !strings.Contains(s, `"description":"状態次元"`) {
+		t.Fatalf("axis object metadata lost on marshal: %s", s)
+	}
+	// axis が string に潰れていない（"axis" 単独文字列で現れない）。
+	if strings.Contains(s, `,"axis"]`) || strings.Contains(s, `,"axis",`) {
+		t.Fatalf("axis must stay object, must not degrade to string: %s", s)
+	}
+}
