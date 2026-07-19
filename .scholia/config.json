@@ -1,7 +1,33 @@
 {
   "schemaVersion": 1,
   "kinds": {
-    "condition": [],
+    "condition": [
+      {
+        "id": "input",
+        "label": "入力",
+        "description": "呼び出しの形。フラグ・引数・UI 操作のパラメータ"
+      },
+      {
+        "id": "env",
+        "label": "環境",
+        "description": "プロセス外の実行環境。OS・導入方式・ポート・外部サービス状態"
+      },
+      {
+        "id": "store",
+        "label": "ストア",
+        "description": ".scholia store の状態。実在・参照整合・pending 差分"
+      },
+      {
+        "id": "derived",
+        "label": "導出",
+        "description": "scholia 自身の導出状態。flow 解析・index・CI ゲート判定"
+      },
+      {
+        "id": "view",
+        "label": "ビュー状態",
+        "description": "viewer クライアントの一時状態。session/URL/表示モード"
+      }
+    ],
     "action": [
       "user",
       "api",
@@ -22,7 +48,14 @@
     "requirement",
     "concern",
     "subject",
-    "axis"
+    {
+      "id": "axis",
+      "label": "軸",
+      "description": "状態次元。値＝この kind のタグを貼られた condition 群。flow/gaps の網羅検査（L-total・重なり）の単位。",
+      "behaviors": [
+        "axis"
+      ]
+    }
   ],
   "facetKinds": [
     "subject",
@@ -32,11 +65,23 @@
   "traceabilityKinds": [
     "requirement"
   ],
+  "ownerKind": "subject",
   "idPrefix": {
     "condition": "cond.",
     "action": "act.",
     "effect": "eff."
   },
+  "roots": [],
+  "viewer": {
+    "port": 4577
+  },
+  "tagKindLabels": {
+    "axis": "軸",
+    "concern": "関心",
+    "requirement": "要件",
+    "subject": "コンポーネント"
+  },
+  "display": {},
   "idPolicy": {
     "transition": "tx.",
     "vocab": {
@@ -50,16 +95,5 @@
       "requirement": "req.",
       "subject": "subject."
     }
-  },
-  "roots": [],
-  "viewer": {
-    "port": 4577
-  },
-  "tagKindLabels": {
-    "axis": "軸",
-    "concern": "関心",
-    "requirement": "要件",
-    "subject": "コンポーネント"
-  },
-  "display": {}
+  }
 }

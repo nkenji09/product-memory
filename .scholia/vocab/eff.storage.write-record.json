@@ -3,7 +3,7 @@
   "category": "effect",
   "label": ".scholia/**/\u003cid\u003e.json を atomic write する",
   "kind": "storage",
-  "owner": "scholia-core",
+  "owner": "subject.store",
   "tags": [
     "concern.git-friendliness"
   ]

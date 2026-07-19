@@ -1,0 +1,9 @@
+{
+  "id": "subject.viewer.server",
+  "name": "ビューアサーバ",
+  "kind": "subject",
+  "parentIds": [
+    "subject.viewer"
+  ],
+  "description": "viewer の Go サーバ側（internal/viewer・HTTP API ハンドラ）。web クライアント（subject.viewer 配下の各ページ）と区別する。"
+}

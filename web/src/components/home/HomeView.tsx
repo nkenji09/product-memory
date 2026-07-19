@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { useT } from '../../i18n';
 import { useLookups } from '../../lookups';
 import type { Config, Decision, Tag, TraceabilityResponse } from '../../types';
+import { kindDeclId } from '../../types';
 import { Icon } from '../shared/Icon';
 
 interface Props {
@@ -37,10 +38,13 @@ export function HomeView({ onGoTags, onSelectTag, onSelectTx, onGoDecisions }: P
   if (error) return <main class="home-view error">{error}</main>;
   if (!tags || !config || !traceability || !decisions) return <main class="home-view dim">{t.home.loading}</main>;
 
-  const kindCounts = config.tagKinds.map((kind) => ({
-    kind,
-    count: tags.filter((t) => t.kind === kind).length,
-  }));
+  const kindCounts = config.tagKinds.map((k) => {
+    const kind = kindDeclId(k);
+    return {
+      kind,
+      count: tags.filter((t) => t.kind === kind).length,
+    };
+  });
 
   const gapEntries = traceability.entries.filter((e) => e.gap);
   const totalEntries = traceability.entries.length;

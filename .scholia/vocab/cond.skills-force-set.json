@@ -1,5 +1,6 @@
 {
   "id": "cond.skills-force-set",
   "category": "condition",
-  "label": "--force が指定されている"
+  "label": "--force が指定されている",
+  "kind": "input"
 }

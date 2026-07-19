@@ -1,5 +1,6 @@
 {
   "id": "cond.target-exists",
   "category": "condition",
-  "label": "decide の対象(transition/tag)が実在する"
+  "label": "decide の対象(transition/tag)が実在する",
+  "kind": "store"
 }

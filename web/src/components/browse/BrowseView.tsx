@@ -5,6 +5,7 @@ import { useLookups } from '../../lookups';
 import { useDrawer } from '../../drawer';
 import { usePendingDiff } from '../../pendingDiff';
 import type { Config, FacetsResponse, FacetTreeNode, SpecReport, Tag, TraceabilityResponse, Transition, TransitionDetail } from '../../types';
+import { kindDeclId } from '../../types';
 import { BrowseRail } from './BrowseRail';
 import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './BrowseRail';
 import { Resizer } from '../layout/Resizer';
@@ -147,7 +148,7 @@ export function BrowseView({
   onSearchChange,
 }: Props) {
   const t = useT();
-  const { tagById: lookupTagById, vocabById, tagKindLabel } = useLookups();
+  const { tagById: lookupTagById, vocabById, tagKindLabel, ownerKind } = useLookups();
   const { closeDrawer } = useDrawer();
   const pendingDiff = usePendingDiff();
   // §8.8 P5「追加」の入口（subject の仕様一覧先頭の「＋ 新規 Transition を
@@ -433,7 +434,10 @@ export function BrowseView({
   let body: preact.JSX.Element;
 
   if (facet === 'tags') {
-    kindOptions = config.tagKinds.map((k) => ({ key: k, label: tagKindLabel(k), count: tags.filter((t) => t.kind === k).length }));
+    kindOptions = config.tagKinds.map((decl) => {
+      const k = kindDeclId(decl);
+      return { key: k, label: tagKindLabel(k), count: tags.filter((t) => t.kind === k).length };
+    });
     const order = buildTagOrder(facetsData.roots, tags, kindFacet);
     const visible = order.filter(({ id }) => {
       const t = tagById.get(id);
@@ -655,8 +659,16 @@ export function BrowseView({
   // Owner candidates only make sense on the specs facet (facet='tags' cards
   // have no owner field to match against — tagMatchesFilters treats 'owner'
   // conditions as a pass-through, so they'd never actually narrow there).
+  //
+  // #45 D9 amend（01KXESDDXZ…）: ownerKind 宣言下では owner はタグの部分集合に
+  // なるため、owner サジェストの候補源を ownerKind のタグ集合へ差し替える（3系統の
+  // 排他 UI は維持）。未宣言プロジェクトでは従来どおり vocab の owner 値から採る。
   const ownerValues =
-    facet === 'specs' ? Array.from(new Set(Array.from(vocabById.values()).map((v) => v.owner).filter((o): o is string => !!o))) : [];
+    facet !== 'specs'
+      ? []
+      : ownerKind
+        ? tags.filter((tg) => tg.kind === ownerKind).map((tg) => tg.id)
+        : Array.from(new Set(Array.from(vocabById.values()).map((v) => v.owner).filter((o): o is string => !!o)));
   const suggestions: SuggestionItem[] = [
     ...tags
       .filter((tag) => !activeFilterKeys.has(`tag:${tag.id}`) && wouldMatchAny({ type: 'tag', id: tag.id }))

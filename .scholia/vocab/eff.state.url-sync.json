@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "view/検索/focus を URL・history に反映",
   "kind": "state",
-  "owner": "viewer-web"
+  "owner": "subject.viewer"
 }

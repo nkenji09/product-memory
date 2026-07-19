@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "sessionStorage に保持したスクロール位置へ復元する",
   "kind": "state",
-  "owner": "viewer-web"
+  "owner": "subject.viewer"
 }

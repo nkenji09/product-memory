@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "in-memory index を再構築する",
   "kind": "state",
-  "owner": "scholia-core"
+  "owner": "subject.store"
 }
