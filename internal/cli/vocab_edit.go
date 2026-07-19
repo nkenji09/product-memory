@@ -9,15 +9,26 @@ import (
 )
 
 func newVocabEditCmd() *cobra.Command {
-	var label, description, descFile string
-	var editDesc bool
+	var label, description, descFile, ref string
+	var altLabels, establishes []string
+	var editDesc, clearAltLabels, clearEstablishes bool
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "edit <id>",
-		Short: "語彙の label/説明(description)を更新する",
+		Short: "語彙の label/説明(description)/ref/altLabels/establishes を更新する",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
+			refChanged := cmd.Flags().Changed("ref")
+			altSet := cmd.Flags().Changed("alt-label")
+			estSet := cmd.Flags().Changed("establishes")
+			if clearAltLabels && altSet {
+				return fmt.Errorf("--clear-alt-labels と --alt-label は同時に指定できません")
+			}
+			if clearEstablishes && estSet {
+				return fmt.Errorf("--clear-establishes と --establishes は同時に指定できません")
+			}
+
 			s, err := openStore()
 			if err != nil {
 				return err
@@ -44,20 +55,45 @@ func newVocabEditCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if !labelChanged && !descChanged {
-				return fmt.Errorf("--label/--description/--desc-file/--edit のいずれかを指定してください")
-			}
 			if descChanged {
 				v.Description = descValue
+			}
+
+			if refChanged {
+				v.Ref = ref
+			}
+			switch {
+			case clearAltLabels:
+				v.AltLabels = nil
+			case altSet:
+				v.AltLabels = dedupeStrings(altLabels)
+			}
+			switch {
+			case clearEstablishes:
+				v.Establishes = nil
+			case estSet:
+				v.Establishes = dedupeStrings(establishes)
+			}
+
+			anyChanged := labelChanged || descChanged || refChanged || altSet || estSet || clearAltLabels || clearEstablishes
+			if !anyChanged {
+				return fmt.Errorf("--label/--description/--desc-file/--edit/--ref/--alt-label/--clear-alt-labels/--establishes/--clear-establishes のいずれかを指定してください")
+			}
+
+			snap, err := s.LoadAll()
+			if err != nil {
+				return err
+			}
+			// establishes の write-time ゲート（effect 限定・実在検証・#45 D5）は
+			// vocab 自身のカテゴリで検査する。snap は保存前だが、establishes の
+			// 参照先（他 condition）の実在は変わらないためこの snap で十分。
+			if err := validateEstablishes(snap, v.Category, v.Establishes); err != nil {
+				return err
 			}
 
 			// 書き込みゲート二層（#45 U3）: vocab edit に reject 規則は無い
 			//（既存 id・total/given を持たない）が、desc/label への advisory
 			// （stale-tense・prose-ref・desc-length 等）を同一ターンに返す。
-			snap, err := s.LoadAll()
-			if err != nil {
-				return err
-			}
 			advisories, allowed, gateErr := runWriteGate(cmd, snap, lint.WriteOp{Vocab: &v, IsNew: false}, nil)
 			if gateErr != nil {
 				return gateErr
@@ -78,6 +114,11 @@ func newVocabEditCmd() *cobra.Command {
 	cmd.Flags().StringVar(&description, "description", "", "説明（markdown・--desc-file/--edit と排他）")
 	cmd.Flags().StringVar(&descFile, "desc-file", "", "説明をファイルから読み込む（--description/--edit と排他）")
 	cmd.Flags().BoolVar(&editDesc, "edit", false, "$EDITOR で説明を入力する（--description/--desc-file と排他）")
+	cmd.Flags().StringVar(&ref, "ref", "", "外部契約・仕様本文へのアンカー（空文字指定でクリア・#45 D5）")
+	cmd.Flags().StringArrayVar(&altLabels, "alt-label", nil, "別表記・同義語（繰り返し可・指定で置換・#45 D5）")
+	cmd.Flags().BoolVar(&clearAltLabels, "clear-alt-labels", false, "altLabels を空にする（#45 D5）")
+	cmd.Flags().StringArrayVar(&establishes, "establishes", nil, "成立させる condition の id（effect のみ・繰り返し可・指定で置換・実在検証・#45 D5）")
+	cmd.Flags().BoolVar(&clearEstablishes, "clear-establishes", false, "establishes を空にする（#45 D5）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "更新後のレコードを応答封筒 { record, advisories } の JSON で出力する")
 	return cmd
 }

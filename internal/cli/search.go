@@ -152,6 +152,12 @@ func searchSnapshot(snap *store.Snapshot, keywords []string, types []string) []s
 		for _, v := range snap.Vocab {
 			add(searchTypeVocab, v.ID, "id", v.ID)
 			add(searchTypeVocab, v.ID, "label", v.Label)
+			// altLabels（別表記・同義語）を検索対象に含める（#45 D5・検索編入3面
+			// の CLI 面）。フィールド名に index を含め、複数 altLabel のヒットの
+			// 取りこぼしを防ぐ（addTransitionVocabRef と同じ dedupe 対策）。
+			for i, al := range v.AltLabels {
+				add(searchTypeVocab, v.ID, fmt.Sprintf("altLabel:%d", i), al)
+			}
 			add(searchTypeVocab, v.ID, "description", v.Description)
 		}
 	}

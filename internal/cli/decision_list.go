@@ -64,7 +64,7 @@ func newDecisionListCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&on, "on", "", "対象で絞り込む（tag:<id> または transition:<id>・完全一致・祖先展開なし・任意）")
+	cmd.Flags().StringVar(&on, "on", "", "対象で絞り込む（tag:<id>・transition:<id>・vocab:<id>・完全一致・祖先展開なし・任意）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "JSON で出力する")
 	return cmd
 }
