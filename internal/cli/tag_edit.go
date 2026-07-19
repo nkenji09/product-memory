@@ -6,10 +6,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nkenji09/scholia/internal/lint"
+	"github.com/nkenji09/scholia/internal/model"
 )
 
 func newTagEditCmd() *cobra.Command {
-	var name, kind, desc, descFile, color, ref string
+	var name, kind, desc, descFile, color, ref, fulfillment string
 	var editDesc, total bool
 	var parents []string
 	var asJSON bool
@@ -93,6 +94,16 @@ func newTagEditCmd() *cobra.Command {
 			if cmd.Flags().Changed("total") {
 				t.Total = total
 			}
+			if cmd.Flags().Changed("fulfillment") {
+				// #45 D6: "" は既定（transitions）へ解除・"property" は性質型要件。
+				switch fulfillment {
+				case "", model.FulfillmentTransitions, model.FulfillmentProperty:
+					t.Fulfillment = fulfillment
+				default:
+					return fmt.Errorf("--fulfillment は %q|%q|\"\"(解除) のいずれかである必要があります（実際は %q）",
+						model.FulfillmentTransitions, model.FulfillmentProperty, fulfillment)
+				}
+			}
 
 			// 書き込みゲート二層（#45 U3）: 編集後の kind×total の組で
 			// total-kind-mismatch を検査（既存 id のため id-policy は対象外）。
@@ -125,6 +136,7 @@ func newTagEditCmd() *cobra.Command {
 	cmd.Flags().StringVar(&color, "color", "", "表示色（空指定で解除）")
 	cmd.Flags().StringVar(&ref, "ref", "", "参照 URL（空指定で解除）")
 	cmd.Flags().BoolVar(&total, "total", false, "kind=axis タグ向け: 軸の値のうち必ず1つが真であるべきか（#39・§3.4）")
+	cmd.Flags().StringVar(&fulfillment, "fulfillment", "", "要件の充足型（#45 D6）: property（遷移では充足されない性質型要件）・transitions（既定）・空で解除。property は acknowledges:[requirement-gap] decision が無いと warn のまま")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "更新後のレコードを応答封筒 { record, advisories } の JSON で出力する")
 	gate = addGateAllowFlags(cmd)
 	return cmd
