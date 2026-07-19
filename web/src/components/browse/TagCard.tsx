@@ -48,7 +48,7 @@ function dedupeDecisions(decisions: Decision[]): Decision[] {
 
 export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilterSelf, onSelectParent, onSelectChild, onSelectSpec, onSelectVocab }: Props) {
   const t = useT();
-  const { tagKindLabel } = useLookups();
+  const { tagKindLabel, tagKindDescription } = useLookups();
   const { changedTagIds } = usePendingDiff();
   const { openComposer, comments } = useComments();
   const entries = report?.entries || [];
@@ -81,7 +81,7 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
       )}
       <div class="tag-card-head">
         <div class="tag-card-badges">
-          <Chip color={kindColor(tag.kind)}>{tag.kind ? tagKindLabel(tag.kind) : '?'}</Chip>
+          <Chip color={kindColor(tag.kind)} title={tagKindDescription(tag.kind)}>{tag.kind ? tagKindLabel(tag.kind) : '?'}</Chip>
           {parents.length > 0 && (
             <span class="tag-card-parents dim">
               <Icon name="corner-down-right" size={13} />

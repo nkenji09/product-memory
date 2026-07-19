@@ -156,6 +156,10 @@ export interface Config {
       field. Never read directly — resolve through useLookups().tagKindLabel
       so the id-fallback lives in one place (lookups.tsx). */
   tagKindLabels?: Record<string, string> | null;
+  /** #45 D9: effect の owner を subject タグ id 参照に構造化するオプトイン宣言。
+      非空のとき owner は正準ルート（タグ詳細）を持つ。未宣言/空なら owner は
+      自由文字列のまま（後方互換）。 */
+  ownerKind?: string;
   display?: DisplayConfig | null;
   /** Current git branch name — a live derived value computed server-side on
       every GET/PUT (2026-07-11 tweaks5 §2), never persisted to config.json.

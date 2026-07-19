@@ -4,6 +4,7 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import { api } from './api';
 import { useT } from './i18n';
 import type { Config, Tag, Transition, VocabEntry } from './types';
+import { kindDeclObject } from './types';
 
 const EMPTY_TAG_KIND_LABELS: Record<string, string> = {};
 
@@ -41,6 +42,12 @@ interface Lookups {
       directly, so a future design change to the fallback rule only
       touches one function. */
   tagKindLabel: (kind: string | undefined) => string;
+  /** #45 D9: config.tagKinds の object 宣言 description（kind バッジ tooltip 用）。
+      未宣言 / string 宣言 / description 空のときは undefined。 */
+  tagKindDescription: (kind: string | undefined) => string | undefined;
+  /** #45 D9: config.ownerKind（オプトイン）。非空のとき owner は subject タグ id
+      参照＝正準ルートを持つ。未宣言（""）なら owner は自由文字列のまま。 */
+  ownerKind: string;
   /** Header's product name: config.display.productName, falling back to
       "scholia" (2026-07-11 tweaks5 §2). */
   productName: string;
@@ -97,6 +104,15 @@ export function LookupsProvider({ children }: { children: ComponentChildren }) {
   const transitionLabel = (txId: string) => composeTransitionLabel(transitionById.get(txId), txId, vocabLabel);
   const tagKindLabel = (kind: string | undefined) => (kind && tagKindLabels[kind]) || kind || '';
 
+  // #45 D9: kind バッジ tooltip 用の description 索引（tagKinds の object 宣言から）。
+  const tagKindDescriptions: Record<string, string> = {};
+  for (const decl of config?.tagKinds || []) {
+    const o = kindDeclObject(decl);
+    if (o.description) tagKindDescriptions[o.id] = o.description;
+  }
+  const tagKindDescription = (kind: string | undefined) => (kind ? tagKindDescriptions[kind] : undefined);
+  const ownerKind = config?.ownerKind || '';
+
   const describeMatch = (matchedOn: string) => {
     if (matchedOn === 'id') return t.lookups.searchById;
     const [prefix, ...rest] = matchedOn.split(':');
@@ -122,6 +138,8 @@ export function LookupsProvider({ children }: { children: ComponentChildren }) {
     transitionLabel,
     describeMatch,
     tagKindLabel,
+    tagKindDescription,
+    ownerKind,
     productName,
     headerSubtitle,
     tagline,

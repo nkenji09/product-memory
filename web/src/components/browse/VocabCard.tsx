@@ -11,6 +11,7 @@ import type { IconName } from '../shared/Icon';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
+import type { KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
 
 interface Props {
@@ -41,7 +42,7 @@ const CATEGORY_ICON: Record<VocabEntry['category'], IconName> = {
 // tag-specific.
 export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFilterTag, onFilterOwner, onSelectTx }: Props) {
   const t = useT();
-  const { tagById, transitionLabel, vocabLabel } = useLookups();
+  const { tagById, transitionLabel, vocabLabel, ownerKind } = useLookups();
   const { changedVocabIds } = usePendingDiff();
   const { openComposer, comments } = useComments();
   const tags = entry.tags || [];
@@ -52,6 +53,20 @@ export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFi
   // flag, not a "proposal" — it steps aside once someone comments on this
   // entry (the comment itself then carries the diff card and badge count).
   const hasUncommentedChange = changedVocabIds.has(entry.id) && !comments.some((c) => c.recordType === 'vocab' && c.recordId === entry.id);
+
+  // #45 D9 amend（01KXY6Q49Z…）: owner の⋮メニュー。ownerKind 宣言下では owner が
+  // subject タグ id 参照＝正準ルート（タグ詳細）を持つので「リンク先を開く」を足す。
+  // ownerKind 未宣言、または owner が実在タグに解決しないプロジェクトでは従来どおり
+  // 「検索条件に追加」のみ（オプトイン原則・根拠の変化のみを反映）。
+  const ownerMenuItems = (owner: string): KebabMenuItem[] => {
+    const items: KebabMenuItem[] = [
+      { key: 'filter', label: t.browse.menuAddFilter, icon: 'plus', onSelect: () => onFilterOwner(owner) },
+    ];
+    if (ownerKind && tagById.has(owner)) {
+      items.push({ key: 'open', label: t.browse.menuOpenLink, icon: 'external-link', href: routeHash({ view: 'spec', tagId: owner }) });
+    }
+    return items;
+  };
 
   return (
     <article ref={cardRef} data-card-id={entry.id} class="card" title={entry.id}>
@@ -139,7 +154,7 @@ export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFi
               trailing={
                 <KebabMenu
                   triggerLabel={t.browse.menuTrigger}
-                  items={[{ key: 'filter', label: t.browse.menuAddFilter, icon: 'plus', onSelect: () => onFilterOwner(entry.owner!) }]}
+                  items={ownerMenuItems(entry.owner!)}
                 />
               }
             >
