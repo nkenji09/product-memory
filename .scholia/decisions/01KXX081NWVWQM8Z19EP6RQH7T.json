@@ -1,0 +1,13 @@
+{
+  "id": "01KXX081NWVWQM8Z19EP6RQH7T",
+  "target": {
+    "type": "tag",
+    "id": "req.self-consistency-lint"
+  },
+  "why": "baseline ratchet の2経路——lint --ci の評価（evaluateCI）と baseline update の台帳生成（newLintBaselineUpdateCmd）——が typed 容認（D6 の AcknowledgedBy）の扱いで割れていた。evaluateCI は acknowledges で畳んだ warn を新規判定・stale 判定から除外するのに、baseline update は Severity==warn の生 findings をそのまま台帳に採用し AcknowledgedBy を除外していなかった。この不整合により、acknowledges で解消した requirement-gap（実例: req.standalone の property＋acknowledges 容認）が baseline に居座り、lint --ci が「stale（次の update で消える）」と報告するのに update を再実行しても消えない——「意図して残す gap を宣言して歯止め台帳を縮める」運用（決定④の baseline 空化）が機能しない状態になっていた。よって baseline update にも evaluateCI と同じ AcknowledgedBy 除外を配線し、ratchet の両経路が typed 容認を等しく畳むことを不変条件とする。これは D6「容認済み finding は baseline ratchet の新規 warn に数えない」を update 経路にも一貫適用する是正であり、新しい振る舞いの追加ではない。",
+  "changed": "1. newLintBaselineUpdateCmd の台帳生成ループに AcknowledgedBy != \"\" スキップを追加（evaluateCI と同じフィルタ）。\n2. 逆検証テスト TestLintBaseline_ExcludesAcknowledgedWarns を追加（フィルタを外すと baseline に容認済み warn が載り落ちる）。\n3. dogfood baseline を update で 10→7 に縮小（req.write-gate・req.authoring-advisory は Step3 のタグ付けで遷移充足・req.standalone は typed 容認＝いずれも歯止め対象外）。",
+  "at": "2026-07-19T10:55:12Z",
+  "commits": [
+    "bb6880e"
+  ]
+}

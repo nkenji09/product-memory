@@ -297,3 +297,32 @@ func TestLintBaseline_RenameRetargetsEntries(t *testing.T) {
 		t.Fatalf("expected retargeted baseline to absorb the renamed warn:\n%s", out)
 	}
 }
+
+// baseline update は typed 容認（#45 D6・AcknowledgedBy）で畳んだ warn を baseline に
+// 載せない——evaluateCI（lint --ci）が除外するのと揃える。揃っていないと、acknowledges で
+// 解消した gap が baseline に居座り、lint --ci が「stale（次の update で消える）」と言うのに
+// update を再実行しても消えない不整合が起きる（concierge が Step3 merge 後に発見したバグ）。
+func TestLintBaseline_ExcludesAcknowledgedWarns(t *testing.T) {
+	dir := setupRatchetStore(t) // req.gap（遷移 0）＝requirement-gap warn 1 件
+
+	// 当該タグ宛てに acknowledges:[requirement-gap] の decision を置くと、その warn は
+	// AcknowledgedBy で畳まれる（typed 容認）。
+	if out, err := run(t, dir, "decide", "--on", "tag:req.gap",
+		"--acknowledges", "requirement-gap", "--why", "意図して残す gap（テスト）"); err != nil {
+		t.Fatalf("decide --acknowledges: %v\n%s", err, out)
+	}
+
+	if out, err := run(t, dir, "lint", "baseline", "update"); err != nil {
+		t.Fatalf("lint baseline update: %v\n%s", err, out)
+	}
+
+	// 容認済みの warn は baseline に入らない＝baseline 0 件。バグ時は baseline 1 件で
+	// stale 化し、再 update しても消えなかった。
+	out, err := run(t, dir, "lint", "--ci")
+	if err != nil {
+		t.Fatalf("lint --ci: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "baseline 0 件・stale 0 件") {
+		t.Fatalf("容認済み warn が baseline に載った（AcknowledgedBy フィルタ漏れ）:\n%s", out)
+	}
+}
