@@ -186,6 +186,17 @@ Case 3 は「WHY この設計にしたか」を残す（原理そのものは波
 すでに運用に現れている実例: vocab 粒度の meta-decision が `concern.traceability` に置かれているのは
 Case 3 パターン（本スキルで名前を付けて正規化する趣旨）。
 
+## Case 4: vocab の関係を結線する（#45 D5・語彙の why・契約・同義語・状態連鎖）
+
+語彙の desc に散文で埋まっている why・契約・別表記・状態連鎖を、専用スロット／vocab-target decision に着地させるとき（DESIGN §3.3／§5.5 表現域）。
+
+1. **why を desc から decision へ** — 語彙の新設理由・時点依存の想定は `scholia decide --on vocab:<id> --why "…" --dry-run`（→ advisory ゼロ確認 → 本番）へ移し、desc は「これは何か」1行に痩せさせる（`scholia vocab edit <id> --description "<要約>"`）。長文契約 desc は `desc-length` advisory が検出する。
+2. **契約全文は desc に書かず `ref` で結線** — API 契約・開示契約は versioned 文書（DESIGN の § 参照・OpenAPI 等の外部正本）に置き、`scholia vocab edit <id> --ref "<アンカー>"` でその1行だけを持つ。`file:line` は `ref-freshness` で腐ると警告される。
+3. **`altLabel` を付与して重複新設を防ぐ** — 同じ概念を別表記で呼ぶ入口があれば `scholia vocab edit <id> --alt-label "<表記>"`（繰返し可）。新規語彙を足す前に `scholia search <別表記>` で既存に無いか確認する（別名が検索で拾えるのは編入後）。
+4. **`establishes` は他遷移の given が実際に読む condition だけ宣言する** — effect が成立させる前提条件を `scholia vocab edit <eff> --establishes <condId>`（繰返し可）で辺にする。宣言してよいのは、**別の遷移の given が実際にその condition を読む**ものだけ（命名の察しで繋がっていた状態連鎖の明示化。無関係な condition を宣言しない）。存在しない id・effect 以外は書込時に reject される。`scholia show vocab <id>` で双方向逆引き（自 establishes／逆引き effect）を確認する。
+
+**Case 3 との見分け**: Case 3 は原理そのもの（波及しない）。Case 4 は語彙という正本レコードの関係欄位を埋める（`establishes` は参照整合 lint の対象・`rename`/`rm` が追随する）。
+
 ## adopt / reject の着地
 
 **adopt か reject かの判断は [scholia-triage スキル](../scholia-triage/SKILL.md) で済んでいる**

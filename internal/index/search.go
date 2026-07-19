@@ -93,6 +93,13 @@ func searchCandidates(ix *Index, t model.Transition) []SearchCandidate {
 			SearchCandidate{Label: "vocab:" + v.ID, Text: strings.ToLower(v.ID)},
 			SearchCandidate{Label: "vocab:" + v.ID, Text: strings.ToLower(v.Label)},
 		)
+		// altLabels（別表記・同義語）を検索コーパスに編入する（#45 D5・検索編入
+		// 3面の viewer index 検索面。live /api/search と static export の両方を
+		// 通す共有基盤）。ラベルは vocab: 単位で dedupe されるため、複数 altLabel
+		// を1つの候補テキストに連結して取りこぼしを防ぐ。
+		if len(v.AltLabels) > 0 {
+			out = append(out, SearchCandidate{Label: "vocab:" + v.ID, Text: strings.ToLower(strings.Join(v.AltLabels, " "))})
+		}
 	}
 	if kind := ix.VocabByID[t.Action].Kind; kind != "" {
 		out = append(out, SearchCandidate{Label: "kind:" + kind, Text: strings.ToLower(kind)})

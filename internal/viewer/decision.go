@@ -68,6 +68,11 @@ func postDecisionHandler(s *store.Store) http.HandlerFunc {
 				writeError(w, http.StatusBadRequest, fmt.Sprintf("tag %q が実在しません", targetID))
 				return
 			}
+		case model.DecisionTargetVocab:
+			if !s.VocabExists(targetID) {
+				writeError(w, http.StatusBadRequest, fmt.Sprintf("vocab %q が実在しません", targetID))
+				return
+			}
 		}
 
 		id, err := model.NewULID()
@@ -92,24 +97,24 @@ func postDecisionHandler(s *store.Store) http.HandlerFunc {
 	}
 }
 
-// parseDecisionOn parses "transition:<id>" / "tag:<id>" — a duplicate of
-// internal/cli/decide.go's unexported parseDecisionOn. Not imported from
-// there: internal/cli already imports internal/viewer (view.go, for `scholia
-// view`/`scholia export`), so the reverse import would cycle. The two copies
-// must be kept in sync if the --on/`on` grammar ever changes.
+// parseDecisionOn parses "transition:<id>" / "tag:<id>" / "vocab:<id>" — a
+// duplicate of internal/cli/decide.go's unexported parseDecisionOn. Not
+// imported from there: internal/cli already imports internal/viewer (view.go,
+// for `scholia view`/`scholia export`), so the reverse import would cycle. The
+// two copies must be kept in sync if the --on/`on` grammar ever changes.
 func parseDecisionOn(on string) (targetType, targetID string, err error) {
 	if on == "" {
-		return "", "", fmt.Errorf("on は必須です（transition:<id> または tag:<id>）")
+		return "", "", fmt.Errorf("on は必須です（transition:<id>・tag:<id>・vocab:<id>）")
 	}
 	parts := strings.SplitN(on, ":", 2)
 	if len(parts) != 2 || parts[1] == "" {
-		return "", "", fmt.Errorf("on の形式が不正です（transition:<id> または tag:<id> である必要があります）: %q", on)
+		return "", "", fmt.Errorf("on の形式が不正です（transition:<id>・tag:<id>・vocab:<id> である必要があります）: %q", on)
 	}
 	switch parts[0] {
-	case model.DecisionTargetTransition, model.DecisionTargetTag:
+	case model.DecisionTargetTransition, model.DecisionTargetTag, model.DecisionTargetVocab:
 		return parts[0], parts[1], nil
 	default:
-		return "", "", fmt.Errorf("on の対象種別は transition|tag のいずれかである必要があります（実際は %q）", parts[0])
+		return "", "", fmt.Errorf("on の対象種別は transition|tag|vocab のいずれかである必要があります（実際は %q）", parts[0])
 	}
 }
 

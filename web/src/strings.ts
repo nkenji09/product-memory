@@ -73,6 +73,12 @@ const ja = {
     noUsage: 'どの遷移からも参照されていません',
     empty: '該当する語彙はありません',
     loading: 'loading…',
+    // #45 D5 の関係スロット表示。
+    refHeading: '外部契約',
+    altLabelsHeading: '別表記',
+    establishesHeading: '成立させる条件',
+    establishedByHeading: '成立させる効果',
+    decisionsHeading: '意思決定',
     // 2026-07-11 tweaks3 §1: 遷移の きっかけ/前提/結果 と同じ語彙に統一
     // （grammar色 --t-act/--t-giv/--t-then とも対応）。VocabEntry.category は
     // Go側では string（3軸固定の想定値だが型では絞られていない）なので、
@@ -429,6 +435,12 @@ const en: Strings = {
     noUsage: 'Not referenced by any transition',
     empty: 'No matching vocab entries',
     loading: 'loading…',
+    // #45 D5 relationship slots.
+    refHeading: 'External contract',
+    altLabelsHeading: 'Alternate labels',
+    establishesHeading: 'Establishes conditions',
+    establishedByHeading: 'Established by effects',
+    decisionsHeading: 'Decisions',
     categoryLabel: (c) => ({ action: FLOW_TRIGGER_EN, condition: FLOW_GIVEN_EN, effect: FLOW_RESULT_EN } as Record<string, string>)[c] || c,
     otherKind: 'Other',
     subjectEmpty: (name) => `No vocab referenced by transitions under ${name}`,

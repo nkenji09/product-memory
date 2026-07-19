@@ -371,6 +371,31 @@ func TestCompute_VocabRenamePairForwardCompat(t *testing.T) {
 	}
 }
 
+func TestCompute_VocabTargetDecisionRepointAllowedWithNewFields(t *testing.T) {
+	// #45 D5: vocab-target decision の target.id が vocab rename で張替わった
+	// diff は append-only OK（exit 0 相当・違反にならない）。新スロット
+	// （establishes/ref/altLabels）を持つ vocab の rename も内容照合が通る。
+	v := model.VocabEntry{ID: "eff.old", Category: "effect", Label: "save",
+		Ref: "https://example/spec", AltLabels: []string{"別名"}, Establishes: []string{"cond.x"}}
+	renamed := v
+	renamed.ID = "eff.new"
+
+	b := baseDecision()
+	b.Target = model.DecisionTarget{Type: "vocab", ID: "eff.old"}
+	a := b
+	a.Target.ID = "eff.new"
+	before := refSnapshot{Vocab: []model.VocabEntry{v}, Decisions: []model.Decision{b}}
+	after := refSnapshot{Vocab: []model.VocabEntry{renamed}, Decisions: []model.Decision{a}}
+
+	r := compute("HEAD", before, after)
+	if r.DecisionViolation() {
+		t.Fatalf("新スロット付き vocab rename 追随が違反扱い: %+v", r.Decisions.Changed)
+	}
+	if got := r.Decisions.Changed[0].AllowedFields; len(got) != 1 || got[0] != "target.id(rename eff.old→eff.new)" {
+		t.Fatalf("AllowedFields = %v", got)
+	}
+}
+
 func TestCompute_RenamePairDoesNotUnlockJudgmentFields(t *testing.T) {
 	// 悪用対策: rename ペアが存在しても判断欄位（why）は不可侵。
 	tx := model.Transition{ID: "T-old", Action: "act.a", Then: []string{"eff.a"}}

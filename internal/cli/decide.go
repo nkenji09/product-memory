@@ -17,8 +17,8 @@ func newDecideCmd() *cobra.Command {
 	var asJSON, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "decide",
-		Short: "意思決定を 1 件記録する（transition か tag に付く・append-only・§3.5）",
-		Long: "意思決定を 1 件記録する（transition か tag に付く・append-only・§3.5）。\n\n" +
+		Short: "意思決定を 1 件記録する（transition・tag・vocab に付く・append-only・§3.5）",
+		Long: "意思決定を 1 件記録する（transition・tag・vocab に付く・append-only・§3.5）。\n\n" +
 			"decision は append-only で保存後の why/changed は直せない。--dry-run で保存せず\n" +
 			"advisory（腐る file:line・消えた文書参照など書き方規律の警告）だけを先にプレビューし、\n" +
 			"ゼロにしてから本番の decide を打つ（#45 U3 の推奨手順）。",
@@ -43,6 +43,10 @@ func newDecideCmd() *cobra.Command {
 			case model.DecisionTargetTag:
 				if !s.TagExists(targetID) {
 					return fmt.Errorf("tag %q が実在しません", targetID)
+				}
+			case model.DecisionTargetVocab:
+				if !s.VocabExists(targetID) {
+					return fmt.Errorf("vocab %q が実在しません", targetID)
 				}
 			}
 
@@ -96,7 +100,7 @@ func newDecideCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&on, "on", "", "対象。transition:<id> または tag:<id>（必須）")
+	cmd.Flags().StringVar(&on, "on", "", "対象。transition:<id>・tag:<id>・vocab:<id>（必須）")
 	cmd.Flags().StringVar(&why, "why", "", "なぜそうしたか（必須）")
 	cmd.Flags().StringVar(&changed, "changed", "", "何を変更したか（任意）")
 	cmd.Flags().StringVar(&ref, "ref", "", "参照。URL・commit hash 推奨（file:line は lint ref-freshness で警告）")
@@ -106,19 +110,20 @@ func newDecideCmd() *cobra.Command {
 	return cmd
 }
 
-// parseDecisionOn は --on の "transition:<id>" / "tag:<id>" を分解する。
+// parseDecisionOn は --on の "transition:<id>" / "tag:<id>" / "vocab:<id>" を
+// 分解する（vocab は #45 D5）。
 func parseDecisionOn(on string) (targetType, targetID string, err error) {
 	if on == "" {
-		return "", "", fmt.Errorf("--on は必須です（transition:<id> または tag:<id>）")
+		return "", "", fmt.Errorf("--on は必須です（transition:<id>・tag:<id>・vocab:<id>）")
 	}
 	parts := strings.SplitN(on, ":", 2)
 	if len(parts) != 2 || parts[1] == "" {
-		return "", "", fmt.Errorf("--on の形式が不正です（transition:<id> または tag:<id> である必要があります）: %q", on)
+		return "", "", fmt.Errorf("--on の形式が不正です（transition:<id>・tag:<id>・vocab:<id> である必要があります）: %q", on)
 	}
 	switch parts[0] {
-	case model.DecisionTargetTransition, model.DecisionTargetTag:
+	case model.DecisionTargetTransition, model.DecisionTargetTag, model.DecisionTargetVocab:
 		return parts[0], parts[1], nil
 	default:
-		return "", "", fmt.Errorf("--on の対象種別は transition|tag のいずれかである必要があります（実際は %q）", parts[0])
+		return "", "", fmt.Errorf("--on の対象種別は transition|tag|vocab のいずれかである必要があります（実際は %q）", parts[0])
 	}
 }

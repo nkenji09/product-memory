@@ -50,6 +50,44 @@ func TestRemoveVocab_RejectsReferencedThenDeletesUnreferenced(t *testing.T) {
 	}
 }
 
+func TestRemoveVocab_RejectsDecisionTargetAndEstablishesReference(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Init(dir)
+	if err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	// cond.a is a decision target — must be undeletable.
+	if err := s.SaveVocab(model.VocabEntry{ID: "cond.a", Category: model.CategoryCondition, Label: "a"}); err != nil {
+		t.Fatalf("SaveVocab: %v", err)
+	}
+	if err := s.SaveDecision(model.Decision{
+		ID: "01DV", Target: model.DecisionTarget{Type: model.DecisionTargetVocab, ID: "cond.a"},
+		Why: "w", At: "2026-01-01T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("SaveDecision: %v", err)
+	}
+	if _, err := s.RemoveVocab("cond.a"); err == nil {
+		t.Fatalf("expected error removing a decision-targeted vocab")
+	}
+	if !s.VocabExists("cond.a") {
+		t.Fatalf("decision-targeted vocab should not have been deleted")
+	}
+
+	// cond.b is referenced by another effect's establishes[] — undeletable.
+	if err := s.SaveVocab(model.VocabEntry{ID: "cond.b", Category: model.CategoryCondition, Label: "b"}); err != nil {
+		t.Fatalf("SaveVocab: %v", err)
+	}
+	if err := s.SaveVocab(model.VocabEntry{ID: "eff.mk", Category: model.CategoryEffect, Label: "mk", Establishes: []string{"cond.b"}}); err != nil {
+		t.Fatalf("SaveVocab: %v", err)
+	}
+	if _, err := s.RemoveVocab("cond.b"); err == nil {
+		t.Fatalf("expected error removing a vocab referenced by another vocab's establishes")
+	}
+	if !s.VocabExists("cond.b") {
+		t.Fatalf("establishes-referenced vocab should not have been deleted")
+	}
+}
+
 func TestRemoveTag_UnreferencedDeletesDirectly(t *testing.T) {
 	dir := t.TempDir()
 	s, err := Init(dir)

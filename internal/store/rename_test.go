@@ -57,6 +57,68 @@ func TestRenameVocab_UpdatesTransitionReferencesAndFile(t *testing.T) {
 	}
 }
 
+func TestRenameVocab_FollowsDecisionTargetAndEstablishes(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Init(dir)
+	if err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	// cond.old is the condition being renamed; it is a decision target and is
+	// referenced by another effect's establishes[].
+	if err := s.SaveVocab(model.VocabEntry{ID: "cond.old", Category: model.CategoryCondition, Label: "old"}); err != nil {
+		t.Fatalf("SaveVocab: %v", err)
+	}
+	if err := s.SaveVocab(model.VocabEntry{ID: "eff.mk", Category: model.CategoryEffect, Label: "mk", Establishes: []string{"cond.old"}}); err != nil {
+		t.Fatalf("SaveVocab: %v", err)
+	}
+	if err := s.SaveDecision(model.Decision{
+		ID: "01DV", Target: model.DecisionTarget{Type: model.DecisionTargetVocab, ID: "cond.old"},
+		Why: "w", At: "2026-01-01T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("SaveDecision: %v", err)
+	}
+	// Unrelated tag decision must be left untouched.
+	if err := s.SaveDecision(model.Decision{
+		ID: "01DT", Target: model.DecisionTarget{Type: model.DecisionTargetTag, ID: "subject.x"},
+		Why: "w", At: "2026-01-01T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("SaveDecision: %v", err)
+	}
+
+	result, err := s.RenameVocab("cond.old", "cond.new")
+	if err != nil {
+		t.Fatalf("RenameVocab: %v", err)
+	}
+	if len(result.UpdatedDecisions) != 1 || result.UpdatedDecisions[0] != "01DV" {
+		t.Fatalf("expected 01DV in UpdatedDecisions, got %v", result.UpdatedDecisions)
+	}
+	if len(result.UpdatedVocab) != 1 || result.UpdatedVocab[0] != "eff.mk" {
+		t.Fatalf("expected eff.mk in UpdatedVocab, got %v", result.UpdatedVocab)
+	}
+
+	snap, err := s.LoadAll()
+	if err != nil {
+		t.Fatalf("LoadAll: %v", err)
+	}
+	byID := make(map[string]model.Decision, len(snap.Decisions))
+	for _, d := range snap.Decisions {
+		byID[d.ID] = d
+	}
+	if byID["01DV"].Target.ID != "cond.new" {
+		t.Fatalf("expected decision 01DV target repointed to cond.new, got %+v", byID["01DV"])
+	}
+	if byID["01DT"].Target.ID != "subject.x" {
+		t.Fatalf("expected unrelated tag decision 01DT untouched, got %+v", byID["01DT"])
+	}
+	eff, err := s.LoadVocab("eff.mk")
+	if err != nil {
+		t.Fatalf("LoadVocab: %v", err)
+	}
+	if len(eff.Establishes) != 1 || eff.Establishes[0] != "cond.new" {
+		t.Fatalf("expected eff.mk.establishes repointed to cond.new, got %v", eff.Establishes)
+	}
+}
+
 func TestRenameVocab_RejectsSameOrExistingID(t *testing.T) {
 	dir := t.TempDir()
 	s, err := Init(dir)

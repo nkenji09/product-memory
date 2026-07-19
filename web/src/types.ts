@@ -14,6 +14,13 @@ export interface VocabEntry {
   owner?: string;
   tags?: string[];
   description?: string;
+  // #45 D5 の関係スロット（additive/omitempty・Go 側 model.VocabEntry と同期）。
+  /** 外部契約・仕様本文へのアンカー（1行・本文は versioned 文書へ）。 */
+  ref?: string;
+  /** 別表記・同義語（検索編入で重複新設を防ぐ）。 */
+  altLabels?: string[];
+  /** この効果が成立させる condition の id（effect のみ・状態連鎖の機械可読辺）。 */
+  establishes?: string[];
 }
 
 export interface Tag {
@@ -27,7 +34,7 @@ export interface Tag {
 }
 
 export interface DecisionTarget {
-  type: 'transition' | 'tag';
+  type: 'transition' | 'tag' | 'vocab';
   id: string;
 }
 
