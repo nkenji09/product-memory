@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -49,6 +51,9 @@ func newVocabAddCmd() *cobra.Command {
 			}
 			establishes = dedupeStrings(establishes)
 			if err := validateEstablishes(snap, category, establishes); err != nil {
+				return err
+			}
+			if err := validateOwner(snap, owner); err != nil {
 				return err
 			}
 
@@ -121,6 +126,34 @@ func dedupeStrings(in []string) []string {
 		return nil
 	}
 	return out
+}
+
+// validateOwner は owner の write-time ゲート（#45 D9）。cfg.OwnerKind が非空
+// （オプトイン宣言）のとき、owner 値が kind==cfg.OwnerKind の実在タグ id である
+// ことを検証する。解決しなければ候補（当該 kind のタグ id）を提示して error。
+// OwnerKind=="" のときは自由文字列を許容する（現状維持・後方互換の不変条件②）。
+// owner が空文字（未指定）なら常に許容する（owner 無指定 effect は D9 でも合法）。
+func validateOwner(snap store.Snapshot, owner string) error {
+	if owner == "" || snap.Config.OwnerKind == "" {
+		return nil
+	}
+	ownerKind := snap.Config.OwnerKind
+	var candidates []string
+	for _, tag := range snap.Tags {
+		if tag.Kind != ownerKind {
+			continue
+		}
+		candidates = append(candidates, tag.ID)
+		if tag.ID == owner {
+			return nil
+		}
+	}
+	sort.Strings(candidates)
+	if len(candidates) == 0 {
+		return fmt.Errorf("--owner %q は kind=%s の実在タグではありません（kind=%s のタグが存在しません）", owner, ownerKind, ownerKind)
+	}
+	return fmt.Errorf("--owner %q は kind=%s の実在タグ id ではありません（候補: %s）",
+		owner, ownerKind, strings.Join(candidates, ", "))
 }
 
 // validateEstablishes は establishes の write-time ゲート（#45 D5）:

@@ -6,20 +6,23 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nkenji09/scholia/internal/lint"
+	"github.com/nkenji09/scholia/internal/model"
 )
 
 func newVocabEditCmd() *cobra.Command {
-	var label, description, descFile, ref string
+	var label, kind, owner, description, descFile, ref string
 	var altLabels, establishes []string
 	var editDesc, clearAltLabels, clearEstablishes bool
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "edit <id>",
-		Short: "語彙の label/説明(description)/ref/altLabels/establishes を更新する",
+		Short: "語彙の label/kind/owner/説明(description)/ref/altLabels/establishes を更新する",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
 			refChanged := cmd.Flags().Changed("ref")
+			kindChanged := cmd.Flags().Changed("kind")
+			ownerChanged := cmd.Flags().Changed("owner")
 			altSet := cmd.Flags().Changed("alt-label")
 			estSet := cmd.Flags().Changed("establishes")
 			if clearAltLabels && altSet {
@@ -44,6 +47,11 @@ func newVocabEditCmd() *cobra.Command {
 					return fmt.Errorf("--label を空にはできません")
 				}
 				v.Label = label
+			}
+
+			// --owner は effect 限定（vocab add と同じ制約・#45 D9）。
+			if ownerChanged && v.Category != model.CategoryEffect {
+				return fmt.Errorf("--owner は effect カテゴリでのみ指定できます（実際は %s）", v.Category)
 			}
 
 			descValue, descChanged, err := descSource{
@@ -74,10 +82,16 @@ func newVocabEditCmd() *cobra.Command {
 			case estSet:
 				v.Establishes = dedupeStrings(establishes)
 			}
+			if kindChanged {
+				v.Kind = kind
+			}
+			if ownerChanged {
+				v.Owner = owner
+			}
 
-			anyChanged := labelChanged || descChanged || refChanged || altSet || estSet || clearAltLabels || clearEstablishes
+			anyChanged := labelChanged || kindChanged || ownerChanged || descChanged || refChanged || altSet || estSet || clearAltLabels || clearEstablishes
 			if !anyChanged {
-				return fmt.Errorf("--label/--description/--desc-file/--edit/--ref/--alt-label/--clear-alt-labels/--establishes/--clear-establishes のいずれかを指定してください")
+				return fmt.Errorf("--label/--kind/--owner/--description/--desc-file/--edit/--ref/--alt-label/--clear-alt-labels/--establishes/--clear-establishes のいずれかを指定してください")
 			}
 
 			snap, err := s.LoadAll()
@@ -88,6 +102,15 @@ func newVocabEditCmd() *cobra.Command {
 			// vocab 自身のカテゴリで検査する。snap は保存前だが、establishes の
 			// 参照先（他 condition）の実在は変わらないためこの snap で十分。
 			if err := validateEstablishes(snap, v.Category, v.Establishes); err != nil {
+				return err
+			}
+			// kind backfill: config.kinds.<category> に宣言済みの kind のみ許容
+			//（vocab add と同じ検査・空文字クリアは常に許容）。
+			if kindChanged && kind != "" && !containsStr(snap.Config.KindsFor(v.Category), kind) {
+				return fmt.Errorf("kind %q は config.kinds.%s に未宣言です", kind, v.Category)
+			}
+			// owner の write-time 実在検証（ownerKind 宣言下のみ・#45 D9）。
+			if err := validateOwner(snap, v.Owner); err != nil {
 				return err
 			}
 
@@ -111,6 +134,8 @@ func newVocabEditCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&label, "label", "", "表示ラベル（空文字は不可）")
+	cmd.Flags().StringVar(&kind, "kind", "", "kind を更新（config.kinds.<category> の宣言集合に含まれる必要がある・condition の backfill 用・#45 D9）")
+	cmd.Flags().StringVar(&owner, "owner", "", "効果を起こす主体を更新（effect のみ・ownerKind 宣言下では実在タグ id を検証・#45 D9）")
 	cmd.Flags().StringVar(&description, "description", "", "説明（markdown・--desc-file/--edit と排他）")
 	cmd.Flags().StringVar(&descFile, "desc-file", "", "説明をファイルから読み込む（--description/--edit と排他）")
 	cmd.Flags().BoolVar(&editDesc, "edit", false, "$EDITOR で説明を入力する（--description/--desc-file と排他）")
