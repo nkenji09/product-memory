@@ -2,6 +2,7 @@
   "id": "cond.update-available",
   "category": "condition",
   "label": "GitHub の最新リリース tag が現在版より新しいとき（更新あり）",
+  "kind": "env",
   "tags": [
     "axis.update.status"
   ]

@@ -2,6 +2,7 @@
   "id": "cond.update-check-flag",
   "category": "condition",
   "label": "scholia update に --check が指定されているとき（dry-run）",
+  "kind": "input",
   "tags": [
     "axis.update.mode"
   ]

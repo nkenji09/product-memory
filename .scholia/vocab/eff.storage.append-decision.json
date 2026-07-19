@@ -3,7 +3,7 @@
   "category": "effect",
   "label": "decisions/ に新規ファイルを追記する",
   "kind": "storage",
-  "owner": "scholia-core",
+  "owner": "subject.store",
   "tags": [
     "concern.git-friendliness"
   ]

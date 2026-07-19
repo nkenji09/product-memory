@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "adopt/reject 済みの人コメントを localStorage(scholia-comments-v1) から削除する",
   "kind": "state",
-  "owner": "viewer-web"
+  "owner": "subject.viewer.drawer"
 }

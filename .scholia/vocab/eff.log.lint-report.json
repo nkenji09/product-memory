@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "lint 結果を出力する",
   "kind": "log",
-  "owner": "scholia-core"
+  "owner": "subject.lint"
 }

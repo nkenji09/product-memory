@@ -2,6 +2,7 @@
   "id": "cond.update-apply",
   "category": "condition",
   "label": "scholia update に --check が指定されていない（実更新を行う）とき",
+  "kind": "input",
   "tags": [
     "axis.update.mode"
   ],

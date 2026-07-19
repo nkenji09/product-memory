@@ -1,5 +1,6 @@
 {
   "id": "cond.cascade-requested",
   "category": "condition",
-  "label": "--cascade が指定されている"
+  "label": "--cascade が指定されている",
+  "kind": "input"
 }

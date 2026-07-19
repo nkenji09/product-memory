@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "decision 詳細/permalink を描画（why/changed/commits/ref/supersedes/acknowledges）",
   "kind": "emit",
-  "owner": "viewer-web"
+  "owner": "subject.viewer.decisions"
 }

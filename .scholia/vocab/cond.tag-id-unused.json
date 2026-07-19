@@ -1,5 +1,6 @@
 {
   "id": "cond.tag-id-unused",
   "category": "condition",
-  "label": "指定 id のタグがまだ存在しない"
+  "label": "指定 id のタグがまだ存在しない",
+  "kind": "store"
 }

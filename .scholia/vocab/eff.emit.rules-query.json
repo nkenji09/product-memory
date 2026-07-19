@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "横断ルールを rules query で描画",
   "kind": "emit",
-  "owner": "viewer-web"
+  "owner": "subject.viewer"
 }

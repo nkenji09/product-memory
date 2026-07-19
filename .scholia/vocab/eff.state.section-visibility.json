@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "セクション開閉状態を localStorage 永続",
   "kind": "state",
-  "owner": "viewer-web"
+  "owner": "subject.viewer"
 }

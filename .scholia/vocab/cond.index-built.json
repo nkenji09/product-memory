@@ -1,5 +1,6 @@
 {
   "id": "cond.index-built",
   "category": "condition",
-  "label": "起動時に .scholia の in-memory index が構築済み"
+  "label": "起動時に .scholia の in-memory index が構築済み",
+  "kind": "derived"
 }

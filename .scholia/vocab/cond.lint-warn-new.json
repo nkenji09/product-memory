@@ -1,5 +1,6 @@
 {
   "id": "cond.lint-warn-new",
   "category": "condition",
-  "label": "warn finding の (rule, target) が .scholia/lint-baseline.json に無いとき"
+  "label": "warn finding の (rule, target) が .scholia/lint-baseline.json に無いとき",
+  "kind": "derived"
 }

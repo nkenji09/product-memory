@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "指定した提案コメントの .scholia/reviews/\u003cid\u003e.json ファイルを削除する",
   "kind": "storage",
-  "owner": "scholia-core"
+  "owner": "subject.store"
 }

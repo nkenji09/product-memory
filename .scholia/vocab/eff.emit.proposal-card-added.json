@@ -3,5 +3,5 @@
   "category": "effect",
   "label": "ドロワーに action/given/then を構造化 diff カード（全追加=after-only・緑）として描画する",
   "kind": "emit",
-  "owner": "viewer-web"
+  "owner": "subject.viewer.drawer"
 }

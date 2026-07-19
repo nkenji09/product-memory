@@ -1,5 +1,6 @@
 {
   "id": "cond.lint-warn-in-baseline",
   "category": "condition",
-  "label": "warn finding の (rule, target) が .scholia/lint-baseline.json に載っているとき"
+  "label": "warn finding の (rule, target) が .scholia/lint-baseline.json に載っているとき",
+  "kind": "store"
 }
