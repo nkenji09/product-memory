@@ -50,6 +50,18 @@ func TestSearch_MatchesTransitionID(t *testing.T) {
 	assertTxIDs(t, res.Transitions, []string{"T-login"})
 }
 
+func TestSearch_MatchesVocabAltLabels(t *testing.T) {
+	snap := searchSnapshot()
+	snap.Vocab[1].AltLabels = []string{"セッション発行", "auth token"} // eff.token
+	ix := Build(snap)
+
+	byAlt := Search(ix, "auth token")
+	assertTxIDs(t, byAlt.Transitions, []string{"T-login", "T-other"})
+
+	byAltJa := Search(ix, "セッション発行")
+	assertTxIDs(t, byAltJa.Transitions, []string{"T-login", "T-other"})
+}
+
 func TestSearch_MatchesKindName(t *testing.T) {
 	ix := Build(searchSnapshot())
 

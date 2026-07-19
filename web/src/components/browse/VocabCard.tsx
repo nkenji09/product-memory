@@ -1,7 +1,7 @@
 import { useLookups } from '../../lookups';
 import { usePendingDiff } from '../../pendingDiff';
 import { useT } from '../../i18n';
-import type { Transition, VocabEntry } from '../../types';
+import type { Decision, Transition, VocabEntry } from '../../types';
 import { Markdown } from '../Markdown';
 import { Chip, kindColor, OWNER_COLOR } from '../shared/Chip';
 import { CommentButton } from '../comments/CommentButton';
@@ -16,6 +16,10 @@ import { routeHash } from '../../router';
 interface Props {
   entry: VocabEntry;
   uses: Transition[];
+  /** vocab-target decision（#45 D5）— この語彙自身を target とする意思決定。 */
+  decisions: Decision[];
+  /** establishes 逆引き（#45 D5）— この語彙（condition）を成立させる effect の id 群。 */
+  establishedBy: string[];
   cardRef: (el: HTMLElement | null) => void;
   onFilterTag: (id: string) => void;
   onFilterOwner: (owner: string) => void;
@@ -35,12 +39,14 @@ const CATEGORY_ICON: Record<VocabEntry['category'], IconName> = {
 // tag-card-spec-list/-row/-label/-id) are reused as-is from TagCard's CSS;
 // they're generic "card head" / "row of records" patterns, not actually
 // tag-specific.
-export function VocabCard({ entry, uses, cardRef, onFilterTag, onFilterOwner, onSelectTx }: Props) {
+export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFilterTag, onFilterOwner, onSelectTx }: Props) {
   const t = useT();
-  const { tagById, transitionLabel } = useLookups();
+  const { tagById, transitionLabel, vocabLabel } = useLookups();
   const { changedVocabIds } = usePendingDiff();
   const { openComposer, comments } = useComments();
   const tags = entry.tags || [];
+  const altLabels = entry.altLabels || [];
+  const establishes = entry.establishes || [];
   // §8.8 P5 vocab/tag（generalized from SpecCard's hasUncommentedChange・
   // §8.3）: a pending change with no comment yet is a quiet pending-change
   // flag, not a "proposal" — it steps aside once someone comments on this
@@ -80,6 +86,40 @@ export function VocabCard({ entry, uses, cardRef, onFilterTag, onFilterOwner, on
       {entry.description && (
         <div class="tag-card-body">
           <Markdown text={entry.description} />
+        </div>
+      )}
+
+      {entry.ref && (
+        <div class="card-section">
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">
+              <Icon name="external-link" size={14} /> {t.vocab.refHeading}
+            </span>
+          </div>
+          {/^https?:\/\//.test(entry.ref) ? (
+            <a class="tag-card-ref" href={entry.ref} target="_blank" rel="noreferrer noopener">
+              {entry.ref}
+            </a>
+          ) : (
+            <span class="tag-card-ref dim">{entry.ref}</span>
+          )}
+        </div>
+      )}
+
+      {altLabels.length > 0 && (
+        <div class="card-section">
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">
+              <Icon name="book-open" size={14} /> {t.vocab.altLabelsHeading}
+            </span>
+          </div>
+          <div class="spec-card-chip-row">
+            {altLabels.map((al) => (
+              <Chip key={al} color={kindColor(entry.category)}>
+                {al}
+              </Chip>
+            ))}
+          </div>
         </div>
       )}
 
@@ -165,6 +205,73 @@ export function VocabCard({ entry, uses, cardRef, onFilterTag, onFilterOwner, on
               );
             })}
           </div>
+        </CollapsibleSection>
+      )}
+
+      {/* establishes 双方向逆引き（#45 D5）: effect 側は「この効果が成立させる
+          条件」、condition 側は「この条件を成立させる効果」。図の導出本体は後
+          フェーズだが、辺は双方向にたどれる。 */}
+      {establishes.length > 0 && (
+        <div class="card-section">
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">
+              <Icon name="git-fork" size={14} /> {t.vocab.establishesHeading} <span class="card-section-count dim">({establishes.length})</span>
+            </span>
+          </div>
+          <div class="tag-card-spec-list">
+            {establishes.map((id) => (
+              <HashLink
+                key={id}
+                href={routeHash({ view: 'vocab', vocabId: id })}
+                class="tag-card-vocab-row"
+                onNavigate={() => {
+                  window.location.hash = routeHash({ view: 'vocab', vocabId: id });
+                }}
+                title={id}
+              >
+                <span class="tag-card-vocab-label">{vocabLabel(id)}</span>
+              </HashLink>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {establishedBy.length > 0 && (
+        <div class="card-section">
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">
+              <Icon name="arrow-right-to-line" size={14} /> {t.vocab.establishedByHeading} <span class="card-section-count dim">({establishedBy.length})</span>
+            </span>
+          </div>
+          <div class="tag-card-spec-list">
+            {establishedBy.map((id) => (
+              <HashLink
+                key={id}
+                href={routeHash({ view: 'vocab', vocabId: id })}
+                class="tag-card-vocab-row"
+                onNavigate={() => {
+                  window.location.hash = routeHash({ view: 'vocab', vocabId: id });
+                }}
+                title={id}
+              >
+                <span class="tag-card-vocab-label">{vocabLabel(id)}</span>
+              </HashLink>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {decisions.length > 0 && (
+        <CollapsibleSection recordId={entry.id} section="decisions" count={decisions.length} icon="scroll-text" label={t.vocab.decisionsHeading} defaultOpen={true}>
+          {decisions.map((d) => (
+            <div key={d.id} class="tag-card-decision">
+              <p>{d.why}</p>
+              <span class="dim">
+                {d.at.slice(0, 10)}
+                {d.ref && ` · ${d.ref}`}
+              </span>
+            </div>
+          ))}
         </CollapsibleSection>
       )}
     </article>

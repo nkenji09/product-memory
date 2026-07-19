@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useLookups } from '../lookups';
 import { useDrawer } from '../drawer';
 import { useT } from '../i18n';
-import type { Config, Transition, VocabEntry } from '../types';
+import type { Config, Decision, Transition, VocabEntry } from '../types';
 import { BrowseRail } from './browse/BrowseRail';
 import type { ConditionChip, KindOption, SuggestionItem } from './browse/BrowseRail';
 import { Resizer } from './layout/Resizer';
@@ -81,6 +81,9 @@ export function VocabView({
   const { closeDrawer } = useDrawer();
   const [vocab, setVocab] = useState<VocabEntry[] | null>(null);
   const [transitions, setTransitions] = useState<Transition[]>([]);
+  // vocab-target decision（#45 D5）: 全 decision を1度取り、vocab 宛だけ
+  // クライアント側で選別する（rules({}) は全件・専用エンドポイント不要）。
+  const [decisions, setDecisions] = useState<Decision[]>([]);
   // category→kind ツリーの kind 順（依頼H・vocab-view-p1）は config.kinds に
   // 拠るので、facets（タグフォレスト）の代わりに config を取得する。
   const [config, setConfig] = useState<Config | null>(null);
@@ -172,11 +175,12 @@ export function VocabView({
   }, [initialFocusId]);
 
   useEffect(() => {
-    Promise.all([api.getVocab(), api.getTransitions({}), api.getConfig()])
-      .then(([v, tx, c]) => {
+    Promise.all([api.getVocab(), api.getTransitions({}), api.getConfig(), api.getRules({})])
+      .then(([v, tx, c, r]) => {
         setVocab(v);
         setTransitions(tx.transitions || []);
         setConfig(c);
+        setDecisions(r.decisions || []);
       })
       .catch((err) => setError(String(err)));
   }, []);
@@ -308,9 +312,33 @@ export function VocabView({
 
   const visible = activeVocab
     .filter((v) => categoryFacet === 'all' || v.category === categoryFacet)
-    .filter((v) => !q || (v.id + ' ' + v.label + ' ' + (v.description || '')).toLowerCase().includes(q))
+    // altLabels（別表記・同義語）も全文検索の対象に含める（#45 D5・検索編入
+    // 3面の viewer フィルタ面。別名から既存語彙へ到達させる）。
+    .filter(
+      (v) => !q || (v.id + ' ' + v.label + ' ' + (v.description || '') + ' ' + (v.altLabels || []).join(' ')).toLowerCase().includes(q),
+    )
     .filter((v) => filters.every((f) => matchesFilter(v, f)))
     .sort((a, b) => a.id.localeCompare(b.id));
+
+  // vocab 宛 decision（#45 D5）を vocab id 別に索引する。
+  const decisionsByVocab = new Map<string, Decision[]>();
+  for (const d of decisions) {
+    if (d.target.type === 'vocab') {
+      const list = decisionsByVocab.get(d.target.id) || [];
+      list.push(d);
+      decisionsByVocab.set(d.target.id, list);
+    }
+  }
+  // establishes の逆引き（#45 D5）: condition id → それを成立させる effect の id 群。
+  // 母集合は base list（全 vocab）— subject モードでも逆引き自体は全域で成立する。
+  const establishedByIndex = new Map<string, string[]>();
+  for (const v of vocab) {
+    for (const condID of v.establishes || []) {
+      const list = establishedByIndex.get(condID) || [];
+      list.push(v.id);
+      establishedByIndex.set(condID, list);
+    }
+  }
 
   const scrollToCard = (id: string) => {
     scrollTarget.current = id;
@@ -486,6 +514,8 @@ export function VocabView({
                 key={v.id}
                 entry={v}
                 uses={usedBy(v, transitions)}
+                decisions={decisionsByVocab.get(v.id) || []}
+                establishedBy={establishedByIndex.get(v.id) || []}
                 cardRef={(el) => {
                   if (el) cardRefs.current.set(v.id, el);
                   else cardRefs.current.delete(v.id);
