@@ -1,0 +1,9 @@
+{
+  "id": "req.comfortable-viewer.decision-browse",
+  "name": "意思決定の横断ブラウズ",
+  "kind": "requirement",
+  "parentIds": [
+    "req.comfortable-viewer"
+  ],
+  "description": "**As a** 記録された意思決定を辿りたい人間（開発者/レビュアー）\n**I want** decision を横断的に一覧・検索し、個々の decision に共有可能な URL で到達したい\n**so that** 「付いているタグを知っている人」でなくても、過去の判断と今の正を辿れる\n\n### 受け入れ基準\n- viewer に decision 一覧（#/decisions）: target 種別・タグ・期間でフィルタ\n- decision 詳細ページ（#/decision/\u003culid\u003e）＋permalink: why/changed/commits/ref を保持描画\n- index 検索コーパスに decision の why/changed を編入（種別フィルタ併設）\n- static export（scholia export --html）に一覧・詳細を同梱"
+}
