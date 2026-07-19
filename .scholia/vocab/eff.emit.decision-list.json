@@ -1,0 +1,7 @@
+{
+  "id": "eff.emit.decision-list",
+  "category": "effect",
+  "label": "decision 一覧を描画（target 種別・タグ・現行/失効・期間フィルタ＋why/changed 検索）",
+  "kind": "emit",
+  "owner": "viewer-web"
+}

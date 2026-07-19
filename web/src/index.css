@@ -21,5 +21,6 @@
 @import './styles/views/config.css';
 @import './styles/views/comments.css';
 @import './styles/views/flow.css';
+@import './styles/views/decisions.css';
 
 @import './styles/markdown.css';

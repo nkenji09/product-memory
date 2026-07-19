@@ -185,6 +185,90 @@ func TestCompute_CommitsRemovalOrReorderIsViolation(t *testing.T) {
 	}
 }
 
+// --- supersedes（#45 D7）の append-only 分類（correctness critical） ---
+//
+// model に Supersedes を足すと未知フィールドでなくなり、diffDecisions の
+// reflect.DeepEqual が supersedes 変更を検出する。分類を足さないと既存 link の
+// 改変が allowed にも violated にも入らず黙認される（append-only 破れ）。以下は
+// その穴が開いていないことの反証テスト。
+
+func TestCompute_SupersedesAppendIsAllowed(t *testing.T) {
+	b := baseDecision()
+	a := baseDecision()
+	a.Supersedes = []model.SupersedeLink{{ID: "d0", Mode: "supersede"}}
+	r := compute("HEAD", refSnapshot{Decisions: []model.Decision{b}}, refSnapshot{Decisions: []model.Decision{a}})
+	if len(r.Decisions.Changed) != 1 {
+		t.Fatalf("Decisions.Changed = %+v, want 1", r.Decisions.Changed)
+	}
+	c := r.Decisions.Changed[0]
+	if c.Violation() || r.DecisionViolation() {
+		t.Fatalf("supersede link の追記が違反扱いされた（追記専用 link の偽陽性）: %+v", c)
+	}
+	if len(c.AllowedFields) != 1 || c.AllowedFields[0] != "supersedes(+1)" {
+		t.Fatalf("AllowedFields = %v, want [supersedes(+1)]", c.AllowedFields)
+	}
+}
+
+func TestCompute_SupersedesModeChangeIsViolation(t *testing.T) {
+	// 既存 link の mode 改変は append-only 破れ（判断の書き換え）。
+	b := baseDecision()
+	b.Supersedes = []model.SupersedeLink{{ID: "d0", Mode: "amend"}}
+	a := baseDecision()
+	a.Supersedes = []model.SupersedeLink{{ID: "d0", Mode: "supersede"}}
+	r := compute("HEAD", refSnapshot{Decisions: []model.Decision{b}}, refSnapshot{Decisions: []model.Decision{a}})
+	if !r.DecisionViolation() {
+		t.Fatalf("既存 supersede link の mode 改変が violation にならない（黙認される穴）: %+v", r.Decisions.Changed)
+	}
+	if got := r.Decisions.Changed[0].ViolatedFields; len(got) != 1 || got[0] != "supersedes" {
+		t.Fatalf("ViolatedFields = %v, want [supersedes]", got)
+	}
+}
+
+func TestCompute_SupersedesRemovalOrReorderIsViolation(t *testing.T) {
+	for name, links := range map[string][]model.SupersedeLink{
+		"removal": {},
+		"replace": {{ID: "dX", Mode: "supersede"}},
+		"reorder": {{ID: "d2", Mode: "amend"}, {ID: "d1prev", Mode: "supersede"}},
+	} {
+		b := baseDecision()
+		b.Supersedes = []model.SupersedeLink{{ID: "d1prev", Mode: "supersede"}, {ID: "d2", Mode: "amend"}}
+		a := baseDecision()
+		a.Supersedes = links
+		r := compute("HEAD", refSnapshot{Decisions: []model.Decision{b}}, refSnapshot{Decisions: []model.Decision{a}})
+		if !r.DecisionViolation() {
+			t.Fatalf("%s: 既存 supersede link の削除・改変・並べ替えは違反のはず: %+v", name, r.Decisions.Changed)
+		}
+		if got := r.Decisions.Changed[0].ViolatedFields; len(got) != 1 || got[0] != "supersedes" {
+			t.Fatalf("%s: ViolatedFields = %v, want [supersedes]", name, got)
+		}
+	}
+}
+
+func TestCompute_AcknowledgesAppendOnly(t *testing.T) {
+	// 追記は allowed・既存要素の削除（容認の取り消し）は violation。
+	appended := baseDecision()
+	appended.Acknowledges = []string{"requirement-gap"}
+	rAdd := compute("HEAD", refSnapshot{Decisions: []model.Decision{baseDecision()}}, refSnapshot{Decisions: []model.Decision{appended}})
+	if rAdd.DecisionViolation() {
+		t.Fatalf("acknowledges の追記が違反扱いされた: %+v", rAdd.Decisions.Changed)
+	}
+	if got := rAdd.Decisions.Changed[0].AllowedFields; len(got) != 1 || got[0] != "acknowledges(+1)" {
+		t.Fatalf("AllowedFields = %v, want [acknowledges(+1)]", got)
+	}
+
+	b := baseDecision()
+	b.Acknowledges = []string{"requirement-gap", "overlap"}
+	a := baseDecision()
+	a.Acknowledges = []string{"requirement-gap"}
+	rDel := compute("HEAD", refSnapshot{Decisions: []model.Decision{b}}, refSnapshot{Decisions: []model.Decision{a}})
+	if !rDel.DecisionViolation() {
+		t.Fatalf("acknowledges の削除（容認取り消し）が violation にならない: %+v", rDel.Decisions.Changed)
+	}
+	if got := rDel.Decisions.Changed[0].ViolatedFields; len(got) != 1 || got[0] != "acknowledges" {
+		t.Fatalf("ViolatedFields = %v, want [acknowledges]", got)
+	}
+}
+
 func TestCompute_JudgmentFieldChangesAreViolations(t *testing.T) {
 	mutate := map[string]func(*model.Decision){
 		"why":         func(d *model.Decision) { d.Why = "改変" },
@@ -421,11 +505,14 @@ func TestCompute_RenamePairDoesNotUnlockJudgmentFields(t *testing.T) {
 	}
 }
 
-// 前方互換（P7 supersedes[] 等）: 未知 additive フィールドの追記は decode 層で
-// 無視されるため Changed に現れない＝violation にならない。
+// 前方互換（将来の additive フィールド）: 未知 additive フィールドの追記は
+// decode 層で無視されるため Changed に現れない＝violation にならない。
+// supersedes は #45 D7 で既知フィールドになったため、ここでは「本実装がまだ
+// 知らない架空の将来フィールド」で前方互換の不変条件を守る（supersedes の
+// append-only 分類は TestSupersedesAppendOnly 系が担う）。
 func TestUnknownAdditiveFieldIsIgnoredByDecode(t *testing.T) {
 	var withField, without model.Decision
-	if err := json.Unmarshal([]byte(`{"id":"d1","target":{"type":"tag","id":"req.a"},"why":"w","at":"2026-01-01T00:00:00Z","supersedes":[{"id":"d0","mode":"amend"}]}`), &withField); err != nil {
+	if err := json.Unmarshal([]byte(`{"id":"d1","target":{"type":"tag","id":"req.a"},"why":"w","at":"2026-01-01T00:00:00Z","someFutureP12Field":[{"id":"d0"}]}`), &withField); err != nil {
 		t.Fatal(err)
 	}
 	if err := json.Unmarshal([]byte(`{"id":"d1","target":{"type":"tag","id":"req.a"},"why":"w","at":"2026-01-01T00:00:00Z"}`), &without); err != nil {

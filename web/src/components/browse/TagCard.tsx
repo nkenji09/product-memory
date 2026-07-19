@@ -163,11 +163,22 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
           extra={<CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="specs" anchorLabel={t.browse.satisfiedSpecs} />}
         >
           <div class="tag-card-spec-list">
-            {entries.map((e) => (
-              <HashLink key={e.transition.id} href={routeHash({ view: 'browse', txId: e.transition.id })} class="tag-card-spec-row" onNavigate={() => onSelectSpec(e.transition.id)} title={e.transition.id}>
-                <span class="tag-card-spec-label">{e.actionLabel}</span>
-              </HashLink>
-            ))}
+            {entries.map((e) => {
+              // 同一 action 複数遷移が同文に潰れる縮退の解消（D10a item 7）: 同じ
+              // action を持つ複数の遷移は actionLabel だけでは全く同じ行に見えて
+              // しまうので、区別している given のラベルを dim の接尾に添える
+              // （SpecEntry.givenLabels — SpecCard/VocabCard と同じ由来。無条件
+              // 遷移は given が無いので接尾も付かない）。
+              const given = (e.givenLabels || []).filter((g) => !!g);
+              return (
+                <HashLink key={e.transition.id} href={routeHash({ view: 'browse', txId: e.transition.id })} class="tag-card-spec-row" onNavigate={() => onSelectSpec(e.transition.id)} title={e.transition.id}>
+                  <span class="tag-card-spec-label">
+                    {e.actionLabel}
+                    {given.length > 0 && <span class="dim tag-card-spec-given"> · {given.join('、')}</span>}
+                  </span>
+                </HashLink>
+              );
+            })}
           </div>
         </CollapsibleSection>
       )}

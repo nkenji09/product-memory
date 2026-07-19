@@ -1,0 +1,14 @@
+{
+  "id": "tx.viewer.decision-list-render",
+  "action": "act.user.enter-view",
+  "given": [
+    "cond.index-built"
+  ],
+  "then": [
+    "eff.emit.decision-list"
+  ],
+  "tags": [
+    "req.comfortable-viewer.decision-browse",
+    "subject.viewer.decisions"
+  ]
+}

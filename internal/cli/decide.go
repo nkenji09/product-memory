@@ -13,7 +13,7 @@ import (
 
 func newDecideCmd() *cobra.Command {
 	var on, why, changed, ref string
-	var commits []string
+	var commits, acknowledges, supersedes []string
 	var asJSON, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "decide",
@@ -54,27 +54,45 @@ func newDecideCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			d := model.Decision{
-				ID:      id,
-				Target:  model.DecisionTarget{Type: targetType, ID: targetID},
-				Why:     why,
-				Changed: changed,
-				Ref:     ref,
-				At:      time.Now().UTC().Format(time.RFC3339),
-				Commits: dedupeAppend(nil, commits),
-			}
 
-			// 書き込みゲート二層（#45 U3）: decision に reject 規則は無いが、
-			// why/changed/ref への advisory を保存前に検査できる。append-only
-			// のため「保存後に直す」が効かない——--dry-run はここで止まる。
+			// --supersedes <oldUlid>[:<mode>]（#45 D7）: 旧 decision 実在・自己参照
+			// 禁止を検査（新規 id なので循環は構造的に起きない——新→旧の一方向のみ）。
+			links, err := parseSupersedeLinks(supersedes, id)
+			if err != nil {
+				return err
+			}
+			// snapshot は supersede 実在照合・書き込みゲート・desc 鮮度で共用（1 回だけ読む）。
 			snap, err := s.LoadAll()
 			if err != nil {
 				return err
 			}
+			if err := validateSupersedeTargets(snap.Decisions, links); err != nil {
+				return err
+			}
+
+			d := model.Decision{
+				ID:           id,
+				Target:       model.DecisionTarget{Type: targetType, ID: targetID},
+				Why:          why,
+				Changed:      changed,
+				Ref:          ref,
+				At:           time.Now().UTC().Format(time.RFC3339),
+				Commits:      dedupeAppend(nil, commits),
+				Acknowledges: dedupeAppend(nil, acknowledges),
+				Supersedes:   links,
+			}
+
+			// 書き込みゲート二層（#45 U3）: decision に unknown-acknowledges reject が
+			// あり、why/changed/ref への advisory を保存前に検査できる。append-only
+			// のため「保存後に直す」が効かない——--dry-run はここで止まる。
 			advisories, allowed, gateErr := runWriteGate(cmd, snap, lint.WriteOp{Decision: &d, IsNew: true}, nil)
 			if gateErr != nil {
 				return gateErr
 			}
+			// desc 現在形ゲート三点配線の第1点（#45 D7）: 対象 desc の stale-tense を
+			// 保存前プレビューで advisory 返す（decision は append-only なので保存後に
+			// 対象 desc を直す動線を今ここで気づかせる）。
+			advisories = append(advisories, lint.TargetDescStaleTense(snap, d.Target)...)
 
 			if dryRun {
 				if asJSON {
@@ -105,6 +123,8 @@ func newDecideCmd() *cobra.Command {
 	cmd.Flags().StringVar(&changed, "changed", "", "何を変更したか（任意）")
 	cmd.Flags().StringVar(&ref, "ref", "", "参照。URL・commit hash 推奨（file:line は lint ref-freshness で警告）")
 	cmd.Flags().StringArrayVar(&commits, "commit", nil, "実装した commit hash（複数指定可・繰り返し可。着地後に結ぶ場合は `scholia decision add-commit` を使う）")
+	cmd.Flags().StringSliceVar(&acknowledges, "acknowledges", nil, "意図的に容認する finding の rule id（カンマ区切り or 繰り返し・#45 D6）。有効な rule id に解決しないと保存前に弾かれる")
+	cmd.Flags().StringArrayVar(&supersedes, "supersedes", nil, "置き換える旧 decision <ulid>[:<mode>]（mode=supersede|amend|exception・既定 amend・繰り返し可・#45 D7）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "作成したレコードを応答封筒 { record, advisories } の JSON で出力する")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "保存せず advisory だけプレビューする（decision は append-only・保存後の why は直せない。decide の前に必ず打つ）")
 	return cmd

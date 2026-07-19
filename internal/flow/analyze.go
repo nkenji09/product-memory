@@ -21,6 +21,24 @@ import (
 // (config.tagKinds must declare it; DESIGN §3.4).
 const AxisTagKind = "axis"
 
+// flow finding の rule 名（#45 D6 の typed 容認キー）。lint/flow を横断する
+// 「有効な rule id 集合」の source of truth の一部で、acknowledges で名指しできる
+// のはここに列挙した名前と lint.Rules の名前に限る。
+const (
+	// RuleSubsetShadow: 証明可能な多重発火（Given(A)⊊Given(B)）。
+	RuleSubsetShadow = "subset-shadow"
+	// RuleTotalGap: total=true 軸の値が given に一度も現れない（L-total 抜け）。
+	RuleTotalGap = "total-gap"
+	// RuleOverlap: 宣言軸 cell を 2+ 遷移が取り合う（subset-shadow で説明されない）。
+	RuleOverlap = "overlap"
+)
+
+// RuleNames は flow finding の rule 名の全列挙（有効 rule id 集合・容認畳みの
+// 消費側が参照する source of truth）。
+func RuleNames() []string {
+	return []string{RuleSubsetShadow, RuleTotalGap, RuleOverlap}
+}
+
 // RemainderTagID is the well-known tag id a transition carries to declare
 // itself as the action's single "acknowledged remainder" default
 // (req.action-flow.acknowledged-remainder). No transition in this repo's own
@@ -53,6 +71,10 @@ type Matrix struct {
 type SubsetShadow struct {
 	Subset   string `json:"subset"`
 	Superset string `json:"superset"`
+	// AcknowledgedBy は typed 容認（#45 D6）で畳んだ decision の id。ペアの
+	// いずれかの transition 宛て decision が acknowledges で subset-shadow を
+	// 名指ししていれば非空（additive・omitempty）。
+	AcknowledgedBy string `json:"acknowledgedBy,omitempty"`
 }
 
 // Axis is one declared axis relevant to the analyzed action (at least one
@@ -92,6 +114,10 @@ type Cell struct {
 type TotalGap struct {
 	AxisID string `json:"axisId"`
 	Value  string `json:"value"`
+	// AcknowledgedBy は typed 容認（#45 D6）で畳んだ decision の id。当該軸タグ
+	// または欠落値 condition 宛ての decision が acknowledges で total-gap を名指し
+	// していれば非空（additive・omitempty）。
+	AcknowledgedBy string `json:"acknowledgedBy,omitempty"`
 }
 
 // Overlap is a "重なり": a declared-axis cell covered by 2+ transitions,
@@ -103,6 +129,10 @@ type TotalGap struct {
 type Overlap struct {
 	Cell        map[string]string `json:"cell"`
 	Transitions []string          `json:"transitions"`
+	// AcknowledgedBy は typed 容認（#45 D6）で畳んだ decision の id。関与する
+	// transition のいずれか宛ての decision が acknowledges で overlap を名指し
+	// していれば非空（additive・omitempty）。
+	AcknowledgedBy string `json:"acknowledgedBy,omitempty"`
 }
 
 // Remainder is a transition acknowledged (via RemainderTagID) as the
@@ -212,6 +242,10 @@ func Analyze(snap *store.Snapshot, ix *index.Index, actionID string) Report {
 	}
 
 	report.Scope = buildScope(axes, conditionUniverse, len(remainderIDs) > 0)
+
+	// typed 容認（#45 D6）: 対象宛て decision の acknowledges で名指しされた
+	// flow finding を「容認済み」に畳む（AcknowledgedBy を書き込む・消しはしない）。
+	applyAcceptance(&report, snap.Decisions)
 	return report
 }
 

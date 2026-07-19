@@ -130,12 +130,14 @@ vocab と tag は形が近い（id・label・kind）が役割が直交する。*
 
 ---
 
-## 7. 完了ゲート（lint の読み方）
+## 7. 完了ゲート（lint の読み方・typed 容認前提・#45 D6）
 
-`scholia lint` の `requirement-gap` を潰し切る。**残ってよい gap は次の 3 種だけで、各々に decision が付いていること**:
+`scholia lint` の `requirement-gap` を潰し切る。**残ってよい gap は「当該タグ宛てで `acknowledges:[requirement-gap]` を含む decision が存在する」ものだけ**（typed 容認）。従来の「祖先に decision があれば緑」（untyped）は採らない——無関係な decision による偽陰性を作らないため。残す gap の類型と、それぞれ decision に書く内容:
 
-1. **外部に実仕様がある**（共通仕様が未定義なら「定義されたらリンクする」旨の decision）
-2. **不採用**（タイトルに `【不採用】` を明記＋不採用の decision）
-3. **構造制約**（action→effect でない・「〜しない」系の decision）
+1. **外部に実仕様がある**（「定義されたらリンクする」旨）
+2. **不採用**（タイトルに `【不採用】` を明記＋不採用理由）
+3. **構造制約 = 性質型要件**（action→effect でない・「〜しない」系・単一バイナリ等の非機能要件）。これは `scholia tag edit <id> --fulfillment property` で性質型と宣言し、**かつ** `scholia decide --on tag:<id> --acknowledges requirement-gap --why "…"` を足す。**property 宣言だけでは畳まない**（宣言のみ・decision 無しは warn のまま＝怠慢な宣言を許さない）。
 
-`unused-vocab`(info) は「まだ遷移に出ていない語彙」＝保留中の挙動語彙で正常。**エラー 0** を保つ。
+flow の finding（`subset-shadow`・`total-gap`・`overlap`）も同様に typed 容認する: 対象（total-gap は軸タグ/欠落値 condition・shadow/overlap は関与 transition）宛てで `--acknowledges <rule>` を付けた decision があれば畳む。**同じ穴が複数 rule で出る場合は出る rule を全列挙して acknowledges に書く**。
+
+`unused-vocab`(info) は「まだ遷移に出ていない語彙」＝保留中の挙動語彙で正常。`decision-stale`(info・git 導出) は「既存レコードを変更した commit に decision を結ばなかった」警告——正当なら対象レコード宛て `acknowledges:[decision-stale]` で容認。**エラー 0** を保つ。

@@ -53,6 +53,10 @@ export function Header({ view, onSelectView }: Props) {
     ['tags', t.nav.tags, 'tags'],
     ['vocab', t.nav.vocab, 'book-open'],
     ['browse', t.nav.specs, 'scroll-text'],
+    // 意思決定の read 面（D10a）— デザイン未対応だが独立の通覧タブが要る
+    // （語彙タブと同じ「未モックだが到達スロットが必要」枠）。#/decision/<ulid>
+    // の詳細もこのタブをアクティブ表示にする（spec→tags と同じ扱い）。
+    ['decisions', t.decisions.heading, 'gavel'],
   ];
 
   // Rail responsiveness (drawer's fixed `top`, sticky rail's `top`/height,
@@ -90,7 +94,7 @@ export function Header({ view, onSelectView }: Props) {
           // 'spec' (legacy per-tag hash, kept for bookmark compat) renders
           // the same BrowseView 'tags' facet does — highlight タグ for it
           // too rather than leaving no tab active.
-          const active = view === key || (key === 'tags' && view === 'spec');
+          const active = view === key || (key === 'tags' && view === 'spec') || (key === 'decisions' && view === 'decision');
           return (
             <button key={key} type="button" class={'topbar-nav-btn' + (active ? ' active' : '')} onClick={() => onSelectView(key)}>
               <Icon name={icon} size={16} />

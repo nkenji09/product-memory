@@ -62,7 +62,21 @@ type Tag struct {
 	// value a sound gap (L-total). Additive/omitempty — irrelevant to any
 	// other tag kind and absent from existing tag files.
 	Total bool `json:"total,omitempty"`
+	// Fulfillment は要件がどのように充足されるかの宣言（#45 D6・additive/
+	// omitempty）。"" は "transitions" 扱い（既定＝遷移で充足される behavioral
+	// 要件）・"property" は「遷移では構造的に充足されない性質型要件」（単一
+	// バイナリ・ランタイム依存ゼロ等の非機能要件）。property のタグは
+	// requirement-gap の遷移充足検査から外れるが、「acknowledges に
+	// requirement-gap を含む decision が当該タグ宛てに存在する」ときのみ緑になる
+	// （宣言だけでは畳まない＝怠慢な宣言を許さない）。
+	Fulfillment string `json:"fulfillment,omitempty"`
 }
+
+// Tag.Fulfillment の値（#45 D6）。"" は FulfillmentTransitions と等価に扱う。
+const (
+	FulfillmentTransitions = "transitions"
+	FulfillmentProperty    = "property"
+)
 
 func (t Tag) GetID() string { return t.ID }
 
@@ -96,9 +110,61 @@ type Decision struct {
 	// 精緻化）。omitempty により commits の無い旧 decision ファイルも無改修
 	// で読める。
 	Commits []string `json:"commits,omitempty"`
+	// Acknowledges は「この decision が意図的に容認する finding の rule id 集合」
+	// （#45 D6・additive/omitempty）。decide 時に rule id を実在照合し（typo は
+	// 同一ターン error＋候補提示）、lint/flow の消費側が「当該 target 宛ての
+	// acknowledges に該当 rule 名があれば finding を『容認済み（decision リンク
+	// 付き）』に畳む」。祖先 decision では畳まない（無関係 decision による偽陰性
+	// ＝untyped 容認を再導入しないため）。rule 改名で解決しなくなった宙吊り
+	// acknowledges は lint dangling-acknowledges（info）が警告する。
+	Acknowledges []string `json:"acknowledges,omitempty"`
+	// Supersedes は「この decision が置き換える／改訂する／例外化する旧 decision」
+	// への追記専用リンク集合（#45 D7・additive/omitempty）。旧 decision は無改変
+	// のまま（新が旧を指す＝append-only 完全保持）。mode が現行性の意味を持ち、
+	// derive 側は保守的に mode=supersede のみ失効扱いにする。link は
+	// `scholia decision link` / `scholia decide --supersedes` で追記でき、判断
+	// 欄位（why/changed/ref/at/target）は不可侵。
+	Supersedes []SupersedeLink `json:"supersedes,omitempty"`
 }
 
 func (d Decision) GetID() string { return d.ID }
+
+// SupersedeLink は decision → 旧 decision への現行性リンク（#45 D7）。Mode が
+// 省略（""）のときは derive 側で ModeAmend（部分改訂）として扱う——保存は書かれた
+// 値のまま（append-only なので既定補完で上書きしない）。
+type SupersedeLink struct {
+	ID   string `json:"id"`
+	Mode string `json:"mode,omitempty"`
+}
+
+// SupersedeLink.Mode の3値（#45 D7）。
+//   - ModeSupersede: 全文置換（旧を失効させる）。derive の --current で被参照を畳む唯一の mode。
+//   - ModeAmend: 部分改訂（既定・旧は失効しない）。既定を amend にするのは
+//     「失効させ忘れ」の系統誤りを避けるため（skill が decide 時に「全文置換か？」を必ず1問挟む）。
+//   - ModeException: 一般則への意識的例外（旧は失効しない）。
+const (
+	ModeSupersede = "supersede"
+	ModeAmend     = "amend"
+	ModeException = "exception"
+)
+
+// SupersedeMode は link の mode を返す（空なら既定 ModeAmend・derive 用の
+// 補完。保存値は書き換えない）。
+func (l SupersedeLink) SupersedeMode() string {
+	if l.Mode == "" {
+		return ModeAmend
+	}
+	return l.Mode
+}
+
+// ValidSupersedeMode は mode 文字列が3値のいずれか（空＝既定 amend も許容）かを返す。
+func ValidSupersedeMode(mode string) bool {
+	switch mode {
+	case "", ModeSupersede, ModeAmend, ModeException:
+		return true
+	}
+	return false
+}
 
 // Kinds はカテゴリごとの kind 宣言集合（§3.6）。カテゴリ軸自体は固定のため型で表す（マップにしない）。
 type Kinds struct {

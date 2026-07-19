@@ -21,7 +21,7 @@ type decisionListOutput struct {
 // こちらは decision レコードそのものの棚卸し（--on は完全一致・祖先展開なし）。
 func newDecisionListCmd() *cobra.Command {
 	var on string
-	var asJSON bool
+	var asJSON, unlinked, current bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "decision レコードをフラットに一覧する（rules=対象別集約とは別・§3.8）",
@@ -44,10 +44,20 @@ func newDecisionListCmd() *cobra.Command {
 				return err
 			}
 
+			// --current（#45 D7）: mode=supersede で指された decision を失効として畳む
+			// （保守的に supersede のみ）。amend/exception は現行のまま。
+			superseded := supersededIDs(snap.Decisions)
+
 			decisions := make([]model.Decision, 0, len(snap.Decisions))
 			for _, d := range snap.Decisions {
 				if on != "" && (d.Target.Type != targetType || d.Target.ID != targetID) {
 					continue
+				}
+				if unlinked && len(d.Commits) != 0 {
+					continue // --unlinked: commits 空（未結線）のみ
+				}
+				if current && superseded[d.ID] {
+					continue // --current: 失効（supersede された）を除く
 				}
 				decisions = append(decisions, d)
 			}
@@ -60,24 +70,36 @@ func newDecisionListCmd() *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(decisionListOutput{Decisions: decisions})
 			}
-			printDecisionList(cmd, decisions)
+			printDecisionList(cmd, decisions, superseded)
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&on, "on", "", "対象で絞り込む（tag:<id>・transition:<id>・vocab:<id>・完全一致・祖先展開なし・任意）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "JSON で出力する")
+	cmd.Flags().BoolVar(&unlinked, "unlinked", false, "commits 未結線（実装来歴が空）の decision だけを列挙する（#45 D7・棚卸し）")
+	cmd.Flags().BoolVar(&current, "current", false, "失効（mode=supersede で指された）decision を畳んで現行のみ列挙する（#45 D7・保守的に supersede のみ）")
 	return cmd
 }
 
-func printDecisionList(cmd *cobra.Command, decisions []model.Decision) {
+func printDecisionList(cmd *cobra.Command, decisions []model.Decision, superseded map[string]bool) {
 	out := cmd.OutOrStdout()
 	if len(decisions) == 0 {
 		fmt.Fprintln(out, "decision list: 該当する decision はありません")
 		return
 	}
 	for _, d := range decisions {
-		fmt.Fprintf(out, "[%s] %s %s:%s\n", d.At, d.ID, d.Target.Type, d.Target.ID)
+		status := ""
+		if superseded[d.ID] {
+			status = " [失効: supersede 済]"
+		} else if len(d.Supersedes) > 0 {
+			// 何かを改訂/例外化している現行 decision（区分表示・#45 D7）。
+			status = fmt.Sprintf(" [改訂: supersedes %d 件]", len(d.Supersedes))
+		}
+		fmt.Fprintf(out, "[%s] %s %s:%s%s\n", d.At, d.ID, d.Target.Type, d.Target.ID, status)
 		fmt.Fprintf(out, "  why: %s\n", truncateOneLine(d.Why, 100))
+		if len(d.Commits) == 0 {
+			fmt.Fprintln(out, "  commits: 未結線")
+		}
 		if d.Ref != "" {
 			fmt.Fprintf(out, "  ref: %s\n", d.Ref)
 		}

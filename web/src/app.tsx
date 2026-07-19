@@ -5,6 +5,8 @@ import { BrowseView } from './components/browse/BrowseView';
 import { ConfigView } from './components/config/ConfigView';
 import { VocabView } from './components/VocabView';
 import { FlowView } from './components/FlowView';
+import { DecisionsView } from './components/decisions/DecisionsView';
+import { DecisionDetailView } from './components/decisions/DecisionDetailView';
 import { CommentPanel } from './components/comments/CommentPanel';
 import { useComments } from './components/comments/useComments';
 import type { CommentRecord } from './components/comments/useComments';
@@ -18,7 +20,7 @@ import { restoreResizableWidths } from './components/layout/resizableWidths';
 // tag/vocab/spec). 'spec' is the legacy per-tag hash rendering the same
 // BrowseView as 'tags'; it's a focus route reached via openTagSpec, never a
 // nav tab, so its remembered search is written but never read back — harmless.
-const SEARCHABLE_VIEWS = new Set<ViewName>(['tags', 'browse', 'spec', 'vocab']);
+const SEARCHABLE_VIEWS = new Set<ViewName>(['tags', 'browse', 'spec', 'vocab', 'decisions']);
 
 export function App() {
   const [route, navigate] = useHashRoute();
@@ -67,6 +69,12 @@ export function App() {
   const openTransition = (txId: string) => navigate({ view: 'browse', txId });
   const openTagSpec = (tagId: string) => navigate({ view: 'spec', tagId });
   const openVocabEntry = (vocabId: string) => navigate({ view: 'vocab', vocabId });
+  // Decisions read-surface (D10a): the list is a searchable view (its
+  // remembered free-text search round-trips through searchMemory, same as
+  // tags/vocab); the detail is a pure focus route keyed by the decision ulid
+  // (a shareable permalink), same shape as openTagSpec/openTransition.
+  const openDecisions = () => navigate({ view: 'decisions', ...searchMemory.current.get('decisions') });
+  const openDecision = (decisionId: string) => navigate({ view: 'decision', decisionId });
   // A plain nav-tab hop restores that view's remembered search (see
   // searchMemory above) so the URL round-trips its filters; focus jumps
   // (openTagSpec/openTransition/openVocabEntry) deliberately DON'T, since those
@@ -101,7 +109,7 @@ export function App() {
   return (
     <>
       <Header view={view} onSelectView={setView} />
-      {view === 'home' && <HomeView onGoTags={() => setView('tags')} onSelectTag={openTagSpec} onSelectTx={openTransition} />}
+      {view === 'home' && <HomeView onGoTags={() => setView('tags')} onSelectTag={openTagSpec} onSelectTx={openTransition} onGoDecisions={openDecisions} />}
       {view === 'browse' && (
         <BrowseView
           scrollKey="browse"
@@ -131,6 +139,14 @@ export function App() {
       )}
       {view === 'tags' && <BrowseView scrollKey="tags" facet="tags" onGoToSpec={openTransition} onGoToVocab={openVocabEntry} onGoToTag={openTagSpec} {...browseSearchProps} />}
       {view === 'flow' && <FlowView actionId={route.actionId} />}
+      {view === 'decisions' && (
+        <DecisionsView
+          searchQuery={route.searchQuery || ''}
+          onSearchChange={(q) => navigate({ view: 'decisions', searchQuery: q || undefined })}
+          onOpenDecision={openDecision}
+        />
+      )}
+      {view === 'decision' && <DecisionDetailView decisionId={route.decisionId} onBack={openDecisions} onOpenDecision={openDecision} />}
       {view === 'config' && <ConfigView />}
       <CommentPanel onGoto={gotoComment} />
     </>

@@ -31,6 +31,18 @@ export interface Tag {
   description?: string;
   color?: string;
   ref?: string;
+  /** 軸タグの網羅性宣言（#39・kind=axis のみ意味を持つ）。 */
+  total?: boolean;
+  /** 要件の充足型（#45 D6）: "property"（遷移では充足されない性質型要件）・
+      "transitions"（既定）。Go 側 model.Tag.Fulfillment と同期。 */
+  fulfillment?: string;
+}
+
+/** decision → 旧 decision への現行性リンク（#45 D7・Go 側 model.SupersedeLink と同期）。 */
+export interface SupersedeLink {
+  id: string;
+  /** supersede | amend | exception（省略時は amend 扱い）。 */
+  mode?: string;
 }
 
 export interface DecisionTarget {
@@ -46,6 +58,10 @@ export interface Decision {
   ref?: string;
   at: string;
   commits?: string[];
+  /** 意図的に容認する finding の rule id 集合（#45 D6）。 */
+  acknowledges?: string[];
+  /** 置き換え/改訂/例外化する旧 decision へのリンク（#45 D7）。 */
+  supersedes?: SupersedeLink[];
 }
 
 // POST /api/decision body（change-cockpit-design-v3.md §1/§8.5・採用フロー）。
