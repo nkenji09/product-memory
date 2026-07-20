@@ -14,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # TestRetrofitDogfoodCounts の decision-stale 検出が git log 全履歴を
+          # 辿るため、shallow clone だとローカルと異なる（少ない）件数になり偽陽性で fail する
+          # （#45 D6/D7 導入以降、束4 merge から本ジョブが shallow clone で継続的に赤くなっていた）。
 
       - uses: actions/setup-go@v6
         with:
