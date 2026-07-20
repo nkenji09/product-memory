@@ -33,7 +33,33 @@
   line-height: 1.8;
 }
 
-/* ── controls (search + filters) ─────────────────────────────────────── */
+/* ── rail-housed filters (viewer-search-consistency) ─────────────────────
+   対象種別/現行性/期間 keep their native <select> widgets but move into the
+   shared BrowseRail drawer, stacked full-width under the search box. The tag
+   axis is now the rail's combobox + AND chips (no <select> here). */
+.decisions-rail-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.decisions-rail-filters .decisions-filter {
+  width: 100%;
+}
+
+.decisions-rail-filters .decisions-filter select {
+  width: 100%;
+}
+
+/* count moved into the browse-main-head h1 (was the controls row) — small,
+   dim, sits just after the heading rather than pushed to a far edge. */
+.browse-main-head .decisions-count {
+  margin-left: 0;
+  align-self: center;
+}
+
+/* ── controls (search + filters) — legacy full-width layout, retained for the
+      error/loading early returns that still render .decisions-view ────────── */
 .decisions-controls {
   display: flex;
   flex-direction: column;

@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { useT } from '../../i18n';
 import { useDrawer } from '../../drawer';
@@ -69,6 +70,12 @@ interface Props {
   indexModes?: { key: string; label: string }[];
   indexMode?: string;
   onIndexModeChange?: (key: string) => void;
+  /** Extra filter controls housed in the same rail/drawer, rendered right
+      under the search box (viewer-search-consistency: #/decisions keeps its
+      対象種別/現行性/期間 native <select>s but folds them into this shared
+      responsive drawer alongside the combobox+AND chips). Additive/optional —
+      VocabView/BrowseView omit it and render exactly as before. */
+  extraControls?: ComponentChildren;
 }
 
 const MAX_SUGGESTIONS = 8;
@@ -96,6 +103,7 @@ export function BrowseRail({
   indexModes,
   indexMode,
   onIndexModeChange,
+  extraControls,
 }: Props) {
   const t = useT();
   const [focused, setFocused] = useState(false);
@@ -189,6 +197,8 @@ export function BrowseRail({
             </ul>
           )}
         </div>
+
+        {extraControls && <div class="browse-rail-section browse-rail-extra">{extraControls}</div>}
 
         {kindOptions.length > 0 && (
           <div class="browse-rail-section">

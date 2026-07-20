@@ -298,6 +298,14 @@
   outline: none;
 }
 
+/* filtered count beside the #/flow index heading (viewer-search-consistency),
+   mirroring #/decisions' .decisions-count. */
+.flow-index-count {
+  align-self: center;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
 .flow-index-list {
   list-style: none;
   margin: 0;

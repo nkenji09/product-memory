@@ -124,6 +124,10 @@ const ja = {
     indexTitle: 'フロー',
     indexIntro: 'action を選ぶと、その分岐（条件×遷移）のフロー図が開きます。',
     indexEmpty: 'フロー図を持つ action がありません。',
+    // 絞り込み結果が空（viewer-search-consistency）。action は在るが条件に一致しない。
+    indexNoMatch: '条件に一致する action がありません。',
+    // 見出し脇の絞り込み後 action 件数（viewer-search-consistency）。
+    indexCount: (n: number) => `${n} 件`,
     indexSearchPlaceholder: 'action を絞り込む…',
     indexTxCount: (n: number) => `${n} 遷移`,
     diagramError: '図の描画に失敗しました。',
@@ -548,6 +552,8 @@ const en: Strings = {
     indexTitle: 'Flow',
     indexIntro: 'Pick an action to open its branching (conditions × transitions) flow diagram.',
     indexEmpty: 'No actions have a flow diagram.',
+    indexNoMatch: 'No actions match the current conditions.',
+    indexCount: (n) => `${n} actions`,
     indexSearchPlaceholder: 'Filter actions…',
     indexTxCount: (n) => `${n} transitions`,
     diagramError: 'Failed to render the diagram.',

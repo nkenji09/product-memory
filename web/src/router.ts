@@ -61,6 +61,13 @@ export interface Route {
   decisionTag?: string;
   decisionCurrency?: string;
   decisionPeriod?: string;
+  /** #/flow 一覧の絞り込み状態（viewer-search-consistency・flow-browse／
+      deep-linking amend）。フリーワードは共有 searchQuery（q）、kind facet は
+      共有 searchKindFacet（k）に相乗りし、タグ AND だけ専用キー ft に comma
+      区切りで載せる。reload/バック/タブ切替で復元。空は省略して URL を汚さない。
+      キー名は実装詳細（decision には書かない）。actionId present（フロー図）の
+      ときは付かない。 */
+  flowTags?: string;
 }
 
 const VIEWS: ViewName[] = ['home', 'browse', 'vocab', 'spec', 'tags', 'config', 'flow', 'decisions', 'decision'];
@@ -143,6 +150,10 @@ export function parseRoute(hash: string): Route {
     if (dt) route.decisionTag = dt;
     if (dc) route.decisionCurrency = dc;
     if (dp) route.decisionPeriod = dp;
+    // #/flow filter tags (viewer-search-consistency) — comma-joined tag id
+    // list; plain truthy-check like q/k (absent = no tag filter).
+    const ft = params.get('ft');
+    if (ft) route.flowTags = ft;
   }
   return route;
 }
@@ -186,6 +197,8 @@ export function routeHash(route: Route): string {
   if (route.decisionTag) params.set('dt', route.decisionTag);
   if (route.decisionCurrency) params.set('dc', route.decisionCurrency);
   if (route.decisionPeriod) params.set('dp', route.decisionPeriod);
+  // #/flow filter tags (viewer-search-consistency) — omit when empty.
+  if (route.flowTags) params.set('ft', route.flowTags);
   const qs = params.toString();
   if (qs) hash += `?${qs}`;
   return hash;
