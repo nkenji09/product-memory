@@ -653,6 +653,18 @@ scholia/
 - **module path**: `github.com/nkenji09/scholia`（`go install …/cmd/scholia@latest` を成立させるため実 URL と一致）。
 - CLI は **cobra**。JSON は標準 `encoding/json`。ロジックは `internal/*` に集約し CLI とビューアが同じコアを呼ぶ（単一の真値）。
 
+### 9.1 面間整合（CLI と viewer は同じ答えを返す・#45 D10b-2）
+
+**原則**: CLI と viewer は同一の query コアで同じ答え（同じデータ・同じ選択規則）を返す。表示の粒度差はサーフェスごとの意図的 decision に従い、省略時はその旨を開示する。
+
+- **前段（データと選択規則）は機械の同一性で守る**——同一 Go 関数の共有。「このレコードを支配する規則は何か」「この語で検索したら何が出るか」への答えは、`internal/index` の単一関数が決め、CLI（`internal/cli`）と viewer（`internal/viewer`）・static export（`internal/render`）はそこへ委譲するだけにする。面ごとに別実装を持たない（別実装は意味論を両方向に分岐させ、同じ問いに面によって違う答えが返る——#45 診断の govern／search 乖離がこの症状だった）。
+- **後段（見せる量・見せ方）は per-surface の decision に委ねる**。同じデータ・同じ選択規則の上で、どれだけ／どう見せるかは各サーフェスが意図的に決めてよい。省略するときは省略した旨を開示する。
+  - 既存の正当な適用例: `01KXN6G0R4DSXEVV86K8W0CZYW`（flow の viewer 表示を mermaid のみに集約し、scope-honesty の全文開示は CLI 側で満たす）。これは後段の per-surface な意図的 decision であって、前段（分析ロジック `internal/flow`）は CLI と viewer で共有されたまま。
+- **最初の適用（本原則の初回2件）**:
+  - **governs（#45 D10b-1）**: CLI `scholia rules`・viewer `GET /api/governs`・static export が `index.SelectRulesDecisionsFor`／`index.GovernsForTag/Transition/Vocab` を共有する。
+  - **検索コア一本化（#45 D10b-3）**: CLI `scholia search`・viewer `GET /api/search`・static corpus が `index.SearchRecords`／`searchCorpus` を共有する。
+- **以後の運用**: CLI／viewer の片面だけに query 意味論を足す変更は、本 decision（`01KXYED62CEKBY97D7X66BMC9A`）に照らして評価する。前段を片面だけで拡張することは、意図的な per-surface decision（後段）とは別物として扱う。
+
 ---
 
 ## 10. 配布（みんなが使える形）
