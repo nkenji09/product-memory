@@ -1,0 +1,17 @@
+{
+  "id": "01KXYED62WZHWQ26TZHFQD4YX1",
+  "target": {
+    "type": "transition",
+    "id": "tx.cli.search"
+  },
+  "why": "## D10b-3・検索コア一本化（検索挙動を正本化した既決の amend）\n\n### 結論\n検索は現在 `internal/cli/search.go`（searchSnapshot）と `internal/index/search.go`（Search）の**2系統で意味論が別々に育っている**。これを単一のレコード横断コアに一本化し、`scholia search` と `GET /api/search` は同コアへ委譲する。amend するのは「何を corpus とし、実装を誰が一本で持つか」であり、search が read-only 派生・保存ゼロ・in-memory query という `01KXFK6V81TEDF3340AFGA08WG` の中核は不変。\n\n### なぜ\nCLI は tag／vocab／transition／decision の4型を対象に desc／why まで読むが transition の実効タグを辿らない。viewer は transition しか返さず desc／why を読まないが実効タグ（祖先閉包）を辿る——**同じキーワードに両面で違う答えが返る**（「decision の why の語」は CLI でだけ・「祖先タグ名」は viewer でだけ見つかる）。束4 D10a は viewer index コーパスに decision why/changed を編入したが、**両系統の一本化は D10b に残すと明示し、それまで粒度差が残ることを開示していた**（`01KXWPQDGX…`）。本 decision がその一本化であり、面間整合原則（D10b-2）を検索面で果たす。\n\n### 不変と明記する既決部分\n`01KXFK6V81…` の中核（read-only 派生・保存ゼロ・in-memory query・req.atoms-derive／git-native の原理に沿う）は不変。\n\n### 変更\n`internal/index` にレコード横断の検索コアを新設（corpus＝現行2系統の和集合: tag〔id/name/description〕・vocab〔id/label/description＋altLabels〕・transition〔自 id＋実効タグ id/name＋given/then の vocab id/label＋action kind 名〕・decision〔why/changed/target.id〕）。`scholia search` と `GET /api/search` は同コアへ委譲。/api/search 応答は additive（既存 `transitions`/`matchedOn` を維持し `records`〔match 単位・4型〕を追加）。SearchCorpus（static export）を同コアの corpus 導出から生成し tag/vocab/decision doc を追加。**挙動変化は「CLI の transition ヒットに実効タグ・action kind 由来の一致が加わる」の1点**（本 amend が明示容認）。あわせて `01KXFK6V81…` の why の「起動時に構築される in-memory index」の文言が現実装（リクエスト毎に再構築）と食い違う点に文言是正の注記を添える。\n\n### 置き換え（adopt 時に `decision link` で結線）\n`01KXFK6V81TEDF3340AFGA08WG` を mode=amend。",
+  "changed": "internal/index にレコード横断の検索コアを新設（corpus＝現行2系統の和集合: tag〔id/name/description〕・vocab〔id/label/description＋altLabels〕・transition〔自 id＋実効タグ id/name＋given/then vocab id/label＋action kind 名〕・decision〔why/changed/target.id〕）／scholia search と GET /api/search を同コアへ委譲・応答は additive（transitions/matchedOn 維持＋records 追加）／SearchCorpus を4型へ拡張／CLI 挙動変化は1点＝transition が実効タグ・action kind でもヒット（本 amend が容認）／01KXFK6V81 の「起動時 in-memory index」文言の是正注記",
+  "ref": "DESIGN §9",
+  "at": "2026-07-20T00:21:54Z",
+  "supersedes": [
+    {
+      "id": "01KXFK6V81TEDF3340AFGA08WG",
+      "mode": "amend"
+    }
+  ]
+}

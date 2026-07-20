@@ -1,0 +1,9 @@
+{
+  "id": "req.comfortable-viewer.axis-structure",
+  "name": "ビューア: 軸カードの構造表示",
+  "kind": "requirement",
+  "parentIds": [
+    "req.comfortable-viewer"
+  ],
+  "description": "axis kind タグのカードに、状態次元・total（宣言由来・非検証）・値（軸タグ付き condition）・効いている action の構造を表示する要件。desc への値列挙の複製を UI が肩代わりし、retrofit の値列挙削除の受け皿になる。D9 の kind description 宣言と接続する。"
+}

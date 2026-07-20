@@ -1,0 +1,17 @@
+{
+  "id": "01KXYED63EKN9DXTZ3XT498Q3M",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.deep-linking"
+  },
+  "why": "## D10b-4・deep-linking の適用範囲拡張 — #/decisions フィルタの URL 化（既決の amend）\n\n### 結論\n束4 D10a で新設された `#/decisions` 一覧の**フィルタ状態（target 種別・タグ・期間・現行/失効）を URL に載せ、reload／ブラウザバックで同じ絞り込みを復元する**。settled セマンティクスを定めた `01KXDFD2S9MWHKH4RC52SJ2A8N` の原則自体は変えず、適用対象を新面へ拡張する（mode=amend）。permalink（`#/decision/\u003culid\u003e`）は D10a で既に着地済みなので、本 decision の追加分は主に**一覧フィルタの URL 永続化**。\n\n### なぜ\n`01KXDFD2S9…` は「検索条件（q/k/f）とアンカーは URL に反映し、reload／バックで同じ検索条件・同じ場所を復元する」を viewer の既存ビューについて定めた。`#/decisions` のフィルタも同じ「今見ている状態をそのまま共有・復元できる」という deep-linking の価値の適用対象であり、これが無いと絞り込んだ一覧は共有・復元できず「その場限り」に戻る。原則の外挿であって新原則ではない。\n\n### 不変と明記する既決\ndeep-linking チェーンの他7件（`01KXDFD2SHHTBSJZFBB7SXJ14E`／`01KXFK3Q1NY9J8Q7FX14T31N7K`／`01KXFQMTTXHE2BWJ0Y476GKPPA`／`01KXFT1QFB0A7TNW5CKQZK1X3N`／`01KXFT24RXR7Q0Z4XJVY9CZ264`／`01KXG4212MB9J6GKJ0GFNEY80T`／`01KXG8QRCXMG70PBW32R9ETCA7`）はカード内アフォーダンス・アンカー化・別タブ既定などの決定で本 amend の対象外（不変）。\n\n### 変更\n`#/decisions` のフィルタ状態を URL query に載せ、reload／バックで復元（既存 settled セマンティクスに従う）。static export でも同一ルートが解決する。**URL のキー名は実装詳細とし本 decision には書かない**（腐る時点依存記述を decision に載せない規律）。\n\n### 置き換え（adopt 時に `decision link` で結線）\n`01KXDFD2S9MWHKH4RC52SJ2A8N` を mode=amend。",
+  "changed": "#/decisions のフィルタ状態（target 種別・タグ・期間・現行/失効）を URL query に載せ reload/ブラウザバックで復元（既存 settled セマンティクス準拠）／static export でも同一ルートが解決／URL キー名は実装詳細とし本 decision には書かない",
+  "ref": "DESIGN §3.5",
+  "at": "2026-07-20T00:21:54Z",
+  "supersedes": [
+    {
+      "id": "01KXDFD2S9MWHKH4RC52SJ2A8N",
+      "mode": "amend"
+    }
+  ]
+}

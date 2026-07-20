@@ -1,0 +1,17 @@
+{
+  "id": "01KXYED63YFKJGN96WXQ87WM9H",
+  "target": {
+    "type": "tag",
+    "id": "req.action-flow.visualize"
+  },
+  "why": "## D10b-5・flow 入口の昇格（flow 導線既決の amend）\n\n### 結論\nflow ビューへの入口を、現状の SpecCard ケバブ1箇所から**3系統**に増やす: (1) nav に「フロー」タブを昇格（action 一覧から `#/flow/\u003caction\u003e` へ）、(2) action カテゴリの語彙カードに当該 action の flow への導線、(3) 既存 SpecCard ケバブは維持。**表示内容（mermaid のみ）と scope-honesty の CLI 開示は一切変えない——変えるのは到達経路だけ**。\n\n### なぜ\n`tx.viewer.action-flow-link` の decision `01KXMGHNNFR72Z3ZJ49B6WJN45` は SpecCard ケバブからの `#/flow/\u003caction\u003e` オープンを「viewer から flow 可視化への入口」と定めたが、**入口が1箇所しか無いことが #45 診断で発見性最低の症状**として実証された（flow は分岐仕様の主要読み面なのに SpecCard の ⋮ を開いた人しか存在を知れない）。入口が1箇所である前提を改める（mode=amend）。\n\n### 不変と明記する既決（整理）\n- `01KXFT1QFB0A7TNW5CKQZK1X3N`（SpecCard の tag/vocab アフォーダンスの ⋮ 集約）: 同一カード内チップの集約の決定であり、nav・語彙カードへの入口追加はカード外/別カードの導線ゆえ非矛盾（不変）。「重複導線を作らない」は同一カード内の話として保持。\n- `01KXM6H6XT66TEGJGFSCSCDPG0`／`01KXM6H6XD9E76DRG4AS0MF4HP`（VocabCard/TagCard の ⋮ 集約）: action 語彙カードへの flow 導線は TagCard のカード頭ケバブと同型の**カード頭 ⋮ を VocabCard に新設**して置く（VocabCard にカード頭 KebabMenu は現存せず・既存 ⋮ は owner/参照タグの per-chip のみ）。`01KXM6H6XT66…` が語彙ラベルへの ⋮ を見送った理由は「自分1件へ絞る no-op な AND 条件」であり、flow への遷移は no-op でないため非矛盾（不変）。\n- `01KXN6G0R4DSXEVV86K8W0CZYW`（viewer は mermaid のみ）: flow ビューの表示内容の決定であり入口の決定ではない（不変）。\n\n### 変更\nnav タブ「フロー」を追加（`#/flow` インデックス→action 選択）。action カテゴリ VocabCard にカード頭 ⋮ を新設し「フローを表示」を置く。`tx.viewer.action-flow-link`（SpecCard ケバブ）は不変維持。新導線2件を transition として登録（id は config.idPolicy＝`tx.\u003ccomponent\u003e.\u003cname\u003e` に従う・純クライアント遷移ゆえ given なし＝既存ケバブ遷移と同型・P3 write ゲートを通す）。\n\n### 置き換え（adopt 時に `decision link` で結線）\n`01KXMGHNNFR72Z3ZJ49B6WJN45` を mode=amend。",
+  "changed": "nav タブ「フロー」を追加（#/flow インデックス→action 選択→#/flow/\u003caction\u003e）／action カテゴリ VocabCard にカード頭 ⋮ を新設し「フローを表示」を追加／tx.viewer.action-flow-link（SpecCard ケバブ）は不変維持／新導線2件を transition 登録（id は config.idPolicy＝tx.\u003ccomponent\u003e.\u003cname\u003e・純クライアント遷移ゆえ given なし・P3 write ゲート通過）／表示内容（mermaid のみ）・scope-honesty の CLI 開示は不変",
+  "ref": "DESIGN §3.4",
+  "at": "2026-07-20T00:21:54Z",
+  "supersedes": [
+    {
+      "id": "01KXMGHNNFR72Z3ZJ49B6WJN45",
+      "mode": "amend"
+    }
+  ]
+}

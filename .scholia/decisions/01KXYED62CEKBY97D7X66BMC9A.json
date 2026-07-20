@@ -1,0 +1,11 @@
+{
+  "id": "01KXYED62CEKBY97D7X66BMC9A",
+  "target": {
+    "type": "tag",
+    "id": "req.design-principles"
+  },
+  "why": "## D10b-2・面間整合原則の正本化（新規 decision）\n\n### 結論\n次の原則を正本化する: **「CLI と viewer は同一の query コアで同じ答え（同じデータ・同じ選択規則）を返す。表示の粒度差はサーフェスごとの意図的 decision に従い、省略時はその旨を開示する。」** 前段（データと選択規則）は機械の同一性——同一 Go 関数の共有——で守り、後段（見せる量・見せ方）は per-surface の decision に委ねる。\n\n### なぜ\n「このレコードを支配する規則は何か」に CLI（祖先込み）と viewer（own-only）で違う答えが返り、「この語で検索したら何が出るか」にも CLI search（4型 corpus・desc/why を含む・実効タグを辿らない）と viewer 検索（transition のみ・desc/why を含まない・実効タグを辿る）で違う答えが返っていた（#45 診断）。面ごとの独立実装が意味論の分岐を生む構造なので、原則を正本化する。governs（D10b-1）と検索コア一本化（D10b-3）がこの原則の最初の2適用。\n\n### 不変と明記する既決\n`01KXN6G0R4DSXEVV86K8W0CZYW`（flow の viewer 表示を mermaid のみに集約・scope-honesty の「必ず印字」は CLI 側で満たす）は、本原則が言う「表示粒度の per-surface な意図的 decision」の**正当な既存例**であり不変。以後、CLI／viewer の片面だけに query 意味論を足す変更は本 decision に照らして評価する。\n\n### 変更\nDESIGN に「面間整合」節を新設（原則文＋既存適用例〔01KXN6G0R4…〕の列挙）。governs（D10b-1）と検索コア（D10b-3）を最初の適用として明記。",
+  "changed": "DESIGN に「面間整合」節を新設（原則文＝CLI と viewer は同一 query コアで同じデータ・同じ選択規則／表示粒度は per-surface decision／省略時開示・＋既存適用例 01KXN6G0R4 の列挙）。governs（D10b-1）・検索コア一本化（D10b-3）を最初の適用として明記。以後 CLI/viewer 片面だけの query 意味論追加は本 decision に照らす",
+  "ref": "DESIGN §9",
+  "at": "2026-07-20T00:21:54Z"
+}
