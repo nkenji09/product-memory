@@ -6,6 +6,7 @@ import { ConfigView } from './components/config/ConfigView';
 import { VocabView } from './components/VocabView';
 import { FlowView } from './components/FlowView';
 import { FlowIndexView } from './components/FlowIndexView';
+import type { FlowFilterState } from './components/FlowIndexView';
 import { DecisionsView } from './components/decisions/DecisionsView';
 import type { DecisionFilterState } from './components/decisions/DecisionsView';
 import { DecisionDetailView } from './components/decisions/DecisionDetailView';
@@ -18,11 +19,21 @@ import type { Route, ViewName } from './router';
 import type { SearchStateChange } from './components/browse/BrowseView';
 import { restoreResizableWidths } from './components/layout/resizableWidths';
 
-// The three views that carry per-view search state (view-state-continuity's
+// The views that carry per-view search state (view-state-continuity's
 // tag/vocab/spec). 'spec' is the legacy per-tag hash rendering the same
 // BrowseView as 'tags'; it's a focus route reached via openTagSpec, never a
 // nav tab, so its remembered search is written but never read back — harmless.
-const SEARCHABLE_VIEWS = new Set<ViewName>(['tags', 'browse', 'spec', 'vocab', 'decisions']);
+// 'decisions'/'flow' joined when their lists gained the shared BrowseRail
+// filters (viewer-search-consistency).
+const SEARCHABLE_VIEWS = new Set<ViewName>(['tags', 'browse', 'spec', 'vocab', 'decisions', 'flow']);
+
+// Which views render a BrowseRail (so Header shows the narrow-viewport 絞り込み
+// toggle). 'flow' only does so on its index — the per-action flow diagram
+// (route.actionId present) has no rail, so the toggle must not appear there.
+function railActiveFor(view: ViewName, hasActionId: boolean): boolean {
+  if (view === 'flow') return !hasActionId;
+  return view === 'tags' || view === 'browse' || view === 'spec' || view === 'vocab' || view === 'decisions';
+}
 
 export function App() {
   const [route, navigate] = useHashRoute();
@@ -44,11 +55,26 @@ export function App() {
   const searchMemory = useRef<
     Map<
       ViewName,
-      Pick<Route, 'searchQuery' | 'searchKindFacet' | 'searchFilters' | 'searchSubject' | 'decisionTargetKind' | 'decisionTag' | 'decisionCurrency' | 'decisionPeriod'>
+      Pick<
+        Route,
+        | 'searchQuery'
+        | 'searchKindFacet'
+        | 'searchFilters'
+        | 'searchSubject'
+        | 'decisionTargetKind'
+        | 'decisionTag'
+        | 'decisionCurrency'
+        | 'decisionPeriod'
+        | 'flowTags'
+      >
     >
   >(new Map());
   useEffect(() => {
-    if (SEARCHABLE_VIEWS.has(route.view)) {
+    // #/flow is view==='flow' for both its index (has the rail/filters) and a
+    // per-action diagram (route.actionId, no filters). Only the index carries
+    // search — remembering the diagram would clobber the index's filters with
+    // blanks, so skip it.
+    if (SEARCHABLE_VIEWS.has(route.view) && !(route.view === 'flow' && route.actionId)) {
       searchMemory.current.set(route.view, {
         searchQuery: route.searchQuery,
         searchKindFacet: route.searchKindFacet,
@@ -60,6 +86,8 @@ export function App() {
         decisionTag: route.decisionTag,
         decisionCurrency: route.decisionCurrency,
         decisionPeriod: route.decisionPeriod,
+        // #/flow list filters (viewer-search-consistency) — same tab-hop memory.
+        flowTags: route.flowTags,
       });
     }
   }, [route]);
@@ -121,7 +149,7 @@ export function App() {
 
   return (
     <>
-      <Header view={view} onSelectView={setView} />
+      <Header view={view} onSelectView={setView} railActive={railActiveFor(view, !!route.actionId)} />
       {view === 'home' && <HomeView onGoTags={() => setView('tags')} onSelectTag={openTagSpec} onSelectTx={openTransition} onGoDecisions={openDecisions} />}
       {view === 'browse' && (
         <BrowseView
@@ -152,8 +180,28 @@ export function App() {
       )}
       {view === 'tags' && <BrowseView scrollKey="tags" facet="tags" onGoToSpec={openTransition} onGoToVocab={openVocabEntry} onGoToTag={openTagSpec} {...browseSearchProps} />}
       {/* nav「フロー」タブ（tx.viewer.flow-nav-tab）は #/flow の index を出し、
-          action を選ぶと #/flow/<action> の既存 FlowView へ（表示内容は不変）。 */}
-      {view === 'flow' && (route.actionId ? <FlowView actionId={route.actionId} /> : <FlowIndexView onSelectAction={(id) => navigate({ view: 'flow', actionId: id })} />)}
+          action を選ぶと #/flow/<action> の既存 FlowView へ（表示内容は不変）。
+          index の絞り込み状態（q/k/ft）は URL に載せて復元（viewer-search-
+          consistency・flow-browse／deep-linking amend）。 */}
+      {view === 'flow' &&
+        (route.actionId ? (
+          <FlowView actionId={route.actionId} />
+        ) : (
+          <FlowIndexView
+            onSelectAction={(id) => navigate({ view: 'flow', actionId: id })}
+            searchQuery={route.searchQuery || ''}
+            kindFacet={route.searchKindFacet || 'all'}
+            flowTags={route.flowTags || ''}
+            onFiltersChange={(f: FlowFilterState) =>
+              navigate({
+                view: 'flow',
+                searchQuery: f.query || undefined,
+                searchKindFacet: f.kindFacet === 'all' ? undefined : f.kindFacet,
+                flowTags: f.tags.length ? f.tags.join(',') : undefined,
+              })
+            }
+          />
+        ))}
       {view === 'decisions' && (
         <DecisionsView
           searchQuery={route.searchQuery || ''}
@@ -162,7 +210,10 @@ export function App() {
           // ('all'/'') from undefined; onFiltersChange merges every field into
           // the hash at once (a single navigate keeps them composed).
           targetKind={(route.decisionTargetKind || 'all') as DecisionFilterState['targetKind']}
-          tagFilter={route.decisionTag || 'all'}
+          // Tag filter widened to a comma-joined id list (viewer-search-
+          // consistency): '' = no tag filter (not the 'all' sentinel the other
+          // axes use). The dt URL key is unchanged; only its value shape grew.
+          tagFilter={route.decisionTag || ''}
           currency={(route.decisionCurrency || 'all') as DecisionFilterState['currency']}
           period={(route.decisionPeriod || 'all') as DecisionFilterState['period']}
           onFiltersChange={(f) =>
@@ -170,7 +221,7 @@ export function App() {
               view: 'decisions',
               searchQuery: f.query || undefined,
               decisionTargetKind: f.targetKind === 'all' ? undefined : f.targetKind,
-              decisionTag: f.tagFilter === 'all' ? undefined : f.tagFilter,
+              decisionTag: f.tagFilter || undefined,
               decisionCurrency: f.currency === 'all' ? undefined : f.currency,
               decisionPeriod: f.period === 'all' ? undefined : f.period,
             })

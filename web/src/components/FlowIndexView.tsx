@@ -1,83 +1,229 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { api } from '../api';
 import { useT } from '../i18n';
 import { useLookups } from '../lookups';
+import { useDrawer } from '../drawer';
 import { routeHash } from '../router';
-import type { Transition } from '../types';
+import type { Tag, Transition } from '../types';
+import { BrowseRail } from './browse/BrowseRail';
+import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './browse/BrowseRail';
+import { ancestorClosure } from './browse/filters';
+import { Resizer } from './layout/Resizer';
+import { RAIL_WIDTH } from './layout/resizableWidths';
+import { kindColor } from './shared/Chip';
 import { HashLink } from './shared/HashLink';
 import { Icon } from './shared/Icon';
 
 // #/flow index（tx.viewer.flow-nav-tab）: nav の「フロー」タブの着地点。実際に
 // 使われている action を一覧し、選ぶと #/flow/<action> の既存フロービューへ。
-// flow の表示内容（mermaid のみ・scope-honesty の CLI 開示）は不変で、これは
-// 到達経路の追加（D10b-5）。action ごとの遷移数を副表示にする。
+// flow の表示内容（mermaid のみ・scope-honesty の CLI 開示）は不変。
+// viewer-search-consistency（flow-browse）: label/id フリーワードに加え、action
+// が消費するタグ/kind の AND 絞り込み（BrowseRail の combobox＋AND チップ＋kind
+// facet＋レスポンシブ・ドロワー）を新設。絞り込み状態は URL に載せて復元する。
+
+// Filter state round-trips through the URL via App (deep-linking amend). Local
+// state drives the list immediately; a debounced effect mirrors it into the
+// hash (same push/adopt pattern as BrowseView/VocabView) so the combobox's
+// select-then-clear-query pair composes into one URL update.
+export interface FlowFilterState {
+  query: string;
+  kindFacet: string;
+  /** Tag ids of the active AND filter. */
+  tags: string[];
+}
 
 interface Props {
   onSelectAction: (actionId: string) => void;
+  /** Free-text query (shared searchQuery hash param). */
+  searchQuery: string;
+  /** Tag-kind facet (shared searchKindFacet hash param). */
+  kindFacet: string;
+  /** Comma-joined tag ids of the active AND filter (dedicated ft param). */
+  flowTags: string;
+  onFiltersChange: (f: FlowFilterState) => void;
 }
 
-export function FlowIndexView({ onSelectAction }: Props) {
+const splitTags = (v: string): string[] => (v ? v.split(',').filter(Boolean) : []);
+
+export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags, onFiltersChange }: Props) {
   const t = useT();
-  const { vocabLabel } = useLookups();
+  const { vocabLabel, tagKindLabel } = useLookups();
+  const { closeDrawer } = useDrawer();
   const [transitions, setTransitions] = useState<Transition[] | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+
+  const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // Local filter state seeded from the URL; the list renders from these, the
+  // URL is pushed (debounced) from the effect below.
+  const [query, setQuery] = useState(() => searchQuery || '');
+  const [facet, setFacet] = useState(() => kindFacet || 'all');
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => splitTags(flowTags));
+
+  // Adopt state pushed in from outside (Back/Forward → hashchange → new props).
+  useEffect(() => {
+    setQuery(searchQuery || '');
+    setFacet(kindFacet || 'all');
+    setSelectedTags(splitTags(flowTags));
+  }, [searchQuery, kindFacet, flowTags]);
+
+  // Push local state to the URL only when it diverges (echo/seed guard).
+  useEffect(() => {
+    const localTags = selectedTags.join(',');
+    if (query === (searchQuery || '') && facet === (kindFacet || 'all') && localTags === (flowTags || '')) return;
+    const id = setTimeout(() => onFiltersChange({ query, kindFacet: facet, tags: selectedTags }), 300);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, facet, selectedTags]);
+
+  const addTag = (id: string) => {
+    setSelectedTags((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    closeDrawer();
+  };
+  const removeTag = (id: string) => setSelectedTags((prev) => prev.filter((x) => x !== id));
 
   useEffect(() => {
-    api
-      .getTransitions({})
-      .then((res) => setTransitions(res.transitions ?? []))
+    // tags carry parentIds (ancestor rollup) and kind (facet); transitions
+    // carry each action's own tags. Both are single bulk calls, static-safe.
+    Promise.all([api.getTransitions({}), api.getTags()])
+      .then(([res, tgs]) => {
+        setTransitions(res.transitions ?? []);
+        setTags(tgs);
+      })
       .catch((err) => setError(String(err)));
   }, []);
 
-  // Distinct action ids actually used by a transition, with a per-action count.
+  const tagById = useMemo(() => new Map(tags.map((tg) => [tg.id, tg])), [tags]);
+  const parents = useMemo(() => new Map(tags.map((tg) => [tg.id, tg.parentIds || []])), [tags]);
+
+  // Distinct action ids actually used by a transition, each with a per-action
+  // count and its effective tag set (ancestor-closed union of the own tags of
+  // every transition carrying that action — "action が消費するタグ").
   const actions = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const tx of transitions ?? []) counts.set(tx.action, (counts.get(tx.action) ?? 0) + 1);
-    return Array.from(counts.entries())
-      .map(([id, count]) => ({ id, label: vocabLabel(id), count }))
+    const byAction = new Map<string, Transition[]>();
+    for (const tx of transitions ?? []) {
+      const arr = byAction.get(tx.action) || [];
+      arr.push(tx);
+      byAction.set(tx.action, arr);
+    }
+    return Array.from(byAction.entries())
+      .map(([id, txs]) => {
+        const own = new Set<string>();
+        for (const tx of txs) for (const tg of tx.tags || []) own.add(tg);
+        return { id, label: vocabLabel(id), count: txs.length, tags: ancestorClosure(Array.from(own), parents) };
+      })
       .sort((a, b) => a.label.localeCompare(b.label) || a.id.localeCompare(b.id));
     // vocabLabel closes over lookups (id fallback is stable enough); excluded
     // from deps intentionally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transitions]);
+  }, [transitions, parents]);
 
-  const q = query.trim().toLowerCase();
-  const filtered = q ? actions.filter((a) => a.label.toLowerCase().includes(q) || a.id.toLowerCase().includes(q)) : actions;
+  const hasKind = (a: { tags: Set<string> }, k: string) => Array.from(a.tags).some((tid) => tagById.get(tid)?.kind === k);
+
+  // Tag kinds present across the actions' effective tags, with a per-kind count
+  // of actions carrying that kind — the facet button row.
+  const kindOptions: KindOption[] = useMemo(() => {
+    const kinds = new Set<string>();
+    for (const a of actions) for (const tid of a.tags) { const k = tagById.get(tid)?.kind; if (k) kinds.add(k); }
+    return Array.from(kinds)
+      .map((k) => ({ key: k, label: tagKindLabel(k), count: actions.filter((a) => hasKind(a, k)).length }))
+      .sort((x, y) => x.label.localeCompare(y.label));
+    // tagKindLabel/hasKind close over lookups; excluded from deps intentionally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actions, tagById]);
 
   if (error) return <main class="flow-index-view error">{error}</main>;
   if (!transitions) return <main class="flow-index-view dim">{t.flow.loading}</main>;
 
+  const q = query.trim().toLowerCase();
+  const matchesText = (a: { label: string; id: string }) => !q || a.label.toLowerCase().includes(q) || a.id.toLowerCase().includes(q);
+  const matchesKind = (a: { tags: Set<string> }) => facet === 'all' || hasKind(a, facet);
+
+  // Base = the kind facet only (query-independent, like BrowseView): the free
+  // text narrows the shown suggestions by tag name inside BrowseRail but must
+  // not shrink the candidate pool, or typing a tag name absent from every
+  // action's label/id would surface no suggestion.
+  const kindBase = actions.filter(matchesKind);
+  const filtered = kindBase.filter(matchesText).filter((a) => selectedTags.every((tg) => a.tags.has(tg)));
+
+  const scrollToRow = (id: string) => {
+    rowRefs.current.get(id)?.scrollIntoView({ block: 'start' });
+    closeDrawer();
+  };
+
+  const conditions: ConditionChip[] = selectedTags.map((id) => {
+    const tg = tagById.get(id);
+    return { label: tg?.name || id, color: kindColor(tg?.kind), onRemove: () => removeTag(id) };
+  });
+
+  const selectedSet = new Set(selectedTags);
+  const corpusTagIds = new Set<string>();
+  for (const a of kindBase) for (const id of a.tags) corpusTagIds.add(id);
+  const wouldMatchAny = (candidate: string): boolean =>
+    kindBase.some((a) => a.tags.has(candidate) && selectedTags.every((tg) => a.tags.has(tg)));
+  const suggestions: SuggestionItem[] = Array.from(corpusTagIds)
+    .filter((id) => !selectedSet.has(id) && wouldMatchAny(id))
+    .map((id) => tagById.get(id))
+    .filter((tg): tg is Tag => !!tg)
+    .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+    .map((tg) => ({ id: tg.id, label: tg.name || tg.id, color: kindColor(tg.kind), kindLabel: t.nav.tags, onSelect: () => addTag(tg.id) }));
+
+  const indexItems: IndexItem[] = filtered.map((a) => ({
+    id: a.id,
+    label: a.label,
+    color: 'var(--t-act)',
+    indent: 0,
+    onClick: () => scrollToRow(a.id),
+  }));
+
   return (
-    <main class="flow-index-view">
-      <header class="flow-index-hero">
-        <h1>
-          <Icon name="git-fork" size={20} /> {t.flow.indexTitle}
-        </h1>
-        <p class="dim">{t.flow.indexIntro}</p>
-      </header>
-
-      {actions.length > 0 && (
-        <div class="flow-index-search">
-          <Icon name="search" size={15} />
-          <input type="search" value={query} placeholder={t.flow.indexSearchPlaceholder} onInput={(e) => setQuery((e.target as HTMLInputElement).value)} />
+    <div class="browse-view">
+      <BrowseRail
+        query={query}
+        onQueryChange={setQuery}
+        kindFacet={facet}
+        kindOptions={kindOptions}
+        onKindFacetChange={setFacet}
+        conditions={conditions}
+        onClearConditions={() => setSelectedTags([])}
+        indexItems={indexItems}
+        suggestions={suggestions}
+      />
+      <Resizer config={RAIL_WIDTH} direction="rail" className="scholia-resizer--rail" />
+      <main class="browse-main flow-index-main">
+        <div class="browse-main-head">
+          <h1>
+            <Icon name="git-fork" size={20} /> {t.flow.indexTitle}
+            <span class="flow-index-count dim">{t.flow.indexCount(filtered.length)}</span>
+          </h1>
+          <span class="dim">{t.flow.indexIntro}</span>
         </div>
-      )}
-
-      {actions.length === 0 ? (
-        <p class="dim flow-index-empty">{t.flow.indexEmpty}</p>
-      ) : (
-        <ul class="flow-index-list">
-          {filtered.map((a) => (
-            <li key={a.id}>
-              <HashLink href={routeHash({ view: 'flow', actionId: a.id })} class="flow-index-row" onNavigate={() => onSelectAction(a.id)} title={a.id}>
-                <span class="flow-index-row-label">{a.label}</span>
-                <span class="flow-index-row-count dim">{t.flow.indexTxCount(a.count)}</span>
-              </HashLink>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+        <div class="browse-card-list">
+          {actions.length === 0 ? (
+            <p class="dim flow-index-empty">{t.flow.indexEmpty}</p>
+          ) : filtered.length === 0 ? (
+            <p class="dim flow-index-empty">{t.flow.indexNoMatch}</p>
+          ) : (
+            <ul class="flow-index-list">
+              {filtered.map((a) => (
+                <li
+                  key={a.id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(a.id, el);
+                    else rowRefs.current.delete(a.id);
+                  }}
+                >
+                  <HashLink href={routeHash({ view: 'flow', actionId: a.id })} class="flow-index-row" onNavigate={() => onSelectAction(a.id)} title={a.id}>
+                    <span class="flow-index-row-label">{a.label}</span>
+                    <span class="flow-index-row-count dim">{t.flow.indexTxCount(a.count)}</span>
+                  </HashLink>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </main>
+    </div>
   );
 }

@@ -1,8 +1,15 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { api } from '../../api';
 import { useT } from '../../i18n';
 import { useLookups } from '../../lookups';
-import type { Decision, Tag } from '../../types';
+import { useDrawer } from '../../drawer';
+import type { Decision, Tag, Transition, VocabEntry } from '../../types';
+import { BrowseRail } from '../browse/BrowseRail';
+import type { ConditionChip, IndexItem, SuggestionItem } from '../browse/BrowseRail';
+import { ancestorClosure } from '../browse/filters';
+import { Resizer } from '../layout/Resizer';
+import { RAIL_WIDTH } from '../layout/resizableWidths';
+import { kindColor } from '../shared/Chip';
 import { Icon } from '../shared/Icon';
 import { buildCurrencyIndex, currencyOf, type Currency } from './decisionModel';
 
@@ -10,12 +17,18 @@ type TargetKindFilter = 'all' | 'transition' | 'tag' | 'vocab';
 type CurrencyFilter = 'all' | 'current' | 'superseded';
 type PeriodFilter = 'all' | '30d' | '90d' | '1y';
 
-// All filter state (#45 D10b-4) is lifted into the URL via App — this view is
-// controlled: it renders from props and reports every change through
-// onFiltersChange (a whole-state snapshot so the hash stays composed).
+// All filter state (#45 D10b-4) round-trips through the URL via App. Local
+// state below drives the list immediately; a debounced effect mirrors it into
+// the hash (same push/adopt pattern as BrowseView/VocabView) so the combobox's
+// select-then-clear-query pair composes into one URL update instead of two
+// racing navigates clobbering each other.
 export interface DecisionFilterState {
   query: string;
   targetKind: TargetKindFilter;
+  /** Comma-joined tag ids of the active AND filter (viewer-search-consistency:
+      the tag axis moved from a single native <select> to the BrowseRail
+      combobox + removable AND chips). '' = no tag filter. The URL key (dt)
+      is unchanged; only its value widened from one id to a list. */
   tagFilter: string;
   currency: CurrencyFilter;
   period: PeriodFilter;
@@ -44,31 +57,82 @@ function currencyBadge(c: Currency, t: ReturnType<typeof useT>): { cls: string; 
   return { cls: 'decision-badge-current', label: t.decisions.currencyCurrent };
 }
 
+const splitTags = (v: string): string[] => (v ? v.split(',').filter(Boolean) : []);
+
 export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, period, onFiltersChange, onOpenDecision }: Props) {
   const t = useT();
   const { tagName, vocabLabel, transitionLabel } = useLookups();
+  const { closeDrawer } = useDrawer();
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [vocab, setVocab] = useState<VocabEntry[]>([]);
+  const [transitions, setTransitions] = useState<Transition[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter state is controlled from the URL (#45 D10b-4). Each setter emits a
-  // whole-state snapshot through onFiltersChange so App merges it into the hash
-  // in one navigate (reload/Back restore the same 絞り込み).
-  const current: DecisionFilterState = { query: searchQuery, targetKind, tagFilter, currency, period };
-  const setTargetKind = (v: TargetKindFilter) => onFiltersChange({ ...current, targetKind: v });
-  const setTagFilter = (v: string) => onFiltersChange({ ...current, tagFilter: v });
-  const setCurrency = (v: CurrencyFilter) => onFiltersChange({ ...current, currency: v });
-  const setPeriod = (v: PeriodFilter) => onFiltersChange({ ...current, period: v });
-  const onSearchChange = (q: string) => onFiltersChange({ ...current, query: q });
+  const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // Local filter state seeded from the URL. The list renders from these; the
+  // URL is pushed (debounced) from the effect below.
+  const [query, setQuery] = useState(() => searchQuery || '');
+  const [kind, setKind] = useState<TargetKindFilter>(() => targetKind);
+  const [cur, setCur] = useState<CurrencyFilter>(() => currency);
+  const [per, setPer] = useState<PeriodFilter>(() => period);
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => splitTags(tagFilter));
+
+  // Adopt state pushed in from *outside* our own typing/clicking (Back/Forward
+  // → hashchange → new props). Runs on mount too, but the seeds already match
+  // so it's a no-op there.
+  useEffect(() => {
+    setQuery(searchQuery || '');
+    setKind(targetKind);
+    setCur(currency);
+    setPer(period);
+    setSelectedTags(splitTags(tagFilter));
+  }, [searchQuery, targetKind, currency, period, tagFilter]);
+
+  // Push local state back to the URL, but only when it genuinely diverges from
+  // what the URL already encodes (echo/seed guard — the return leg of our own
+  // push and the mount seed both no-op naturally, no dangling flag).
+  useEffect(() => {
+    const localTags = selectedTags.join(',');
+    if (query === (searchQuery || '') && kind === targetKind && cur === currency && per === period && localTags === (tagFilter || '')) {
+      return;
+    }
+    const id = setTimeout(() => onFiltersChange({ query, targetKind: kind, tagFilter: localTags, currency: cur, period: per }), 300);
+    return () => clearTimeout(id);
+    // Deps are LOCAL state only (URL props read in-body) so an external nav
+    // doesn't schedule a spurious push of stale local state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, kind, cur, per, selectedTags]);
+
+  const addTag = (id: string) => {
+    setSelectedTags((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    // Close the narrow-viewport drawer on select (same rule as BrowseView/
+    // VocabView: picking a filter narrows the list, so the drawer's job is
+    // done — adjusting the native selects / removing a chip doesn't close).
+    closeDrawer();
+  };
+  const removeTag = (id: string) => setSelectedTags((prev) => prev.filter((x) => x !== id));
 
   useEffect(() => {
-    Promise.all([api.getRules({}), api.getTags()])
-      .then(([rules, tgs]) => {
+    // vocab/transitions are loaded alongside rules/tags so the tag filter can
+    // resolve a decision's effective tag set for every target type (tag →
+    // itself, vocab/transition → their own tags), all closed over ancestors.
+    // Each is a single bulk call (no N+1); all four resolve in static mode too.
+    Promise.all([api.getRules({}), api.getTags(), api.getVocab(), api.getTransitions({})])
+      .then(([rules, tgs, vcb, tx]) => {
         setDecisions(rules.decisions);
         setTags(tgs);
+        setVocab(vcb);
+        setTransitions(tx.transitions || []);
       })
       .catch((err) => setError(String(err)));
   }, []);
+
+  const tagById = useMemo(() => new Map(tags.map((tg) => [tg.id, tg])), [tags]);
+  const vocabById = useMemo(() => new Map(vocab.map((v) => [v.id, v])), [vocab]);
+  const txById = useMemo(() => new Map(transitions.map((x) => [x.id, x])), [transitions]);
+  const parents = useMemo(() => new Map(tags.map((tg) => [tg.id, tg.parentIds || []])), [tags]);
 
   // The target's human label, covering all three target types (transitionLabel
   // only handles transitions; tag/vocab resolve through their own lookups).
@@ -82,140 +146,202 @@ export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, pe
 
   const currencyIndex = useMemo(() => buildCurrencyIndex(decisions || []), [decisions]);
 
-  // Tags that a decision actually targets — the tag-filter dropdown only
-  // offers tags that a decision points at (a tag with no decisions would just
-  // be a dead option). tagFilter matches a decision whose target IS the tag.
-  const targetedTagIds = useMemo(() => {
-    const s = new Set<string>();
-    for (const d of decisions || []) if (d.target.type === 'tag') s.add(d.target.id);
-    return s;
-  }, [decisions]);
+  // The effective tag set of each decision (viewer-search-consistency): the
+  // ancestor-closure of the decision's target's own tags. tag targets seed
+  // with themselves; vocab/transition targets seed with their own tags. The
+  // AND tag filter matches when every selected tag is in this set.
+  const effTagsById = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const d of decisions || []) {
+      let own: string[] = [];
+      if (d.target.type === 'tag') own = [d.target.id];
+      else if (d.target.type === 'vocab') own = vocabById.get(d.target.id)?.tags || [];
+      else own = txById.get(d.target.id)?.tags || [];
+      m.set(d.id, ancestorClosure(own, parents));
+    }
+    return m;
+  }, [decisions, vocabById, txById, parents]);
 
-  const q = searchQuery.trim().toLowerCase();
+  const q = query.trim().toLowerCase();
   const now = Date.now();
 
-  const filtered = useMemo(() => {
+  // Base = the non-tag, non-free-text filters only (対象種別/現行性/期間). This is
+  // deliberately query-independent: it's what the visible list narrows further
+  // AND what the combobox gates its suggestions against — the free-text box
+  // narrows the shown suggestions (by tag name, inside BrowseRail) but must not
+  // shrink the candidate pool, or typing a tag name that no record's why/target
+  // happens to contain would surface no suggestion (same rule as BrowseView).
+  const filterBase = useMemo(() => {
     if (!decisions) return [];
-    return decisions
-      .filter((d) => {
-        if (targetKind !== 'all' && d.target.type !== targetKind) return false;
-        if (tagFilter !== 'all' && !(d.target.type === 'tag' && d.target.id === tagFilter)) return false;
-        const cur = currencyOf(d.id, currencyIndex);
-        if (currency === 'superseded' && cur !== 'superseded') return false;
-        if (currency === 'current' && cur === 'superseded') return false;
-        if (period !== 'all') {
-          const ageDays = (now - new Date(d.at).getTime()) / 86400000;
-          if (!(ageDays <= PERIOD_DAYS[period])) return false;
-        }
-        if (q) {
-          // Search corpus: why + changed + target id/label + acknowledges.
-          const hay = [d.why, d.changed || '', d.target.id, targetLabel(d), (d.acknowledges || []).join(' ')].join(' ').toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        return true;
-      })
-      .slice()
-      .reverse(); // newest-first (getRules returns chronological ascending)
-    // targetLabel closes over lookups; excluded from deps intentionally (label
-    // fallback to id is stable enough, and lookups populate before decisions
-    // in practice) — re-running on lookups churn isn't worth the extra deps.
+    return decisions.filter((d) => {
+      if (kind !== 'all' && d.target.type !== kind) return false;
+      const c = currencyOf(d.id, currencyIndex);
+      if (cur === 'superseded' && c !== 'superseded') return false;
+      if (cur === 'current' && c === 'superseded') return false;
+      if (per !== 'all') {
+        const ageDays = (now - new Date(d.at).getTime()) / 86400000;
+        if (!(ageDays <= PERIOD_DAYS[per])) return false;
+      }
+      return true;
+    });
+  }, [decisions, currencyIndex, kind, cur, per, now]);
+
+  const matchesQuery = (d: Decision): boolean => {
+    if (!q) return true;
+    // Search corpus: why + changed + target id/label + acknowledges.
+    const hay = [d.why, d.changed || '', d.target.id, targetLabel(d), (d.acknowledges || []).join(' ')].join(' ').toLowerCase();
+    return hay.includes(q);
+  };
+  const matchesTags = (d: Decision): boolean => {
+    if (selectedTags.length === 0) return true;
+    const eff = effTagsById.get(d.id);
+    return !!eff && selectedTags.every((tg) => eff.has(tg));
+  };
+
+  const filtered = useMemo(
+    () => filterBase.filter(matchesQuery).filter(matchesTags).slice().reverse(), // newest-first (getRules is chronological asc)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decisions, currencyIndex, targetKind, tagFilter, currency, period, q]);
+    [filterBase, q, effTagsById, selectedTags],
+  );
 
   if (error) return <main class="decisions-view error">{error}</main>;
   if (!decisions) return <main class="decisions-view dim">{t.decisions.loading}</main>;
 
-  const filterTags = tags.filter((tg) => targetedTagIds.has(tg.id));
+  const scrollToCard = (id: string) => {
+    cardRefs.current.get(id)?.scrollIntoView({ block: 'start' });
+    closeDrawer();
+  };
+
+  // AND condition chips (the selected tags) — same removable-chip shape the
+  // other browse rails use.
+  const conditions: ConditionChip[] = selectedTags.map((id) => {
+    const tg = tagById.get(id);
+    return { label: tg?.name || id, color: kindColor(tg?.kind), onRemove: () => removeTag(id) };
+  });
+
+  // Combobox candidates: every tag that is an effective tag of some decision
+  // still passing the other filters, minus the already-selected ones, minus
+  // any that would leave zero results if added (same "AND-narrow, only offer
+  // what helps" rule as BrowseView/VocabView).
+  const selectedSet = new Set(selectedTags);
+  const corpusTagIds = new Set<string>();
+  for (const d of filterBase) for (const id of effTagsById.get(d.id) || []) corpusTagIds.add(id);
+  const wouldMatchAny = (candidate: string): boolean =>
+    filterBase.some((d) => {
+      const eff = effTagsById.get(d.id);
+      return !!eff && eff.has(candidate) && selectedTags.every((tg) => eff.has(tg));
+    });
+  const suggestions: SuggestionItem[] = Array.from(corpusTagIds)
+    .filter((id) => !selectedSet.has(id) && wouldMatchAny(id))
+    .map((id) => tagById.get(id))
+    .filter((tg): tg is Tag => !!tg)
+    .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+    .map((tg) => ({ id: tg.id, label: tg.name || tg.id, color: kindColor(tg.kind), kindLabel: t.nav.tags, onSelect: () => addTag(tg.id) }));
+
+  // Jump index: the currently-visible decisions, keyed by target label, so the
+  // rail offers scroll-to-row navigation like the other browse pages.
+  const indexItems: IndexItem[] = filtered.map((d) => ({
+    id: d.id,
+    label: targetLabel(d),
+    color: kindColor(d.target.type === 'tag' ? tagById.get(d.target.id)?.kind : undefined),
+    indent: 0,
+    onClick: () => scrollToCard(d.id),
+  }));
+
+  // 対象種別・現行性・期間 keep their native <select> widgets but move into the
+  // shared responsive drawer (viewer-search-consistency amend). Only the tag
+  // axis changed widget (→ combobox + AND chips above).
+  const extraControls = (
+    <div class="decisions-rail-filters">
+      <label class="decisions-filter">
+        <span class="decisions-filter-label dim">{t.decisions.filterTargetKind}</span>
+        <select value={kind} onChange={(e) => setKind((e.target as HTMLSelectElement).value as TargetKindFilter)}>
+          <option value="all">{t.decisions.filterAll}</option>
+          <option value="transition">{t.decisions.targetKindTransition}</option>
+          <option value="tag">{t.decisions.targetKindTag}</option>
+          <option value="vocab">{t.decisions.targetKindVocab}</option>
+        </select>
+      </label>
+      <label class="decisions-filter">
+        <span class="decisions-filter-label dim">{t.decisions.filterCurrency}</span>
+        <select value={cur} onChange={(e) => setCur((e.target as HTMLSelectElement).value as CurrencyFilter)}>
+          <option value="all">{t.decisions.filterAll}</option>
+          <option value="current">{t.decisions.currencyCurrent}</option>
+          <option value="superseded">{t.decisions.currencySuperseded}</option>
+        </select>
+      </label>
+      <label class="decisions-filter">
+        <span class="decisions-filter-label dim">{t.decisions.filterPeriod}</span>
+        <select value={per} onChange={(e) => setPer((e.target as HTMLSelectElement).value as PeriodFilter)}>
+          <option value="all">{t.decisions.periodAll}</option>
+          <option value="30d">{t.decisions.period30d}</option>
+          <option value="90d">{t.decisions.period90d}</option>
+          <option value="1y">{t.decisions.period1y}</option>
+        </select>
+      </label>
+    </div>
+  );
 
   return (
-    <main class="decisions-view">
-      <header class="decisions-hero">
-        <h1>
-          <Icon name="gavel" size={20} /> {t.decisions.heading}
-        </h1>
-        <p class="dim">{t.decisions.intro}</p>
-      </header>
-
-      <section class="decisions-controls">
-        <div class="decisions-search">
-          <Icon name="search" size={15} />
-          <input
-            type="search"
-            value={searchQuery}
-            placeholder={t.decisions.searchPlaceholder}
-            onInput={(e) => onSearchChange((e.target as HTMLInputElement).value)}
-          />
+    <div class="browse-view">
+      <BrowseRail
+        query={query}
+        onQueryChange={setQuery}
+        kindFacet="all"
+        kindOptions={[]}
+        onKindFacetChange={() => {}}
+        conditions={conditions}
+        onClearConditions={() => setSelectedTags([])}
+        indexItems={indexItems}
+        suggestions={suggestions}
+        extraControls={extraControls}
+      />
+      <Resizer config={RAIL_WIDTH} direction="rail" className="scholia-resizer--rail" />
+      <main class="browse-main decisions-main">
+        <div class="browse-main-head">
+          <h1>
+            <Icon name="gavel" size={20} /> {t.decisions.heading}
+            <span class="decisions-count dim">{t.decisions.countLabel(filtered.length)}</span>
+          </h1>
+          <span class="dim">{t.decisions.intro}</span>
         </div>
-        <div class="decisions-filters">
-          <label class="decisions-filter">
-            <span class="decisions-filter-label dim">{t.decisions.filterTargetKind}</span>
-            <select value={targetKind} onChange={(e) => setTargetKind((e.target as HTMLSelectElement).value as TargetKindFilter)}>
-              <option value="all">{t.decisions.filterAll}</option>
-              <option value="transition">{t.decisions.targetKindTransition}</option>
-              <option value="tag">{t.decisions.targetKindTag}</option>
-              <option value="vocab">{t.decisions.targetKindVocab}</option>
-            </select>
-          </label>
-          {filterTags.length > 0 && (
-            <label class="decisions-filter">
-              <span class="decisions-filter-label dim">{t.decisions.filterTag}</span>
-              <select value={tagFilter} onChange={(e) => setTagFilter((e.target as HTMLSelectElement).value)}>
-                <option value="all">{t.decisions.filterAll}</option>
-                {filterTags.map((tg) => (
-                  <option key={tg.id} value={tg.id}>
-                    {tg.name || tg.id}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <div class="browse-card-list">
+          {decisions.length === 0 ? (
+            <p class="dim decisions-empty">{t.decisions.empty}</p>
+          ) : filtered.length === 0 ? (
+            <p class="dim decisions-empty">{t.decisions.noMatch}</p>
+          ) : (
+            <ul class="decisions-list">
+              {filtered.map((d) => {
+                const badge = currencyBadge(currencyOf(d.id, currencyIndex), t);
+                return (
+                  <li key={d.id}>
+                    <button
+                      type="button"
+                      class="decision-row"
+                      ref={(el) => {
+                        if (el) cardRefs.current.set(d.id, el);
+                        else cardRefs.current.delete(d.id);
+                      }}
+                      onClick={() => onOpenDecision(d.id)}
+                    >
+                      <div class="decision-row-top">
+                        <span class="decision-row-target">
+                          <span class="decision-row-target-kind dim">{targetPrefix(d.target.type)}</span>
+                          {targetLabel(d)}
+                        </span>
+                        <span class={'decision-badge ' + badge.cls}>{badge.label}</span>
+                      </div>
+                      <p class="decision-row-why">{d.why}</p>
+                      <span class="decision-row-at dim">{d.at.slice(0, 10)}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          <label class="decisions-filter">
-            <span class="decisions-filter-label dim">{t.decisions.filterCurrency}</span>
-            <select value={currency} onChange={(e) => setCurrency((e.target as HTMLSelectElement).value as CurrencyFilter)}>
-              <option value="all">{t.decisions.filterAll}</option>
-              <option value="current">{t.decisions.currencyCurrent}</option>
-              <option value="superseded">{t.decisions.currencySuperseded}</option>
-            </select>
-          </label>
-          <label class="decisions-filter">
-            <span class="decisions-filter-label dim">{t.decisions.filterPeriod}</span>
-            <select value={period} onChange={(e) => setPeriod((e.target as HTMLSelectElement).value as PeriodFilter)}>
-              <option value="all">{t.decisions.periodAll}</option>
-              <option value="30d">{t.decisions.period30d}</option>
-              <option value="90d">{t.decisions.period90d}</option>
-              <option value="1y">{t.decisions.period1y}</option>
-            </select>
-          </label>
-          <span class="decisions-count dim">{t.decisions.countLabel(filtered.length)}</span>
         </div>
-      </section>
-
-      {decisions.length === 0 ? (
-        <p class="dim decisions-empty">{t.decisions.empty}</p>
-      ) : filtered.length === 0 ? (
-        <p class="dim decisions-empty">{t.decisions.noMatch}</p>
-      ) : (
-        <ul class="decisions-list">
-          {filtered.map((d) => {
-            const badge = currencyBadge(currencyOf(d.id, currencyIndex), t);
-            return (
-              <li key={d.id}>
-                <button type="button" class="decision-row" onClick={() => onOpenDecision(d.id)}>
-                  <div class="decision-row-top">
-                    <span class="decision-row-target">
-                      <span class="decision-row-target-kind dim">{targetPrefix(d.target.type)}</span>
-                      {targetLabel(d)}
-                    </span>
-                    <span class={'decision-badge ' + badge.cls}>{badge.label}</span>
-                  </div>
-                  <p class="decision-row-why">{d.why}</p>
-                  <span class="decision-row-at dim">{d.at.slice(0, 10)}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </main>
+      </main>
+    </div>
   );
 }

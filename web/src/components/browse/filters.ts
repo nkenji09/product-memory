@@ -21,6 +21,24 @@ import type { FacetTreeNode, Tag, TransitionDetail, VocabEntry } from '../../typ
 // shoehorned into 'tag'/'vocab' — `id` holds the raw owner string itself.
 export type FilterCondition = { type: 'tag' | 'vocab'; id: string } | { type: 'owner'; id: string };
 
+/** {each startId} ∪ its transitive parentIds ancestors, cycle-safe
+    (viewer-search-consistency). Works off a flat id→parentIds map (built from
+    the tags list) rather than the facet forest — used by the #/decisions and
+    #/flow tag filters to expand a record's own tags to the effective set
+    (ancestor rollup), matching the 'ancestor' source in the backend's
+    EffectiveTag model. */
+export function ancestorClosure(startIds: string[], parents: Map<string, string[]>): Set<string> {
+  const seen = new Set<string>();
+  const stack = [...startIds];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    for (const p of parents.get(cur) || []) if (!seen.has(p)) stack.push(p);
+  }
+  return seen;
+}
+
 /** All tag ids in the subtree rooted at `rootId` (inclusive of rootId itself). */
 export function descendantIds(roots: FacetTreeNode[], rootId: string): Set<string> {
   const out = new Set<string>();

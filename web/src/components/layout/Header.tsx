@@ -11,19 +11,16 @@ import { useLookups } from '../../lookups';
 interface Props {
   view: ViewName;
   onSelectView: (v: ViewName) => void;
+  /** True when the current view renders a BrowseRail — the off-canvas drawer
+      on narrow viewports needs the 絞り込み toggle for these (design's own
+      `showFilterToggle: isNarrow && isBrowse`). Computed by App
+      (railActiveFor) since it depends on the full route: tags/browse/spec/
+      vocab (BrowseView), vocab, decisions, and #/flow's index only — the
+      per-action flow diagram has no rail (viewer-search-consistency). */
+  railActive: boolean;
 }
 
-// Every screen that renders a BrowseRail (the off-canvas drawer on narrow
-// viewports needs a toggle for these, and only these — design's own
-// `showFilterToggle: isNarrow && isBrowse` where isBrowse = view is
-// 'tags'/'specs'; ours additionally has 'browse'/'spec' as hash-compat
-// aliases for the same BrowseView, and 'vocab' since VocabView adopted the
-// same rail (2026-07-11 tweaks2 §4) after the design was written).
-function usesRail(view: ViewName): boolean {
-  return view === 'tags' || view === 'browse' || view === 'spec' || view === 'vocab';
-}
-
-export function Header({ view, onSelectView }: Props) {
+export function Header({ view, onSelectView, railActive }: Props) {
   const t = useT();
   const { lang, toggleLang } = useLang();
   const { settings, toggleTheme, incFont, decFont } = useViewerSettings();
@@ -79,7 +76,7 @@ export function Header({ view, onSelectView }: Props) {
     return () => ro.disconnect();
   }, []);
 
-  const showFilterToggle = isNarrow && usesRail(view);
+  const showFilterToggle = isNarrow && railActive;
   const badgeCount = comments.length;
 
   return (
