@@ -611,6 +611,38 @@
   overflow-wrap: anywhere;
 }
 
+/* governs 並置（#45 D10b-1）: 出自バッジ付きの decision 並置欄。own と via を
+   視覚区別する（§10-8・viewer-mock 画面a）。 */
+.governs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.governs-provenance-badge {
+  /* .tag-card-decision span の mono/dim を上書き（バッジは本文フォント・色付き）。 */
+  font-family: var(--lm-font-sans);
+  align-self: flex-start;
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--r-pill, 999px);
+  line-height: 1.5;
+}
+
+/* own = この記録自身の判断（強めのアクセント）。 */
+.governs-provenance-own {
+  color: var(--lm-primary);
+  background: color-mix(in srgb, var(--lm-primary) 14%, transparent);
+}
+
+/* via（effective-tag / parent）= 経由の規則（控えめ・own と区別）。 */
+.governs-provenance-effective-tag,
+.governs-provenance-parent {
+  color: var(--lm-text-dim);
+  background: color-mix(in srgb, var(--lm-text-dim) 12%, transparent);
+}
+
 /* H3: 関連語彙の行（category バッジ＋kind＋ラベル）。関連仕様と同じくリンク
    （<a href> via HashLink）なので tag-card-spec-row とスタイルを揃える
    （related-vocab-row-linkable）。 */

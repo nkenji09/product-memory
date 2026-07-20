@@ -192,6 +192,15 @@ const ja = {
     parentLinkTitle: '親タグのカードへ移動',
     childLinkTitle: 'このカードへ移動',
     kindHeading: '種別',
+    // governs 並置（#45 D10b-1）: 「この記録を支配する規則」欄。own の意思決定は
+    // 従来位置のまま不変で、祖先/実効タグ経由の decision を出自バッジ付きで並置。
+    // 既定折りたたみ・件数バッジのみ常時表示。
+    governsHeading: 'この記録を支配する規則',
+    // 出自バッジ: own=この記録自身の判断／effective-tag=直接持つタグ経由／
+    // parent=祖先タグ経由。tagId は via バッジに添える経由タグ名。
+    governsProvenanceOwn: 'この記録自身',
+    governsProvenanceEffectiveTag: (tag: string) => `タグ経由〈${tag}〉`,
+    governsProvenanceParent: (tag: string) => `親タグ経由〈${tag}〉`,
   },
   // 複数画面で同じ語を使う汎用ボタン/操作ラベル（保存・キャンセル等）。
   common: {
@@ -564,6 +573,10 @@ const en: Strings = {
     parentLinkTitle: 'Go to parent tag card',
     childLinkTitle: 'Go to this card',
     kindHeading: 'Kind',
+    governsHeading: 'Rules governing this record',
+    governsProvenanceOwn: 'this record',
+    governsProvenanceEffectiveTag: (tag: string) => `via tag ⟨${tag}⟩`,
+    governsProvenanceParent: (tag: string) => `via parent ⟨${tag}⟩`,
   },
   common: {
     save: 'Save',

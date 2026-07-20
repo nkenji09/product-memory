@@ -13,6 +13,7 @@ import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
 import type { KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
+import { GovernsSection } from './GovernsSection';
 
 interface Props {
   entry: VocabEntry;
@@ -296,6 +297,10 @@ export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFi
           ))}
         </CollapsibleSection>
       )}
+
+      {/* governs 並置（#45 D10b-1）: own の vocab-target decision（上）は不変で、
+          own＋vocab.tags/祖先経由の decision を出自バッジ付きで並置する既定折りたたみ欄。 */}
+      <GovernsSection record={{ kind: 'vocab', id: entry.id }} />
     </article>
   );
 }

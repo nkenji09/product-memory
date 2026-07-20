@@ -12,6 +12,7 @@ import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
+import { GovernsSection } from './GovernsSection';
 
 // VocabCard と同じ category→アイコン対応（きっかけ/前提/結果 = action/
 // condition/effect の固定3軸）。関連語彙行（H3）で流用する。
@@ -208,6 +209,10 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
           ))}
         </CollapsibleSection>
       )}
+
+      {/* governs 並置（#45 D10b-1）: own の意思決定（上の tagDecisions）は不変で、
+          own＋祖先/実効タグ経由の decision を出自バッジ付きで並置する既定折りたたみ欄。 */}
+      <GovernsSection record={{ kind: 'tag', id: tag.id }} />
 
       {/* H2: 下位のタグを件数付きで開閉可能に（5件以上で既定折りたたみ＝
           CollapsibleSection の既定しきい値そのまま）。specs/decisions と同じ
