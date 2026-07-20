@@ -83,6 +83,26 @@ func TestCLI_RulesRejectsMultipleSelectors(t *testing.T) {
 	if _, err := run(t, dir, "rules", "--tag", "subject.auth", "--tx", "T-login"); err == nil {
 		t.Fatalf("expected error when --tag and --tx are both given")
 	}
+	if _, err := run(t, dir, "rules", "--vocab", "act.user.submit-login", "--tag", "subject.auth"); err == nil {
+		t.Fatalf("expected error when --vocab and --tag are both given")
+	}
+}
+
+func TestCLI_RulesVocabSelector(t *testing.T) {
+	dir := t.TempDir()
+	setupAuthFixture(t, dir)
+	// act.user.submit-login は subject.auth タグを直接持つ（vocab tag 経路）。
+	// own の vocab-target decision と、vocab.tags 経由の tag decision の両方が出る。
+	mustRun(t, dir, "decide", "--on", "vocab:act.user.submit-login", "--why", "この語彙固有の規則")
+	mustRun(t, dir, "decide", "--on", "tag:subject.auth", "--why", "subject.auth の共通規則")
+
+	out := mustRun(t, dir, "rules", "--vocab", "act.user.submit-login")
+	if !strings.Contains(out, "この語彙固有の規則") {
+		t.Fatalf("rules --vocab should surface the vocab-target decision:\n%s", out)
+	}
+	if !strings.Contains(out, "subject.auth の共通規則") {
+		t.Fatalf("rules --vocab should surface a decision on the vocab's tag (subject.auth):\n%s", out)
+	}
 }
 
 func TestCLI_DecideRejectsMissingTarget(t *testing.T) {
