@@ -52,6 +52,15 @@ export interface Route {
       (view-state-continuity). Vocab-only — tags/specs BrowseView never sets
       it, so the param is simply absent there. */
   searchSubject?: string;
+  /** DecisionsView's filter state (#/decisions・#45 D10b-4): target 種別・
+      タグ・現行/失効・期間。free-text search（searchQuery）と同じく URL query
+      に載せ、reload/ブラウザバックで復元する（既存 settled セマンティクス）。
+      キー名は router.ts の実装詳細（decision には書かない）。既定値（'all'）の
+      ときは省略して URL を汚さない（q/k と同じ扱い）。 */
+  decisionTargetKind?: string;
+  decisionTag?: string;
+  decisionCurrency?: string;
+  decisionPeriod?: string;
 }
 
 const VIEWS: ViewName[] = ['home', 'browse', 'vocab', 'spec', 'tags', 'config', 'flow', 'decisions', 'decision'];
@@ -123,6 +132,17 @@ export function parseRoute(hash: string): Route {
     // filter-on-focus-tag default applies only in the latter case) — see
     // BrowseView.tsx's deriveFilters.
     if (params.has('f')) route.searchFilters = params.get('f') || '';
+    // DecisionsView filters (#45 D10b-4) — plain truthy-check like q/k: an
+    // absent param means "default" (the view resolves 'all'/'' itself), so
+    // the default value is simply omitted from the URL.
+    const dk = params.get('dk');
+    const dt = params.get('dt');
+    const dc = params.get('dc');
+    const dp = params.get('dp');
+    if (dk) route.decisionTargetKind = dk;
+    if (dt) route.decisionTag = dt;
+    if (dc) route.decisionCurrency = dc;
+    if (dp) route.decisionPeriod = dp;
   }
   return route;
 }
@@ -159,6 +179,13 @@ export function routeHash(route: Route): string {
   // Explicit '' must still emit `f=` (see parseRoute) — only a fully-absent
   // searchFilters (undefined) omits the param.
   if (route.searchFilters !== undefined) params.set('f', route.searchFilters);
+  // DecisionsView filters (#45 D10b-4) — omit default values so the URL stays
+  // clean until a filter is actually applied (parseRoute treats absent as
+  // default). App passes these already-normalized (undefined when default).
+  if (route.decisionTargetKind) params.set('dk', route.decisionTargetKind);
+  if (route.decisionTag) params.set('dt', route.decisionTag);
+  if (route.decisionCurrency) params.set('dc', route.decisionCurrency);
+  if (route.decisionPeriod) params.set('dp', route.decisionPeriod);
   const qs = params.toString();
   if (qs) hash += `?${qs}`;
   return hash;
