@@ -1,0 +1,7 @@
+{
+  "id": "eff.emit.open-flow-index",
+  "category": "effect",
+  "label": "フロー一覧(#/flow)を開き action を選ばせる",
+  "kind": "emit",
+  "owner": "subject.viewer.flow"
+}

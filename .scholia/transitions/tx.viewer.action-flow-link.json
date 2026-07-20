@@ -9,6 +9,7 @@
   ],
   "tags": [
     "req.action-flow.visualize",
-    "subject.viewer.spec"
+    "subject.viewer.spec",
+    "subject.viewer.vocab"
   ]
 }

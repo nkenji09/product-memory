@@ -245,3 +245,93 @@
   font-size: var(--fs-2xs);
   color: var(--lm-text-dim);
 }
+
+/* #/flow インデックス（#45 D10b-5・tx.viewer.flow-nav-tab）: nav「フロー」タブの
+   着地点。decisions 一覧と同系のリスト意匠を踏襲する。 */
+.flow-index-view {
+  padding: var(--sp-6) var(--sp-4) var(--sp-8);
+  overflow-y: auto;
+  max-width: 940px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.flow-index-hero h1 {
+  margin: 0 0 var(--sp-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--lm-text-strong);
+}
+
+.flow-index-hero p {
+  margin: 0;
+  max-width: 64ch;
+  font-size: var(--fs-md);
+  line-height: 1.8;
+}
+
+.flow-index-search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  border: 1px solid var(--lm-border);
+  background: var(--lm-s1);
+  border-radius: var(--r-md);
+  padding: 0 var(--sp-3);
+  color: var(--lm-text-dim);
+}
+
+.flow-index-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: var(--sp-2) 0;
+  font-size: var(--fs-sm);
+  color: var(--lm-text);
+  outline: none;
+}
+
+.flow-index-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.flow-index-row {
+  width: 100%;
+  text-decoration: none;
+  border: 1px solid var(--lm-border);
+  background: var(--lm-s1);
+  border-radius: var(--r-lg);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.flow-index-row:hover {
+  border-color: var(--lm-border-strong);
+  box-shadow: var(--sh-sm);
+}
+
+.flow-index-row-label {
+  font-weight: 600;
+  color: var(--lm-text-strong);
+}
+
+.flow-index-row-count {
+  font-size: var(--fs-2xs);
+  white-space: nowrap;
+}

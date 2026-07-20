@@ -1,0 +1,6 @@
+{
+  "id": "act.user.open-flow-nav",
+  "category": "action",
+  "label": "nav の「フロー」タブを開いたとき",
+  "kind": "user"
+}

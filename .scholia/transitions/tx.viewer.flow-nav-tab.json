@@ -1,0 +1,14 @@
+{
+  "id": "tx.viewer.flow-nav-tab",
+  "action": "act.user.open-flow-nav",
+  "given": [
+    "cond.index-built"
+  ],
+  "then": [
+    "eff.emit.open-flow-index"
+  ],
+  "tags": [
+    "req.action-flow.visualize",
+    "subject.viewer.flow"
+  ]
+}

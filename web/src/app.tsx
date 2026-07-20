@@ -5,6 +5,7 @@ import { BrowseView } from './components/browse/BrowseView';
 import { ConfigView } from './components/config/ConfigView';
 import { VocabView } from './components/VocabView';
 import { FlowView } from './components/FlowView';
+import { FlowIndexView } from './components/FlowIndexView';
 import { DecisionsView } from './components/decisions/DecisionsView';
 import type { DecisionFilterState } from './components/decisions/DecisionsView';
 import { DecisionDetailView } from './components/decisions/DecisionDetailView';
@@ -150,7 +151,9 @@ export function App() {
         <BrowseView scrollKey="spec" facet="tags" initialFocusTagId={route.tagId} onGoToSpec={openTransition} onGoToVocab={openVocabEntry} onGoToTag={openTagSpec} {...browseSearchProps} />
       )}
       {view === 'tags' && <BrowseView scrollKey="tags" facet="tags" onGoToSpec={openTransition} onGoToVocab={openVocabEntry} onGoToTag={openTagSpec} {...browseSearchProps} />}
-      {view === 'flow' && <FlowView actionId={route.actionId} />}
+      {/* nav「フロー」タブ（tx.viewer.flow-nav-tab）は #/flow の index を出し、
+          action を選ぶと #/flow/<action> の既存 FlowView へ（表示内容は不変）。 */}
+      {view === 'flow' && (route.actionId ? <FlowView actionId={route.actionId} /> : <FlowIndexView onSelectAction={(id) => navigate({ view: 'flow', actionId: id })} />)}
       {view === 'decisions' && (
         <DecisionsView
           searchQuery={route.searchQuery || ''}

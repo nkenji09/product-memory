@@ -37,6 +37,7 @@ const ja = {
     tags: 'タグ',
     specs: '仕様',
     vocab: '語彙',
+    flow: 'フロー',
     config: '設定',
   },
   header: {
@@ -118,6 +119,13 @@ const ja = {
     viewTitle: (label: string) => `${label} のフロー`,
     loading: '読み込み中…',
     emptyAction: 'この action を持つ遷移はありません。',
+    // #/flow インデックス（tx.viewer.flow-nav-tab）: nav の「フロー」タブから
+    // action 一覧を出し、選ぶと #/flow/<action> へ。
+    indexTitle: 'フロー',
+    indexIntro: 'action を選ぶと、その分岐（条件×遷移）のフロー図が開きます。',
+    indexEmpty: 'フロー図を持つ action がありません。',
+    indexSearchPlaceholder: 'action を絞り込む…',
+    indexTxCount: (n: number) => `${n} 遷移`,
     diagramError: '図の描画に失敗しました。',
     // 凡例。矢印は同じ意味の繰り返しラベルを持たせず、ここで一括して説明する。
     legendClickable: '結果（クリックで遷移詳細へ）',
@@ -464,6 +472,7 @@ const en: Strings = {
     tags: 'Tags',
     specs: 'Specs',
     vocab: 'Vocab',
+    flow: 'Flow',
     config: 'Settings',
   },
   header: {
@@ -522,6 +531,11 @@ const en: Strings = {
     viewTitle: (label) => `${label} flow`,
     loading: 'Loading…',
     emptyAction: 'No transitions carry this action.',
+    indexTitle: 'Flow',
+    indexIntro: 'Pick an action to open its branching (conditions × transitions) flow diagram.',
+    indexEmpty: 'No actions have a flow diagram.',
+    indexSearchPlaceholder: 'Filter actions…',
+    indexTxCount: (n) => `${n} transitions`,
     diagramError: 'Failed to render the diagram.',
     legendClickable: 'Result (click for the transition detail)',
     zoomIn: 'Zoom in',
