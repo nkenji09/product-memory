@@ -5,7 +5,9 @@ import { BrowseView } from './components/browse/BrowseView';
 import { ConfigView } from './components/config/ConfigView';
 import { VocabView } from './components/VocabView';
 import { FlowView } from './components/FlowView';
+import { FlowIndexView } from './components/FlowIndexView';
 import { DecisionsView } from './components/decisions/DecisionsView';
+import type { DecisionFilterState } from './components/decisions/DecisionsView';
 import { DecisionDetailView } from './components/decisions/DecisionDetailView';
 import { CommentPanel } from './components/comments/CommentPanel';
 import { useComments } from './components/comments/useComments';
@@ -39,7 +41,12 @@ export function App() {
   // so setView() can reconstruct it; it's an in-session bridge, not a second
   // source of truth (the URL stays authoritative — reload/Back read from it,
   // and leaving a view repopulates the map from the live route below).
-  const searchMemory = useRef<Map<ViewName, Pick<Route, 'searchQuery' | 'searchKindFacet' | 'searchFilters' | 'searchSubject'>>>(new Map());
+  const searchMemory = useRef<
+    Map<
+      ViewName,
+      Pick<Route, 'searchQuery' | 'searchKindFacet' | 'searchFilters' | 'searchSubject' | 'decisionTargetKind' | 'decisionTag' | 'decisionCurrency' | 'decisionPeriod'>
+    >
+  >(new Map());
   useEffect(() => {
     if (SEARCHABLE_VIEWS.has(route.view)) {
       searchMemory.current.set(route.view, {
@@ -47,6 +54,12 @@ export function App() {
         searchKindFacet: route.searchKindFacet,
         searchFilters: route.searchFilters,
         searchSubject: route.searchSubject,
+        // DecisionsView filters (#45 D10b-4) — remembered like search state so a
+        // plain nav-tab hop back to 意思決定 restores the applied filters too.
+        decisionTargetKind: route.decisionTargetKind,
+        decisionTag: route.decisionTag,
+        decisionCurrency: route.decisionCurrency,
+        decisionPeriod: route.decisionPeriod,
       });
     }
   }, [route]);
@@ -138,11 +151,30 @@ export function App() {
         <BrowseView scrollKey="spec" facet="tags" initialFocusTagId={route.tagId} onGoToSpec={openTransition} onGoToVocab={openVocabEntry} onGoToTag={openTagSpec} {...browseSearchProps} />
       )}
       {view === 'tags' && <BrowseView scrollKey="tags" facet="tags" onGoToSpec={openTransition} onGoToVocab={openVocabEntry} onGoToTag={openTagSpec} {...browseSearchProps} />}
-      {view === 'flow' && <FlowView actionId={route.actionId} />}
+      {/* nav「フロー」タブ（tx.viewer.flow-nav-tab）は #/flow の index を出し、
+          action を選ぶと #/flow/<action> の既存 FlowView へ（表示内容は不変）。 */}
+      {view === 'flow' && (route.actionId ? <FlowView actionId={route.actionId} /> : <FlowIndexView onSelectAction={(id) => navigate({ view: 'flow', actionId: id })} />)}
       {view === 'decisions' && (
         <DecisionsView
           searchQuery={route.searchQuery || ''}
-          onSearchChange={(q) => navigate({ view: 'decisions', searchQuery: q || undefined })}
+          // DecisionsView filter state lives in the URL (#45 D10b-4) so
+          // reload/Back restore the same 絞り込み. The view resolves defaults
+          // ('all'/'') from undefined; onFiltersChange merges every field into
+          // the hash at once (a single navigate keeps them composed).
+          targetKind={(route.decisionTargetKind || 'all') as DecisionFilterState['targetKind']}
+          tagFilter={route.decisionTag || 'all'}
+          currency={(route.decisionCurrency || 'all') as DecisionFilterState['currency']}
+          period={(route.decisionPeriod || 'all') as DecisionFilterState['period']}
+          onFiltersChange={(f) =>
+            navigate({
+              view: 'decisions',
+              searchQuery: f.query || undefined,
+              decisionTargetKind: f.targetKind === 'all' ? undefined : f.targetKind,
+              decisionTag: f.tagFilter === 'all' ? undefined : f.tagFilter,
+              decisionCurrency: f.currency === 'all' ? undefined : f.currency,
+              decisionPeriod: f.period === 'all' ? undefined : f.period,
+            })
+          }
           onOpenDecision={openDecision}
         />
       )}

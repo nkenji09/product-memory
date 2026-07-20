@@ -53,6 +53,11 @@ export function Header({ view, onSelectView }: Props) {
     ['tags', t.nav.tags, 'tags'],
     ['vocab', t.nav.vocab, 'book-open'],
     ['browse', t.nav.specs, 'scroll-text'],
+    // flow 入口の昇格（#45 D10b-5）— nav の「フロー」タブは #/flow の index を
+    // 出し、action を選ぶと #/flow/<action> へ。従来 SpecCard ケバブ1箇所しか
+    // 無かった入口を3系統（nav・vocab カード・spec ケバブ）へ増やす到達経路の
+    // 追加であって、flow の表示内容（mermaid のみ）は不変。
+    ['flow', t.nav.flow, 'git-fork'],
     // 意思決定の read 面（D10a）— デザイン未対応だが独立の通覧タブが要る
     // （語彙タブと同じ「未モックだが到達スロットが必要」枠）。#/decision/<ulid>
     // の詳細もこのタブをアクティブ表示にする（spec→tags と同じ扱い）。

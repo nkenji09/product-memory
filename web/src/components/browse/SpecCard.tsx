@@ -9,6 +9,7 @@ import { Icon } from '../shared/Icon';
 import { KebabMenu, type KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { GovernsSection } from './GovernsSection';
 
 interface Props {
   detail: TransitionDetail;
@@ -235,6 +236,10 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
           ))}
         </CollapsibleSection>
       )}
+
+      {/* governs 並置（#45 D10b-1）: own の意思決定（上の rules）は不変で、own＋
+          実効タグ/祖先経由の decision を出自バッジ付きで並置する既定折りたたみ欄。 */}
+      <GovernsSection record={{ kind: 'transition', id: detail.id }} />
     </article>
   );
 }

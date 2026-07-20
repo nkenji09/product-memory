@@ -155,3 +155,117 @@ func TestSelectRulesDecisions_NoneReturnsAll(t *testing.T) {
 		t.Fatalf("len(decisions) = %d, want %d (all)", len(got), len(snap.Decisions))
 	}
 }
+
+// snapshotWithVocabGoverns adds a vocab (cond.valid) carrying req.auth-happy
+// and a vocab-target decision, so the --vocab selector's "own ∪ vocab.tags +
+// ancestors" closure can be exercised.
+func snapshotWithVocabGoverns() *store.Snapshot {
+	snap := testSnapshotWithDecisions()
+	for i := range snap.Vocab {
+		if snap.Vocab[i].ID == "cond.valid" {
+			snap.Vocab[i].Tags = []string{"req.auth-happy"}
+		}
+	}
+	snap.Decisions = append(snap.Decisions,
+		model.Decision{ID: "d-vocab", Target: model.DecisionTarget{Type: model.DecisionTargetVocab, ID: "cond.valid"}, Why: "cond.valid 固有の decision", At: "2026-01-04T00:00:00Z"},
+	)
+	return snap
+}
+
+func TestSelectRulesDecisionsFor_ByVocabIncludesOwnAndTagAncestors(t *testing.T) {
+	snap := snapshotWithVocabGoverns()
+	got, err := SelectRulesDecisionsFor(snap, "", "", "cond.valid", "")
+	if err != nil {
+		t.Fatalf("SelectRulesDecisionsFor: %v", err)
+	}
+	ids := map[string]bool{}
+	for _, d := range got {
+		ids[d.ID] = true
+	}
+	// own (d-vocab) ∪ req.auth-happy's ancestor req.auth's decision (d-tag-ancestor).
+	want := map[string]bool{"d-vocab": true, "d-tag-ancestor": true}
+	if len(ids) != len(want) {
+		t.Fatalf("decision ids = %v, want exactly %v", ids, want)
+	}
+	for id := range want {
+		if !ids[id] {
+			t.Fatalf("missing decision %q in %v", id, ids)
+		}
+	}
+}
+
+func TestSelectRulesDecisionsFor_ByVocabUnknownIsError(t *testing.T) {
+	snap := snapshotWithVocabGoverns()
+	if _, err := SelectRulesDecisionsFor(snap, "", "", "does-not-exist", ""); err == nil {
+		t.Fatalf("expected error for unknown vocab")
+	}
+}
+
+func TestGovernsForTag_ProvenanceOwnAndParent(t *testing.T) {
+	snap := testSnapshotWithDecisions()
+	got, err := GovernsForTag(snap, "req.auth-happy")
+	if err != nil {
+		t.Fatalf("GovernsForTag: %v", err)
+	}
+	// d-tag-ancestor targets req.auth, which is req.auth-happy's parent → via parent.
+	if len(got) != 1 {
+		t.Fatalf("entries = %+v, want 1", got)
+	}
+	if got[0].Decision.ID != "d-tag-ancestor" || got[0].Provenance != GovernsViaParent || got[0].ViaTag != "req.auth" {
+		t.Fatalf("entry = %+v, want d-tag-ancestor via parent req.auth", got[0])
+	}
+}
+
+func TestGovernsForTag_OwnTagIsEffectiveTag(t *testing.T) {
+	snap := testSnapshotWithDecisions()
+	got, err := GovernsForTag(snap, "req.auth")
+	if err != nil {
+		t.Fatalf("GovernsForTag: %v", err)
+	}
+	if len(got) != 1 || got[0].Decision.ID != "d-tag-ancestor" || got[0].Provenance != GovernsEffectiveTag {
+		t.Fatalf("entries = %+v, want [d-tag-ancestor effective-tag]", got)
+	}
+}
+
+func TestGovernsForTransition_OwnAndTagPaths(t *testing.T) {
+	snap := testSnapshotWithDecisions()
+	got, err := GovernsForTransition(snap, "T-1")
+	if err != nil {
+		t.Fatalf("GovernsForTransition: %v", err)
+	}
+	byID := map[string]GovernsEntry{}
+	for _, e := range got {
+		byID[e.Decision.ID] = e
+	}
+	// d-tx: own; d-tag-ancestor: T-1 carries req.auth-happy directly, req.auth
+	// is its ancestor → the decision on req.auth is via parent.
+	if e, ok := byID["d-tx"]; !ok || e.Provenance != GovernsOwn {
+		t.Fatalf("d-tx entry = %+v, want own", byID["d-tx"])
+	}
+	if e, ok := byID["d-tag-ancestor"]; !ok || e.Provenance != GovernsViaParent {
+		t.Fatalf("d-tag-ancestor entry = %+v, want via parent", byID["d-tag-ancestor"])
+	}
+	if _, ok := byID["d-unrelated-tag"]; ok {
+		t.Fatalf("d-unrelated-tag must not govern T-1")
+	}
+}
+
+func TestGovernsForVocab_OwnAndTagPaths(t *testing.T) {
+	snap := snapshotWithVocabGoverns()
+	got, err := GovernsForVocab(snap, "cond.valid")
+	if err != nil {
+		t.Fatalf("GovernsForVocab: %v", err)
+	}
+	byID := map[string]GovernsEntry{}
+	for _, e := range got {
+		byID[e.Decision.ID] = e
+	}
+	if e, ok := byID["d-vocab"]; !ok || e.Provenance != GovernsOwn {
+		t.Fatalf("d-vocab entry = %+v, want own", byID["d-vocab"])
+	}
+	// cond.valid carries req.auth-happy directly (effective-tag); req.auth is
+	// its ancestor → the decision on req.auth is via parent.
+	if e, ok := byID["d-tag-ancestor"]; !ok || e.Provenance != GovernsViaParent {
+		t.Fatalf("d-tag-ancestor entry = %+v, want via parent", byID["d-tag-ancestor"])
+	}
+}

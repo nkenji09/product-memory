@@ -214,8 +214,13 @@ func TestRetrofitDogfoodCounts(t *testing.T) {
 	// 4件目として真ヒットし 16/16 → 17/17。D7 が「機械マイグレーション/データ作業型
 	// commit は偽陽性として残り acknowledges で容認可」と規定した挙動どおりの新実測
 	// （info・lint --ci は warn を数えるため緑・regression ではない）。
-	if resp.AcknowledgeOnly.FindingCount != 17 || resp.AcknowledgeOnly.RecordCount != 17 {
-		t.Fatalf("dogfood acknowledgeOnly = %d findings / %d records, want 17/17", resp.AcknowledgeOnly.FindingCount, resp.AcknowledgeOnly.RecordCount)
+	// #45 束7（D10b-5）の flow 入口昇格 data-work commit（既存 tx.viewer.action-flow-link
+	// に subject.viewer.vocab を追加＝vocab 導線を正規形『1原子＋複数 subject タグ』で
+	// 記録・正本 decision 01KXYED63YFK… は前もって base commit 326007a で記録済ゆえ当該
+	// commit 自体には decision 非同伴）が decision-stale の5件目として真ヒットし
+	// 17/17 → 18/18。D7 規定どおりの新実測（info・lint --ci 緑・regression ではない）。
+	if resp.AcknowledgeOnly.FindingCount != 18 || resp.AcknowledgeOnly.RecordCount != 18 {
+		t.Fatalf("dogfood acknowledgeOnly = %d findings / %d records, want 18/18", resp.AcknowledgeOnly.FindingCount, resp.AcknowledgeOnly.RecordCount)
 	}
 	if total := resp.Fixable.ByRule["dead-doc-ref"] + resp.AcknowledgeOnly.ByRule["dead-doc-ref"]; total != 8 {
 		t.Fatalf("dogfood dead-doc-ref total = %d, want 8", total)

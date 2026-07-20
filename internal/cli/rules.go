@@ -17,20 +17,20 @@ type rulesOutput struct {
 }
 
 func newRulesCmd() *cobra.Command {
-	var tagID, txID, facet, sortBy string
+	var tagID, txID, vocabID, facet, sortBy string
 	var asJSON, current bool
 	cmd := &cobra.Command{
 		Use:   "rules",
-		Short: "対象（tag/transition/facet）に関わる decisions を横断集約する（§3.8）",
+		Short: "対象（tag/transition/vocab/facet）に関わる decisions を横断集約する（§3.8）",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			selected := 0
-			for _, v := range []string{tagID, txID, facet} {
+			for _, v := range []string{tagID, txID, vocabID, facet} {
 				if v != "" {
 					selected++
 				}
 			}
 			if selected > 1 {
-				return fmt.Errorf("--tag / --tx / --facet は同時に指定できません")
+				return fmt.Errorf("--tag / --tx / --vocab / --facet は同時に指定できません")
 			}
 			if sortBy != "chrono" && sortBy != "target" {
 				return fmt.Errorf("--sort は chrono|target のいずれかである必要があります（実際は %q）", sortBy)
@@ -45,7 +45,7 @@ func newRulesCmd() *cobra.Command {
 				return err
 			}
 
-			decisions, err := index.SelectRulesDecisions(&snap, tagID, txID, facet)
+			decisions, err := index.SelectRulesDecisionsFor(&snap, tagID, txID, vocabID, facet)
 			if err != nil {
 				return err
 			}
@@ -75,6 +75,7 @@ func newRulesCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&tagID, "tag", "", "タグを対象にする（自身＋祖先タグへの decisions）")
 	cmd.Flags().StringVar(&txID, "tx", "", "遷移を対象にする（自身＋実効タグへの decisions）")
+	cmd.Flags().StringVar(&vocabID, "vocab", "", "語彙を対象にする（自身＋その語彙が持つタグ〔vocab.tags〕とその祖先への decisions・#45 D10b）")
 	cmd.Flags().StringVar(&facet, "facet", "", "指定 kind を持つ全タグを対象にする")
 	cmd.Flags().StringVar(&sortBy, "sort", "chrono", "並び順（chrono=at昇順・既定 | target=対象ごとにグループ化）")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "JSON で出力する")

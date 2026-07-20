@@ -33,7 +33,7 @@ type staticData struct {
 	Traceability     traceabilityPayload               `json:"traceability"`
 	TransitionsByTag map[string]transitionsPayload     `json:"transitionsByTag"`
 	TransitionDetail map[string]index.TransitionDetail `json:"transitionDetail"`
-	SearchCorpus     []index.TransitionSearchDoc       `json:"searchCorpus"`
+	SearchCorpus     []index.RecordSearchDoc           `json:"searchCorpus"`
 	Lint             lintPayload                       `json:"lint"`
 	Spec             map[string]SpecReport             `json:"spec"`
 	// Flow mirrors GET /api/flow/<action> (tx.viewer.action-flow-render),
@@ -60,6 +60,15 @@ type staticData struct {
 	// (index.SortedRulesFor's "no selector" case) — HOME's recent-decisions
 	// widget needs this in the static export too, not just `scholia view`.
 	Decisions []model.Decision `json:"decisions"`
+	// Governs mirrors GET /api/governs?tag=|tx=|vocab= (#45 D10b-1 per-record
+	// governs). Keyed by record ref ("tag:<id>" / "transition:<id>" /
+	// "vocab:<id>") so the SPA looks up the governing decisions for the card
+	// it's showing without a server. Values come from index.GovernsForTag/
+	// Transition/Vocab — the same functions the live handler calls — so the
+	// static export can't diverge from `scholia view`/`scholia rules` (§9,
+	// 面間整合原則 D10b-2). "bake what the SPA can request": every tag /
+	// transition / vocab id is a possible governs lookup.
+	Governs map[string][]index.GovernsEntry `json:"governs"`
 }
 
 // facetsPayload / transitionsPayload / traceabilityPayload / lintPayload
@@ -204,6 +213,33 @@ func collectStaticData(s *store.Store) (staticData, error) {
 		decisions = []model.Decision{}
 	}
 
+	// per-record governs（#45 D10b-1）を Go 側で焼き込む。live /api/governs と
+	// 同一の index.GovernsFor* を呼び、SPA が要求しうる各レコード ref（tag/
+	// transition/vocab の全 id）を先に計算する（transitionsByTag と同じ「bake
+	// what the SPA can request」規約）。key は "tag:<id>" 等の record ref。
+	governs := make(map[string][]index.GovernsEntry, len(snap.Tags)+len(ix.TransitionByID)+len(snap.Vocab))
+	for _, t := range snap.Tags {
+		entries, err := index.GovernsForTag(&snap, t.ID)
+		if err != nil {
+			return staticData{}, err
+		}
+		governs["tag:"+t.ID] = entries
+	}
+	for _, t := range ix.AllTransitions() {
+		entries, err := index.GovernsForTransition(&snap, t.ID)
+		if err != nil {
+			return staticData{}, err
+		}
+		governs["transition:"+t.ID] = entries
+	}
+	for _, v := range snap.Vocab {
+		entries, err := index.GovernsForVocab(&snap, v.ID)
+		if err != nil {
+			return staticData{}, err
+		}
+		governs["vocab:"+v.ID] = entries
+	}
+
 	return staticData{
 		Config:           snap.Config,
 		Facets:           facets,
@@ -218,6 +254,7 @@ func collectStaticData(s *store.Store) (staticData, error) {
 		Vocab:            vocab,
 		VocabBySubject:   vocabBySubject,
 		Decisions:        decisions,
+		Governs:          governs,
 	}, nil
 }
 

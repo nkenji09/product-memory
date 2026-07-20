@@ -611,6 +611,38 @@
   overflow-wrap: anywhere;
 }
 
+/* governs 並置（#45 D10b-1）: 出自バッジ付きの decision 並置欄。own と via を
+   視覚区別する（§10-8・viewer-mock 画面a）。 */
+.governs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.governs-provenance-badge {
+  /* .tag-card-decision span の mono/dim を上書き（バッジは本文フォント・色付き）。 */
+  font-family: var(--lm-font-sans);
+  align-self: flex-start;
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--r-pill, 999px);
+  line-height: 1.5;
+}
+
+/* own = この記録自身の判断（強めのアクセント）。 */
+.governs-provenance-own {
+  color: var(--lm-primary);
+  background: color-mix(in srgb, var(--lm-primary) 14%, transparent);
+}
+
+/* via（effective-tag / parent）= 経由の規則（控えめ・own と区別）。 */
+.governs-provenance-effective-tag,
+.governs-provenance-parent {
+  color: var(--lm-text-dim);
+  background: color-mix(in srgb, var(--lm-text-dim) 12%, transparent);
+}
+
 /* H3: 関連語彙の行（category バッジ＋kind＋ラベル）。関連仕様と同じくリンク
    （<a href> via HashLink）なので tag-card-spec-row とスタイルを揃える
    （related-vocab-row-linkable）。 */
@@ -899,4 +931,96 @@
   color: var(--lm-warning-ic);
   border-radius: var(--r-md);
   font-size: var(--fs-xs);
+}
+
+/* 軸カードの構造表示（#45 D10b-6）: 状態次元・total・値・効く action。 */
+.axis-structure-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.axis-dimension-badge {
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--r-pill, 999px);
+  color: var(--lm-primary);
+  background: color-mix(in srgb, var(--lm-primary) 14%, transparent);
+}
+
+.axis-total-badge {
+  font-size: var(--fs-3xs);
+  padding: 2px 8px;
+  border-radius: var(--r-pill, 999px);
+}
+
+.axis-total-true {
+  color: var(--lm-text);
+  background: color-mix(in srgb, var(--lm-text-dim) 12%, transparent);
+}
+
+.axis-total-false {
+  color: var(--lm-text-dim);
+  background: transparent;
+  border: 1px dashed var(--lm-border);
+}
+
+.axis-value-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.axis-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--lm-border-strong);
+  background: var(--lm-s1);
+  border-radius: var(--r-md);
+}
+
+.axis-value-label {
+  font-weight: 600;
+  color: var(--lm-text-strong);
+  text-decoration: none;
+}
+
+.axis-value-label:hover {
+  text-decoration: underline;
+}
+
+.axis-value-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.axis-value-actions-label {
+  font-size: var(--fs-3xs);
+}
+
+.axis-value-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-3xs);
+  text-decoration: none;
+  padding: 1px 7px;
+  border-radius: var(--r-pill, 999px);
+  color: var(--t-act, var(--lm-primary));
+  background: color-mix(in srgb, var(--t-act, var(--lm-primary)) 10%, transparent);
+}
+
+.axis-value-action-chip:hover {
+  background: color-mix(in srgb, var(--t-act, var(--lm-primary)) 20%, transparent);
 }

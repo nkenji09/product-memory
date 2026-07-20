@@ -1,0 +1,17 @@
+{
+  "id": "01KXYED61J6QBEX75H2XHVHW7Y",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.decision-display"
+  },
+  "why": "## D10b-1・governs 並置 — 「この記録を支配する規則」欄（own-only decision の amend）\n\n### 結論\n各レコードカード（TagCard／SpecCard／VocabCard）に「この記録を支配する規則」（**governs**）欄を追加し、own の decision と祖先／実効タグ経由の decision を**出自バッジ付きで並置**する。own-only の中核（自身の判断がどれか曖昧にしない）は保持。既定は**折りたたみ**（件数バッジのみ常時表示）で単票の読みやすさを守る。governs のデータ源とセレクタは CLI `scholia rules` と同一の query コア（`index.SelectRulesDecisions`）に一本化する——面間整合原則（D10b-2）の最初の適用。\n\n### なぜ\nown-only を定めた `01KXDFD2RZJ118T2VVAF5F07RW` は「表示は own-only・cross-cutting は rules query で別経路として surface」と役割分離を決めたが、**約束された rules query の読み面が viewer に一度も実装されなかった**（/api/rules の frontend 利用は採用コメントの why 復元のみ）。結果「このレコードを支配する規則は何か」に CLI（`scholia rules --tag`＝自身＋祖先）と viewer（own-only）で違う答えが返り、「why は decision へ」の規律に従うほど根拠へ辿れない逆転が起きた（#45 診断: 親に decision を持ち子に無いタグの why が viewer から不可視）。本 amend は `01KXDFD2RZ…` が予告した「rules query で別経路として surface」の**実装**であって否定ではない（mode=amend）。\n\n### 不変と明記する既決\n`01KXGATP16Z1C9GB19PV1BHR61`（decision 可視性の transition 非依存化＝SpecReport トップレベル tagDecisions）は本 amend の影響を受けない。own 表示の供給経路はそのまま governs の own 段に載る。\n\n### 変更\nTagCard／SpecCard／VocabCard に governs セクションを追加（own 表示は従来位置のまま不変・governs は既定折りたたみ・出自バッジ〔own／via parent〈tagId〉／via effective-tag〕付き）。governs のセレクタは `index.SelectRulesDecisions` と同一関数を共有。VocabCard の governs は P5 の vocab-target decision＋vocab.tags 経由（下記 `rules --vocab` と同一合成規則）。CLI に `scholia rules --vocab \u003cid\u003e`（own∪ vocab.tags＋祖先タグへの decision・`--tag`/`--tx`/`--facet` と相互排他）を新設し viewer VocabCard governs と実装共有。static export に per-record governs を Go 側で焼き込む（live API と同一関数を呼び「SPA が要求しうる入力を先に焼く」既存規約）。情報量（既定折りたたみ・出自バッジの見せ方）は §10-8 として実 UI（viewer-mock 画面a が材料）で確定する。\n\n### 置き換え（adopt 時に `decision link` で結線）\n`01KXDFD2RZJ118T2VVAF5F07RW` を mode=amend。",
+  "changed": "TagCard/SpecCard/VocabCard に governs セクション追加（own 表示は従来位置のまま不変・既定折りたたみ・出自バッジ〔own／via parent〈tagId〉／via effective-tag〕）／governs セレクタは index.SelectRulesDecisions を共有／CLI rules --vocab 新設（own∪ vocab.tags＋祖先・--tag/--tx/--facet と相互排他）／static export に per-record governs を Go 側で bake／情報量（折りたたみ・バッジ）は §10-8 として実 UI で確定",
+  "ref": "DESIGN §3.5",
+  "at": "2026-07-20T00:21:54Z",
+  "supersedes": [
+    {
+      "id": "01KXDFD2RZJ118T2VVAF5F07RW",
+      "mode": "amend"
+    }
+  ]
+}

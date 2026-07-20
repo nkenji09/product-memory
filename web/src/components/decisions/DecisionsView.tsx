@@ -6,17 +6,33 @@ import type { Decision, Tag } from '../../types';
 import { Icon } from '../shared/Icon';
 import { buildCurrencyIndex, currencyOf, type Currency } from './decisionModel';
 
+type TargetKindFilter = 'all' | 'transition' | 'tag' | 'vocab';
+type CurrencyFilter = 'all' | 'current' | 'superseded';
+type PeriodFilter = 'all' | '30d' | '90d' | '1y';
+
+// All filter state (#45 D10b-4) is lifted into the URL via App — this view is
+// controlled: it renders from props and reports every change through
+// onFiltersChange (a whole-state snapshot so the hash stays composed).
+export interface DecisionFilterState {
+  query: string;
+  targetKind: TargetKindFilter;
+  tagFilter: string;
+  currency: CurrencyFilter;
+  period: PeriodFilter;
+}
+
 interface Props {
   /** Free-text query (routed via the shared searchQuery hash param so it
       round-trips a shared link). */
   searchQuery: string;
-  onSearchChange: (q: string) => void;
+  /** Filter state, restored from the URL (#45 D10b-4). */
+  targetKind: TargetKindFilter;
+  tagFilter: string;
+  currency: CurrencyFilter;
+  period: PeriodFilter;
+  onFiltersChange: (f: DecisionFilterState) => void;
   onOpenDecision: (id: string) => void;
 }
-
-type TargetKindFilter = 'all' | 'transition' | 'tag' | 'vocab';
-type CurrencyFilter = 'all' | 'current' | 'superseded';
-type PeriodFilter = 'all' | '30d' | '90d' | '1y';
 
 const PERIOD_DAYS: Record<Exclude<PeriodFilter, 'all'>, number> = { '30d': 30, '90d': 90, '1y': 365 };
 
@@ -28,17 +44,22 @@ function currencyBadge(c: Currency, t: ReturnType<typeof useT>): { cls: string; 
   return { cls: 'decision-badge-current', label: t.decisions.currencyCurrent };
 }
 
-export function DecisionsView({ searchQuery, onSearchChange, onOpenDecision }: Props) {
+export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, period, onFiltersChange, onOpenDecision }: Props) {
   const t = useT();
   const { tagName, vocabLabel, transitionLabel } = useLookups();
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const [targetKind, setTargetKind] = useState<TargetKindFilter>('all');
-  const [tagFilter, setTagFilter] = useState<string>('all');
-  const [currency, setCurrency] = useState<CurrencyFilter>('all');
-  const [period, setPeriod] = useState<PeriodFilter>('all');
+  // Filter state is controlled from the URL (#45 D10b-4). Each setter emits a
+  // whole-state snapshot through onFiltersChange so App merges it into the hash
+  // in one navigate (reload/Back restore the same 絞り込み).
+  const current: DecisionFilterState = { query: searchQuery, targetKind, tagFilter, currency, period };
+  const setTargetKind = (v: TargetKindFilter) => onFiltersChange({ ...current, targetKind: v });
+  const setTagFilter = (v: string) => onFiltersChange({ ...current, tagFilter: v });
+  const setCurrency = (v: CurrencyFilter) => onFiltersChange({ ...current, currency: v });
+  const setPeriod = (v: PeriodFilter) => onFiltersChange({ ...current, period: v });
+  const onSearchChange = (q: string) => onFiltersChange({ ...current, query: q });
 
   useEffect(() => {
     Promise.all([api.getRules({}), api.getTags()])

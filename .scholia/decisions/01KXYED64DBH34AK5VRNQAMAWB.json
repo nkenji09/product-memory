@@ -1,0 +1,11 @@
+{
+  "id": "01KXYED64DBH34AK5VRNQAMAWB",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.axis-structure"
+  },
+  "why": "## D10b-6・軸カードの構造表示＋「軸」画面文言の是正（新規 decision）\n\n### 結論\naxis kind タグのカードに**構造表示**を追加する: 状態次元バッジ・total（「宣言による・非検証」を明示）・値の一覧（各 condition の語彙カードへリンク）・効いている action（値が given に現れる action・`#/flow/\u003caction\u003e` へリンク）。あわせて viewer 可視文字列で4義に overload している「軸」の文言を是正する。\n\n### なぜ\naxis タグのカードには total も値も「効いている action」も出ない。その結果 `axis.update.*` 4枚すべての desc に「値＝{cond…}。total=true」という**構造から導出できる値一覧が手書き**された（#45 診断——表示の穴が規律違反〔軸 desc の値列挙手書き〕を誘発する再生産構造）。カードに構造表示を足すと desc への複製の動機が UI から消え、retrofit が既存の値列挙 desc を安全に削除是正できる受け皿になる（データ是正は retrofit 起点・本 decision は表示側の受け皿）。あわせて「軸」が分類軸／facet 軸／宣言軸／kind バッジ「軸」の4義に overload している文言を是正する——恒久解は束6（D9）で着地済みの **kind description 宣言**なので、文言是正は宣言由来の表示（kind バッジ tooltip の description）で行う。\n\n### 関連既決（枠内で表示だけを足す）\n`01KXMRBB3XJYTQ4WM3MZGZZY7C` 等 `axis.update.*` 4 decision の「Level1＝軸宣言＋タグ付与のみ」の枠内で、表示だけを足す（宣言・total の意味は不変）。\n\n### 変更\nTagCard（kind=axis）に構造表示セクション（状態次元・total〔宣言由来・非検証と明示〕・値・効く action）を追加。値→語彙カード・action→flow ビューへのリンク。web の Tag 型と API payload の `total`（束6 で web 型に着地済み）を実表示に接続。viewer 可視文字列の「軸」4義を区別する文言改訂（strings.ts）＝D9 の kind description を出典に。",
+  "changed": "TagCard（kind=axis）に構造表示セクション追加（状態次元・total〔宣言由来・非検証と明示〕・値・効く action）／値→語彙カード・action→#/flow/\u003caction\u003e へリンク／web Tag.total（束6 で web 型に着地済）を実表示へ接続／viewer 可視文字列の「軸」4義（分類軸/facet 軸/宣言軸/kind バッジ「軸」）を区別する文言改訂（strings.ts）＝D9 の kind description を出典に",
+  "ref": "DESIGN §3.4",
+  "at": "2026-07-20T00:21:54Z"
+}

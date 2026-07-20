@@ -13,6 +13,7 @@ import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
 import type { KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
+import { GovernsSection } from './GovernsSection';
 
 interface Props {
   entry: VocabEntry;
@@ -88,14 +89,22 @@ export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFi
           <span class="tag-card-spacer" />
           <CommentButton recordType="vocab" recordId={entry.id} recordTitle={entry.label} anchor="card" anchorLabel={t.comments.cardAnchorLabel} />
         </div>
-        {/* Unlike TagCard's name (its ⋮ narrows to this tag — meaningful
-            because tags nest and have their own #/spec/<id> page), a vocab
-            entry has no hierarchy to drill into: filtering "to just this
-            one entry" or reopening its own #/vocab/<id> would be a no-op
-            on the card you're already looking at. So this stays a plain
-            heading with no ⋮ — the affordance is reserved for the owner/
-            tag chips below, which actually narrow or link elsewhere. */}
-        <span class="tag-card-name vocab-card-name">{entry.label}</span>
+        {/* action 語彙のカード頭ケバブ（#45 D10b-5・tx.viewer.vocab-flow-link）:
+            TagCard のカード頭ケバブと同型のカード頭 ⋮ を新設し「フローを表示」を
+            置く。VocabCard にカード頭 ⋮ は現存しなかった（既存 ⋮ は owner/参照
+            タグの per-chip のみ）。ラベルへの ⋮ を見送った既決（01KXM6H6XT66…）の
+            理由は「自分1件へ絞る no-op な AND 条件」で、flow への遷移は no-op で
+            ないため非矛盾。action 以外のカテゴリ（condition/effect）はフロー図を
+            持たないので ⋮ を出さず従来どおり plain heading のまま。 */}
+        <div class="tag-card-name-row">
+          <span class="tag-card-name vocab-card-name">{entry.label}</span>
+          {entry.category === 'action' && (
+            <KebabMenu
+              triggerLabel={t.browse.menuTrigger}
+              items={[{ key: 'flow', label: t.flow.menuShowFlow, icon: 'git-fork', href: routeHash({ view: 'flow', actionId: entry.id }) }]}
+            />
+          )}
+        </div>
       </div>
 
       {entry.description && (
@@ -296,6 +305,10 @@ export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFi
           ))}
         </CollapsibleSection>
       )}
+
+      {/* governs 並置（#45 D10b-1）: own の vocab-target decision（上）は不変で、
+          own＋vocab.tags/祖先経由の decision を出自バッジ付きで並置する既定折りたたみ欄。 */}
+      <GovernsSection record={{ kind: 'vocab', id: entry.id }} />
     </article>
   );
 }

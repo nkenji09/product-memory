@@ -50,6 +50,21 @@ export interface DecisionTarget {
   id: string;
 }
 
+/** How a governing decision reaches a record (#45 D10b-1・Go 側
+    index.GovernsProvenance と同期）。own=このレコード自身への decision／
+    effective-tag=レコードが直接持つタグへの decision／parent=祖先タグ
+    （ParentIDs 展開）への decision。 */
+export type GovernsProvenance = 'own' | 'effective-tag' | 'parent';
+
+/** per-record governs の 1 エントリ（#45 D10b-1・Go 側 index.GovernsEntry と
+    同期）。decision と出自バッジ・経由タグ id。 */
+export interface GovernsEntry {
+  decision: Decision;
+  provenance: GovernsProvenance;
+  /** 経由タグ id（effective-tag/parent のとき・own では空）。 */
+  viaTag?: string;
+}
+
 export interface Decision {
   id: string;
   target: DecisionTarget;
@@ -231,6 +246,20 @@ export interface SpecEntry {
   decisions?: Decision[];
 }
 
+/** 軸の1値（#45 D10b-6・Go 側 index.AxisValue と同期）: 軸タグ付き condition と
+    その値が効いている action id 群。 */
+export interface AxisValue {
+  condition: VocabEntry;
+  actions: string[];
+}
+
+/** axis kind タグの構造（#45 D10b-6・Go 側 index.AxisStructure と同期）。
+    total は宣言由来・非検証（viewer がその旨を明示）。 */
+export interface AxisStructure {
+  total: boolean;
+  values: AxisValue[];
+}
+
 export interface SpecReport {
   tag: Tag;
   entries: SpecEntry[];
@@ -243,6 +272,9 @@ export interface SpecReport {
   // このタグを直接持つ語彙（VocabEntry.Tags 逆引き・H3 の関連語彙）。Go 側の
   // render.SpecReport.RelatedVocab（omitempty）と同期。該当なしは省略される。
   relatedVocab?: VocabEntry[];
+  // axis kind タグの構造表示（#45 D10b-6）。Go 側 render.SpecReport.Axis
+  // （omitempty）と同期。axis 以外・値の無い軸では省略される。
+  axis?: AxisStructure;
 }
 
 export interface LintFinding {
@@ -270,9 +302,20 @@ export interface TraceabilityResponse {
   entries: TraceabilityEntry[];
 }
 
+/** One cross-record search hit (#45 D10b-3・Go 側 index.RecordMatch と同期）。 */
+export interface RecordMatch {
+  type: 'tag' | 'transition' | 'vocab' | 'decision';
+  id: string;
+  field: string;
+  snippet: string;
+}
+
 export interface SearchResult {
   transitions: Transition[];
   matchedOn: Record<string, string[]>;
+  /** 4型横断の match 単位ヒット（#45 D10b-3・additive）。既存 transitions/
+      matchedOn は不変のまま records が加わる。 */
+  records?: RecordMatch[];
 }
 
 export interface SearchCandidate {
@@ -280,8 +323,12 @@ export interface SearchCandidate {
   text: string;
 }
 
-export interface TransitionSearchDoc {
-  transitionId: string;
+/** 静的 export の検索コーパス 1 レコード分（#45 D10b-3 で4型へ拡張・Go 側
+    index.RecordSearchDoc と同期）。type/id がレコードを、candidates が
+    (フィールドラベル, 小文字化済みテキスト) の組を表す。 */
+export interface RecordSearchDoc {
+  type: 'tag' | 'transition' | 'vocab' | 'decision';
+  id: string;
   candidates: SearchCandidate[];
 }
 
@@ -461,7 +508,7 @@ export interface ScholiaStaticData {
   traceability: TraceabilityResponse;
   transitionsByTag: Record<string, TransitionsResponse>;
   transitionDetail: Record<string, TransitionDetail>;
-  searchCorpus: TransitionSearchDoc[];
+  searchCorpus: RecordSearchDoc[];
   lint: LintResult;
   spec: Record<string, SpecReport>;
   tags: Tag[];
@@ -475,4 +522,8 @@ export interface ScholiaStaticData {
   // transition (internal/render/export.go's flowReports) — the only action
   // ids the SpecCard kebab can ever link to.
   flow: Record<string, FlowReport>;
+  // per-record governs（#45 D10b-1）: record ref（"tag:<id>" / "transition:<id>"
+  // / "vocab:<id>"）→ その記録を支配する decision（出自バッジ付き）。live
+  // GET /api/governs と同じ形を全レコード id について焼き込む。
+  governs: Record<string, GovernsEntry[]>;
 }
