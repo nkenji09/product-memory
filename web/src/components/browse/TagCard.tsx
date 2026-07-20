@@ -49,10 +49,13 @@ function dedupeDecisions(decisions: Decision[]): Decision[] {
 
 export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilterSelf, onSelectParent, onSelectChild, onSelectSpec, onSelectVocab }: Props) {
   const t = useT();
-  const { tagKindLabel, tagKindDescription } = useLookups();
+  const { tagKindLabel, tagKindDescription, vocabLabel } = useLookups();
   const { changedTagIds } = usePendingDiff();
   const { openComposer, comments } = useComments();
   const entries = report?.entries || [];
+  // 軸カードの構造表示（#45 D10b-6）。backend が axis kind＋値ありのタグにだけ
+  // report.axis を載せる（フロントは axis 判定を再計算しない・§9）。
+  const axis = report?.axis;
   // H3: このタグを直接持つ語彙（Go 側 render.SpecReport.RelatedVocab・
   // VocabEntry.Tags の逆引き）。関連仕様の"上"に常時開きで出す。
   const relatedVocab = report?.relatedVocab || [];
@@ -124,6 +127,63 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
             <CommentButton recordType="tag" recordId={tag.id} recordTitle={tag.name || tag.id} anchor="body" anchorLabel={t.comments.descriptionAnchorLabel} />
           </div>
           <Markdown text={tag.description} />
+        </div>
+      )}
+
+      {/* 軸の構造表示（#45 D10b-6）: 状態次元バッジ・total（宣言由来・非検証と
+          明示）・値の一覧（軸タグ付き condition・各値の語彙カードへリンク）・
+          効いている action（その値が given に現れる action・#/flow/<action> へ
+          リンク）。表示が入ることで desc への値列挙の複製の動機が UI から消える
+          （retrofit が値列挙 desc を安全に是正できる受け皿）。 */}
+      {axis && (
+        <div class="card-section axis-structure">
+          <div class="card-section-heading-row">
+            <span class="card-section-heading">
+              <Icon name="git-fork" size={14} /> {t.browse.axisStructureHeading}
+            </span>
+          </div>
+          <div class="axis-structure-meta">
+            <span class="axis-dimension-badge">{t.browse.axisDimensionBadge}</span>
+            <span class={'axis-total-badge ' + (axis.total ? 'axis-total-true' : 'axis-total-false')}>
+              {axis.total ? t.browse.axisTotalTrue : t.browse.axisTotalFalse}
+            </span>
+          </div>
+          {axis.values.length === 0 ? (
+            <span class="dim axis-no-values">{t.browse.axisNoValues}</span>
+          ) : (
+            <ul class="axis-value-list">
+              {axis.values.map((v) => (
+                <li key={v.condition.id} class="axis-value">
+                  <HashLink
+                    href={routeHash({ view: 'vocab', vocabId: v.condition.id })}
+                    class="axis-value-label"
+                    onNavigate={() => onSelectVocab(v.condition.id)}
+                    title={v.condition.id}
+                  >
+                    {v.condition.label || v.condition.id}
+                  </HashLink>
+                  {v.actions.length > 0 && (
+                    <span class="axis-value-actions">
+                      <span class="dim axis-value-actions-label">{t.browse.axisValueActions}:</span>
+                      {v.actions.map((a) => (
+                        <HashLink
+                          key={a}
+                          href={routeHash({ view: 'flow', actionId: a })}
+                          class="axis-value-action-chip"
+                          onNavigate={() => {
+                            window.location.hash = routeHash({ view: 'flow', actionId: a });
+                          }}
+                          title={a}
+                        >
+                          <Icon name="git-fork" size={11} /> {vocabLabel(a)}
+                        </HashLink>
+                      ))}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

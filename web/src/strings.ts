@@ -149,7 +149,7 @@ const ja = {
     // フル scope-disclosure ほど詳しくする必要はなく、「宣言軸＝完全な区別
     // 集合」と読者に誤読させない最小限の注意書きで足りる、というのが
     // decision の骨子（why は tx.viewer.action-flow-render 側に記録）。
-    scopeCaveat: '※ この図は宣言軸のみに基づく整理です。評価順は宣言された priority によるもので実装との一致は未検証。網羅は保証しません（全量は scholia flow）',
+    scopeCaveat: '※ この図は宣言された状態次元（axis kind の軸）のみに基づく整理です。評価順は宣言された priority によるもので実装との一致は未検証。網羅は保証しません（全量は scholia flow）',
   },
   // BROWSE(タグ/仕様) — 旧 Browse(3ペイン)/TagsView(ツリー)/SpecView を検索
   // レール＋カード一覧の1つの型に統合した画面（.concierge/decision.md A-2）。
@@ -209,6 +209,16 @@ const ja = {
     governsProvenanceOwn: 'この記録自身',
     governsProvenanceEffectiveTag: (tag: string) => `タグ経由〈${tag}〉`,
     governsProvenanceParent: (tag: string) => `親タグ経由〈${tag}〉`,
+    // 軸カードの構造表示（#45 D10b-6）。状態次元・total（宣言由来・非検証）・値・効く action。
+    axisStructureHeading: '軸の構造',
+    // 「軸」= 状態次元（分岐を束ねる分類軸）。kind バッジの「軸」とは別義（D9 の
+    // kind description で説明）だが、この見出しは分類軸そのものを指す。
+    axisDimensionBadge: '状態次元',
+    axisTotalTrue: '網羅宣言あり（宣言による・非検証）',
+    axisTotalFalse: '網羅宣言なし',
+    axisValuesHeading: '値',
+    axisValueActions: '効いている action',
+    axisNoValues: '軸タグ付きの値（condition）がまだありません',
   },
   // 複数画面で同じ語を使う汎用ボタン/操作ラベル（保存・キャンセル等）。
   common: {
@@ -405,7 +415,9 @@ const ja = {
     portInvalid: (current: string) => `ポートは 1〜65535 の整数で入力してください（現在: ${current}）`,
     portEmptyWord: '空',
     sections: {
-      classification: { title: '分類軸', desc: 'タグをどう分類し、どの軸で見せるか' },
+      // 「分類軸」= タグをどう分類し facet ナビでどう束ねるか（グルーピングの軸）。
+      // kind バッジの「軸」（axis kind＝状態次元）とは別義（D10b-6 文言是正）。
+      classification: { title: 'タグの分類', desc: 'タグをどの種類（kind）で分類し、どの種類で facet ナビに束ねて見せるか' },
       traceability: { title: 'トレーサビリティ', desc: '要件↔実装（仕様）の対応を追跡する対象' },
       viewer: { title: 'ビューア', desc: 'ローカルサーバの設定' },
       display: { title: '表示', desc: 'ヘッダーの製品名と概要画面の見出し文。空欄は既定文言にフォールバックします。' },
@@ -418,7 +430,9 @@ const ja = {
     },
     fields: {
       tagKinds: { label: 'タグ種別', description: 'タグに付けられる分類の種類。タグの「役割」を定義します。' },
-      facetKinds: { label: 'facet 軸', description: 'Browse 画面のサイドバー facet ナビに出す種類。通常 tagKinds の部分集合です。' },
+      // 「facet ナビの種類」= サイドバーの分類ナビに出す tag kind（グルーピングの
+      // 軸）。axis kind（状態次元）とは無関係（D10b-6 文言是正）。
+      facetKinds: { label: 'facet ナビの種類', description: 'Browse 画面のサイドバー facet ナビに束ねて出す tag kind。通常 tagKinds の部分集合です。' },
       roots: { label: 'ルートタグ', description: 'タグ階層のルートに置くタグ。空でも構いません。' },
       traceabilityKinds: {
         label: 'トレーサビリティ対象',
@@ -545,7 +559,7 @@ const en: Strings = {
     legendSubsetShadow: 'Dotted line (one-way) = fires together',
     gapLabel: 'Undefined',
     legendGap: 'Red = undefined (no transition explicitly requires this)',
-    scopeCaveat: '※ This diagram reflects declared axes only. Evaluation order follows declared priority and is not verified against the implementation. Coverage is not guaranteed (see `scholia flow` for the full picture).',
+    scopeCaveat: '※ This diagram reflects only declared state dimensions (axis-kind axes). Evaluation order follows declared priority and is not verified against the implementation. Coverage is not guaranteed (see `scholia flow` for the full picture).',
   },
   browse: {
     searchPlaceholder: 'Search by keyword or tag',
@@ -591,6 +605,13 @@ const en: Strings = {
     governsProvenanceOwn: 'this record',
     governsProvenanceEffectiveTag: (tag: string) => `via tag ⟨${tag}⟩`,
     governsProvenanceParent: (tag: string) => `via parent ⟨${tag}⟩`,
+    axisStructureHeading: 'Axis structure',
+    axisDimensionBadge: 'state dimension',
+    axisTotalTrue: 'total declared (by declaration, unverified)',
+    axisTotalFalse: 'no total declaration',
+    axisValuesHeading: 'Values',
+    axisValueActions: 'Actions affected',
+    axisNoValues: 'No axis-tagged values (conditions) yet',
   },
   common: {
     save: 'Save',
@@ -751,7 +772,9 @@ const en: Strings = {
     portInvalid: (current) => `Port must be an integer between 1 and 65535 (current: ${current})`,
     portEmptyWord: 'empty',
     sections: {
-      classification: { title: 'Classification axes', desc: 'How to classify tags, and which axes to show' },
+      // "Tag classification" = how tags are grouped in the facet nav — the
+      // grouping axis, distinct from the axis *kind* (a state dimension).
+      classification: { title: 'Tag classification', desc: 'Which kind classifies tags, and which kind groups them in the facet nav' },
       traceability: { title: 'Traceability', desc: 'What requirement↔implementation (spec) traceability tracks' },
       viewer: { title: 'Viewer', desc: 'Local server settings' },
       display: { title: 'Display', desc: "The header product name and HOME headline text. Blank falls back to the built-in copy." },
@@ -764,7 +787,7 @@ const en: Strings = {
     },
     fields: {
       tagKinds: { label: 'Tag kinds', description: 'The classification kinds a tag can carry. Defines a tag\'s "role".' },
-      facetKinds: { label: 'Facet axes', description: "The kinds shown in the Browse screen's sidebar facet nav. Usually a subset of tagKinds." },
+      facetKinds: { label: 'Facet nav kinds', description: "The tag kinds grouped in the Browse screen's sidebar facet nav. Usually a subset of tagKinds. Unrelated to the axis kind (a state dimension)." },
       roots: { label: 'Root tags', description: 'Tags placed at the root of the tag hierarchy. May be empty.' },
       traceabilityKinds: {
         label: 'Traceability targets',

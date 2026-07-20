@@ -36,6 +36,10 @@ type SpecReport struct {
 	// H3）。entries（関連仕様）が transition を届けるのと同じ経路でカードへ
 	// 載せるので live API・静的 export 双方に効く。omitempty で該当なしは省略。
 	RelatedVocab []model.VocabEntry `json:"relatedVocab,omitempty"`
+	// Axis は axis kind タグの構造表示（#45 D10b-6）: 状態次元 total・値（軸タグ
+	// 付き condition）と各値が効く action。axis 以外のタグ・値の無い軸では nil
+	// （omitempty で省略）。導出は index.BuildAxisStructure（live/static 共有）。
+	Axis *index.AxisStructure `json:"axis,omitempty"`
 }
 
 // Spec は subjectTag で束ねた"仕様"レポートを構築する。
@@ -69,7 +73,12 @@ func Spec(snap *store.Snapshot, ix *index.Index, subjectTag string) (SpecReport,
 		entries = append(entries, e)
 	}
 
-	return SpecReport{Tag: tag, Entries: entries, TagDecisions: tagDecisions, RelatedVocab: ix.VocabByTag(subjectTag)}, nil
+	// axis 構造（#45 D10b-6）: axis kind のタグにだけ載る。kind の axis 挙動は
+	// config の宣言（D9・KindHasBehavior）で判定する（literal "axis" 直書きは
+	// しない）。
+	axis := index.BuildAxisStructure(ix, subjectTag, snap.Config.KindHasBehavior(tag.Kind, model.BehaviorAxis))
+
+	return SpecReport{Tag: tag, Entries: entries, TagDecisions: tagDecisions, RelatedVocab: ix.VocabByTag(subjectTag), Axis: axis}, nil
 }
 
 func vocabLabel(ix *index.Index, vocabID string) string {

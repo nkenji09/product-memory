@@ -246,6 +246,20 @@ export interface SpecEntry {
   decisions?: Decision[];
 }
 
+/** 軸の1値（#45 D10b-6・Go 側 index.AxisValue と同期）: 軸タグ付き condition と
+    その値が効いている action id 群。 */
+export interface AxisValue {
+  condition: VocabEntry;
+  actions: string[];
+}
+
+/** axis kind タグの構造（#45 D10b-6・Go 側 index.AxisStructure と同期）。
+    total は宣言由来・非検証（viewer がその旨を明示）。 */
+export interface AxisStructure {
+  total: boolean;
+  values: AxisValue[];
+}
+
 export interface SpecReport {
   tag: Tag;
   entries: SpecEntry[];
@@ -258,6 +272,9 @@ export interface SpecReport {
   // このタグを直接持つ語彙（VocabEntry.Tags 逆引き・H3 の関連語彙）。Go 側の
   // render.SpecReport.RelatedVocab（omitempty）と同期。該当なしは省略される。
   relatedVocab?: VocabEntry[];
+  // axis kind タグの構造表示（#45 D10b-6）。Go 側 render.SpecReport.Axis
+  // （omitempty）と同期。axis 以外・値の無い軸では省略される。
+  axis?: AxisStructure;
 }
 
 export interface LintFinding {
