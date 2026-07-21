@@ -1,0 +1,16 @@
+{
+  "id": "01KY1X4THC396WJ54KD2K0JYKC",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.flow-browse"
+  },
+  "why": "サイドバー索引を、タグ/語彙/仕様の3画面と同じタグ階層フォルダ表示に拡張する（部分改訂）。従来はメイン一覧と同じフラットな並びをそのまま索引としても使っていたが、タグ/語彙/仕様は共通の buildFolderIndex（統一タグツリーのフォレストへ leaf=own tags で配置する汎用部品・#45 依頼C-1）でサイドバー索引だけをフォルダツリー化しており、フロー画面だけこの経路を欠いていた。追加するのは action を leaf とし、その action を持つ transition 群の own tags の和集合を tags として渡すこと——vocab 経由の広い一致（実装還元 viewer-search-consistency で検索Tierに導入したもの）は混ぜず、タグ階層への配置は仕様画面と同じ『own tagsのみ』の分類基準に揃える（検索の再現率拡張と、索引の構造分類は別の関心事として分離する）。メイン一覧（フラット・自由記述検索でTier順に並ぶ）とkindファセットは不変——索引だけが追加の到達経路になる。",
+  "ref": "web/src/components/FlowIndexView.tsx,web/src/components/browse/indexTree.ts",
+  "at": "2026-07-21T08:37:12Z",
+  "supersedes": [
+    {
+      "id": "01KY1Q8S0V8NQW8J26QHSNES4V",
+      "mode": "amend"
+    }
+  ]
+}

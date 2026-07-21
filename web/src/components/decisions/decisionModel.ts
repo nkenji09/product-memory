@@ -1,5 +1,13 @@
 import type { Decision } from '../../types';
 
+/** `decision.at` (ISO 8601) → `YYYY-MM-DD HH:MM`, shared by the list row and
+    detail header so a decision's time-of-day (not just the day) is visible
+    without opening every record — same substring-slice approach as the
+    date-only rendering it replaces, just two characters wider. */
+export function formatDecisionAt(at: string): string {
+  return at.slice(0, 16).replace('T', ' ');
+}
+
 // Currency of a decision relative to the full decision set (D10a).
 //   - 'superseded': some OTHER decision's supersedes[] links to this id with
 //     mode === 'supersede'. That link outright replaces this decision.

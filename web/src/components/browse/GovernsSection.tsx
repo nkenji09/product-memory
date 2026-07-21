@@ -5,6 +5,7 @@ import { useLookups } from '../../lookups';
 import type { GovernsEntry } from '../../types';
 import { Markdown } from '../Markdown';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { formatDecisionAt } from '../decisions/decisionModel';
 
 // governs 並置（#45 D10b-1）— 「この記録を支配する規則」欄。TagCard/SpecCard/
 // VocabCard の3種で共有。own の decision は各カードの従来位置のまま不変で、この
@@ -65,7 +66,7 @@ export function GovernsSection({ record }: { record: RecordRef }) {
             <span class={'governs-provenance-badge governs-provenance-' + e.provenance}>{provenanceLabel(e)}</span>
             <Markdown text={e.decision.why} />
             <span class="dim">
-              {e.decision.at.slice(0, 10)} {e.decision.ref && `· ${e.decision.ref}`}
+              {formatDecisionAt(e.decision.at)} {e.decision.ref && `· ${e.decision.ref}`}
             </span>
           </div>
         ))}

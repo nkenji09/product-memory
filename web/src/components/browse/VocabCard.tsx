@@ -13,6 +13,7 @@ import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
 import type { KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
+import { formatDecisionAt } from '../decisions/decisionModel';
 import { GovernsSection } from './GovernsSection';
 
 interface Props {
@@ -298,7 +299,7 @@ export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFi
             <div key={d.id} class="tag-card-decision">
               <p>{d.why}</p>
               <span class="dim">
-                {d.at.slice(0, 10)}
+                {formatDecisionAt(d.at)}
                 {d.ref && ` · ${d.ref}`}
               </span>
             </div>

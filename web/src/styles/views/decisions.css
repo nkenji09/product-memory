@@ -158,6 +158,17 @@
 .decision-row-top {
   display: flex;
   align-items: center;
+  gap: var(--sp-2);
+}
+
+/* Currency badge lives here (next to the date), not next to the target
+   title — a long title wrapping to multiple lines used to squeeze the
+   fixed-size badge down to near-zero width in the same flex row, breaking
+   its text into a vertical stack of single characters. Pairing it with the
+   one-line date instead removes that width contention entirely. */
+.decision-row-bottom {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: var(--sp-2);
 }

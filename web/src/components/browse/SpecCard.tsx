@@ -10,6 +10,7 @@ import { KebabMenu, type KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { GovernsSection } from './GovernsSection';
+import { formatDecisionAt } from '../decisions/decisionModel';
 
 interface Props {
   detail: TransitionDetail;
@@ -230,7 +231,7 @@ export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab,
             <div key={d.id} class="tag-card-decision">
               <p>{d.why}</p>
               <span class="dim">
-                {d.at.slice(0, 10)} {d.ref && `· ${d.ref}`}
+                {formatDecisionAt(d.at)} {d.ref && `· ${d.ref}`}
               </span>
             </div>
           ))}

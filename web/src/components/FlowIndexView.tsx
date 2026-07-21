@@ -4,15 +4,18 @@ import { useT } from '../i18n';
 import { useLookups } from '../lookups';
 import { useDrawer } from '../drawer';
 import { routeHash } from '../router';
-import type { Tag, Transition, VocabEntry } from '../types';
+import type { FacetsResponse, Tag, Transition, VocabEntry } from '../types';
 import { BrowseRail } from './browse/BrowseRail';
 import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './browse/BrowseRail';
 import { ancestorClosure, tagTextMatches, textMatches, transitionVocabTagIds, vocabOwnMatches } from './browse/filters';
+import { buildFolderIndex, loadCollapsed, saveCollapsed } from './browse/indexTree';
 import { Resizer } from './layout/Resizer';
 import { RAIL_WIDTH } from './layout/resizableWidths';
 import { kindColor } from './shared/Chip';
 import { HashLink } from './shared/HashLink';
 import { Icon } from './shared/Icon';
+
+const COLLAPSE_FACET = 'flow';
 
 // #/flow index（tx.viewer.flow-nav-tab）: nav の「フロー」タブの着地点。実際に
 // 使われている action を一覧し、選ぶと #/flow/<action> の既存フロービューへ。
@@ -52,7 +55,9 @@ export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags
   const [transitions, setTransitions] = useState<Transition[] | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [vocab, setVocab] = useState<VocabEntry[]>([]);
+  const [facetsData, setFacetsData] = useState<FacetsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => loadCollapsed(COLLAPSE_FACET));
 
   const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
 
@@ -89,13 +94,16 @@ export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags
     // carry each action's own tags; vocab carries the tags referenced
     // action/given/then entries add via vocab-tag assignment (req.comfortable-
     // viewer.flow-browse amend — vocab-derived tags count as "consumed" by the
-    // action too, not just each transition's own tags). All three are single
-    // bulk calls, static-safe.
-    Promise.all([api.getTransitions({}), api.getTags(), api.getVocab()])
-      .then(([res, tgs, vcb]) => {
+    // action too, not just each transition's own tags). facets is the unified
+    // tag forest — the folder skeleton for the sidebar index (req.comfortable-
+    // viewer.flow-browse amend: same buildFolderIndex the tags/specs facets
+    // use). All four are single bulk calls, static-safe.
+    Promise.all([api.getTransitions({}), api.getTags(), api.getVocab(), api.getFacets()])
+      .then(([res, tgs, vcb, facets]) => {
         setTransitions(res.transitions ?? []);
         setTags(tgs);
         setVocab(vcb);
+        setFacetsData(facets);
       })
       .catch((err) => setError(String(err)));
   }, []);
@@ -150,7 +158,17 @@ export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags
   }, [actions, tagById]);
 
   if (error) return <main class="flow-index-view error">{error}</main>;
-  if (!transitions) return <main class="flow-index-view dim">{t.flow.loading}</main>;
+  if (!transitions || !facetsData) return <main class="flow-index-view dim">{t.flow.loading}</main>;
+
+  const toggleCollapse = (id: string) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      saveCollapsed(COLLAPSE_FACET, next);
+      return next;
+    });
+  };
 
   const q = query.trim().toLowerCase();
   const matchesKind = (a: { tags: Set<string> }) => facet === 'all' || hasKind(a, facet);
@@ -199,13 +217,21 @@ export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags
     .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
     .map((tg) => ({ id: tg.id, label: tg.name || tg.id, color: kindColor(tg.kind), kindLabel: t.nav.tags, onSelect: () => addTag(tg.id) }));
 
-  const indexItems: IndexItem[] = filtered.map((a) => ({
-    id: a.id,
-    label: a.label,
-    color: 'var(--t-act)',
-    indent: 0,
-    onClick: () => scrollToRow(a.id),
-  }));
+  // req.comfortable-viewer.flow-browse amend: same タグ階層フォルダ index the
+  // tags/specs facets use (buildFolderIndex) — each action files into every
+  // tag folder its transitions' own tags (union across the action, not
+  // ancestor-closed/vocab-derived — that broader reach stays the search
+  // Tier's job, kept separate from this structural classification) reach,
+  // duplicated across folders same as a multi-tagged spec.
+  const indexItems: IndexItem[] = buildFolderIndex({
+    roots: facetsData.roots,
+    leaves: filtered.map((a) => ({ id: a.id, label: a.label, color: 'var(--t-act)', tags: Array.from(a.ownTagIds) })),
+    untaggedLabel: t.browse.uncategorized,
+    folderColor: (tag) => kindColor(tag.kind),
+    collapsedIds,
+    onToggle: toggleCollapse,
+    onSelect: scrollToRow,
+  });
 
   return (
     <div class="browse-view">

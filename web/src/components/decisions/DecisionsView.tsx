@@ -3,15 +3,18 @@ import { api } from '../../api';
 import { useT } from '../../i18n';
 import { useLookups } from '../../lookups';
 import { useDrawer } from '../../drawer';
-import type { Decision, Tag, Transition, VocabEntry } from '../../types';
+import type { Decision, FacetsResponse, Tag, Transition, VocabEntry } from '../../types';
 import { BrowseRail } from '../browse/BrowseRail';
 import type { ConditionChip, IndexItem, SuggestionItem } from '../browse/BrowseRail';
 import { ancestorClosure, tagTextMatches, textMatches, transitionVocabTagIds, vocabOwnMatches } from '../browse/filters';
+import { buildFolderIndex, loadCollapsed, saveCollapsed } from '../browse/indexTree';
 import { Resizer } from '../layout/Resizer';
 import { RAIL_WIDTH } from '../layout/resizableWidths';
 import { kindColor } from '../shared/Chip';
 import { Icon } from '../shared/Icon';
-import { buildCurrencyIndex, currencyOf, type Currency } from './decisionModel';
+import { buildCurrencyIndex, currencyOf, formatDecisionAt, type Currency } from './decisionModel';
+
+const COLLAPSE_FACET = 'decisions';
 
 type TargetKindFilter = 'all' | 'transition' | 'tag' | 'vocab';
 type CurrencyFilter = 'all' | 'current' | 'superseded';
@@ -67,7 +70,9 @@ export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, pe
   const [tags, setTags] = useState<Tag[]>([]);
   const [vocab, setVocab] = useState<VocabEntry[]>([]);
   const [transitions, setTransitions] = useState<Transition[]>([]);
+  const [facetsData, setFacetsData] = useState<FacetsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => loadCollapsed(COLLAPSE_FACET));
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
 
@@ -118,13 +123,17 @@ export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, pe
     // vocab/transitions are loaded alongside rules/tags so the tag filter can
     // resolve a decision's effective tag set for every target type (tag →
     // itself, vocab/transition → their own tags), all closed over ancestors.
-    // Each is a single bulk call (no N+1); all four resolve in static mode too.
-    Promise.all([api.getRules({}), api.getTags(), api.getVocab(), api.getTransitions({})])
-      .then(([rules, tgs, vcb, tx]) => {
+    // facets is the unified tag forest — the folder skeleton for the sidebar
+    // index (req.comfortable-viewer.decision-browse amend: same
+    // buildFolderIndex the tags/specs facets use). Each is a single bulk call
+    // (no N+1); all five resolve in static mode too.
+    Promise.all([api.getRules({}), api.getTags(), api.getVocab(), api.getTransitions({}), api.getFacets()])
+      .then(([rules, tgs, vcb, tx, facets]) => {
         setDecisions(rules.decisions);
         setTags(tgs);
         setVocab(vcb);
         setTransitions(tx.transitions || []);
+        setFacetsData(facets);
       })
       .catch((err) => setError(String(err)));
   }, []);
@@ -243,11 +252,32 @@ export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, pe
   );
 
   if (error) return <main class="decisions-view error">{error}</main>;
-  if (!decisions) return <main class="decisions-view dim">{t.decisions.loading}</main>;
+  if (!decisions || !facetsData) return <main class="decisions-view dim">{t.decisions.loading}</main>;
 
   const scrollToCard = (id: string) => {
     cardRefs.current.get(id)?.scrollIntoView({ block: 'start' });
     closeDrawer();
+  };
+
+  const toggleCollapse = (id: string) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      saveCollapsed(COLLAPSE_FACET, next);
+      return next;
+    });
+  };
+
+  // req.comfortable-viewer.decision-browse amend: the folder-index
+  // classification for a decision is its target's OWN tags (not the
+  // ancestor-closed/vocab-derived effTagsById above, which is the AND-filter
+  // and search Tier's broader reach — buildFolderIndex handles ancestor
+  // placement itself via the tree's own nesting).
+  const decisionOwnTagIds = (d: Decision): string[] => {
+    if (d.target.type === 'tag') return [d.target.id];
+    if (d.target.type === 'vocab') return vocabById.get(d.target.id)?.tags || [];
+    return txById.get(d.target.id)?.tags || [];
   };
 
   // AND condition chips (the selected tags) — same removable-chip shape the
@@ -276,15 +306,27 @@ export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, pe
     .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
     .map((tg) => ({ id: tg.id, label: tg.name || tg.id, color: kindColor(tg.kind), kindLabel: t.nav.tags, onSelect: () => addTag(tg.id) }));
 
-  // Jump index: the currently-visible decisions, keyed by target label, so the
-  // rail offers scroll-to-row navigation like the other browse pages.
-  const indexItems: IndexItem[] = filtered.map((d) => ({
-    id: d.id,
-    label: targetLabel(d),
-    color: kindColor(d.target.type === 'tag' ? tagById.get(d.target.id)?.kind : undefined),
-    indent: 0,
-    onClick: () => scrollToCard(d.id),
-  }));
+  // req.comfortable-viewer.decision-browse amend: same タグ階層フォルダ index
+  // the tags/specs/flow screens use (buildFolderIndex) — each decision files
+  // into every tag folder its target's own tags reach, duplicated across
+  // folders same as a multi-tagged spec. The founding "reach it without
+  // knowing its tag" purpose stays intact: this is an added path alongside
+  // the still-primary flat/chronological + free-text search list, not a
+  // replacement for it.
+  const indexItems: IndexItem[] = buildFolderIndex({
+    roots: facetsData.roots,
+    leaves: filtered.map((d) => ({
+      id: d.id,
+      label: targetLabel(d),
+      color: kindColor(d.target.type === 'tag' ? tagById.get(d.target.id)?.kind : undefined),
+      tags: decisionOwnTagIds(d),
+    })),
+    untaggedLabel: t.browse.uncategorized,
+    folderColor: (tag) => kindColor(tag.kind),
+    collapsedIds,
+    onToggle: toggleCollapse,
+    onSelect: scrollToCard,
+  });
 
   // 対象種別・現行性・期間 keep their native <select> widgets but move into the
   // shared responsive drawer (viewer-search-consistency amend). Only the tag
@@ -368,10 +410,12 @@ export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, pe
                           <span class="decision-row-target-kind dim">{targetPrefix(d.target.type)}</span>
                           {targetLabel(d)}
                         </span>
-                        <span class={'decision-badge ' + badge.cls}>{badge.label}</span>
                       </div>
                       <p class="decision-row-why">{d.why}</p>
-                      <span class="decision-row-at dim">{d.at.slice(0, 10)}</span>
+                      <div class="decision-row-bottom">
+                        <span class="decision-row-at dim">{formatDecisionAt(d.at)}</span>
+                        <span class={'decision-badge ' + badge.cls}>{badge.label}</span>
+                      </div>
                     </button>
                   </li>
                 );

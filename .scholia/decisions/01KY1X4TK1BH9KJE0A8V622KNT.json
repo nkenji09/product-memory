@@ -1,0 +1,16 @@
+{
+  "id": "01KY1X4TK1BH9KJE0A8V622KNT",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.decision-browse"
+  },
+  "why": "サイドバー索引を、タグ/語彙/仕様の3画面と同じタグ階層フォルダ表示に拡張する（部分改訂）。req.comfortable-viewer.decision-browse 自体は『付いているタグを知らない人でも辿れる横断到達』を解くために新設された経緯（decision 01KXWPQDGX7QM3V2A8MB9TTW6J）があり、索引の階層化はこの founding purpose と一見緊張するが、変えるのはサイドバーの補助的な辿り方だけで、メイン一覧（フラット・新しい順・自由記述検索が主経路）は無改修のまま——『タグを知らない→検索で辿る』という主経路は保持しつつ、『タグは知っている→索引で辿る』という別解を追加するだけなので founding purpose と非矛盾。leaf=decision、tags=targetの own tags（tag対象→自分自身のid・vocab対象→そのvocabのown tags・transition対象→そのtransitionのown tags）とし、タグ/仕様画面と同じ buildFolderIndex（own tagsのみで配置・vocab経由の広い一致は混ぜない）を再利用する。",
+  "ref": "web/src/components/decisions/DecisionsView.tsx,web/src/components/browse/indexTree.ts",
+  "at": "2026-07-21T08:37:12Z",
+  "supersedes": [
+    {
+      "id": "01KY1Q8RYWSDTJGXZG6VCMRRE9",
+      "mode": "amend"
+    }
+  ]
+}

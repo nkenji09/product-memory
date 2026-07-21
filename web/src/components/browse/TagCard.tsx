@@ -13,6 +13,7 @@ import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
 import { GovernsSection } from './GovernsSection';
+import { formatDecisionAt } from '../decisions/decisionModel';
 
 // VocabCard と同じ category→アイコン対応（きっかけ/前提/結果 = action/
 // condition/effect の固定3軸）。関連語彙行（H3）で流用する。
@@ -263,7 +264,7 @@ export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilt
             <div key={d.id} class="tag-card-decision">
               <p>{d.why}</p>
               <span class="dim">
-                {d.at.slice(0, 10)} {d.ref && `· ${d.ref}`}
+                {formatDecisionAt(d.at)} {d.ref && `· ${d.ref}`}
               </span>
             </div>
           ))}
