@@ -22,7 +22,7 @@ The viewer for browsing them ships as a single binary, so no extra runtime or da
 - **Store only atoms; derive structure.** The only thing stored is the transition — an atom. Specs, hierarchies, and groupings are all derived from tags and queries.
 - **Classify along three axes.** Category (fixed), kind (declared per project), and tag (free-form, nestable, cross-cutting classification) — nothing more.
 - **Let git be the database.** One record, one text file. History, diffs, and review all run on plain git — no dedicated database needed.
-- **Decisions are append-only.** A decision is never deleted or edited; a correction is added as a new entry. Frozen judgments become the baseline against which future changes are evaluated.
+- **Decisions are append-only.** A decision is never deleted or edited; a correction is added as a new entry, optionally marked as superseding, amending, or an exception to the one it corrects (`supersedes`), so "what's current" stays machine-checkable. Frozen judgments become the baseline against which future changes are evaluated.
 - **Vocabulary and tags are orthogonal.** Vocabulary (vocab) composes behavior; tags classify it (tags classify; vocab composes).
 
 The diagram below shows the relationship between the atoms that get stored and the derived views built from them.
@@ -148,10 +148,23 @@ Don't edit files under `.scholia/` directly in a text editor.
 `scholia` handles reads and writes consistently, enforcing normalization, invariant checks, and the append-only guarantee on decisions.
 Writing by hand breaks these guarantees and undermines the reliability of the records.
 
+## Beyond the basics
+
+As a project's records grow, a few more mechanisms keep them honest:
+
+- **Typed acknowledgement of gaps.** `scholia decide --acknowledges <rule-id>` records that a lint or flow finding is an intentional, reviewed gap rather than silence — tied to the specific rule, so an unrelated decision can't accidentally mask a real one.
+- **Evaluation order for overlapping transitions.** `scholia tx add/edit --priority <n>` declares which transition wins when more than one could apply to the same case, so `scholia flow`/`scholia gaps` can resolve the overlap instead of just flagging it as undefined.
+- **Vocabulary provenance.** `scholia vocab add/edit --ref --alt-label --establishes` records where a vocabulary entry came from and what state it establishes; `scholia show vocab <id>` reverse-looks-up both usages and provenance.
+- **CI enforcement.** `scholia lint --ci` gates on a warning baseline (`scholia lint baseline update`), and `scholia diff --check` gates on decisions' append-only guarantee — both meant to run in CI.
+- **Onboarding an existing repo.** `scholia retrofit` inventories advisory-rule violations read-only, and `scholia config infer-id-policy` proposes an id-naming policy from the ids already in use.
+
+Run `scholia <command> --help` for the full flag reference, or see [DESIGN.md](DESIGN.md) for the underlying model.
+
 ## For AI agents
 
 `scholia rules` surfaces the rules to follow, and `scholia decision list` surfaces past judgments, both in machine-readable form.
 `scholia show vocab <id>` reverse-looks-up the transitions that reference a given vocabulary entry — the true impact set for a safe refactor.
+`scholia rules --current` folds in superseded decisions so only what's still in force shows up, and `scholia decision list --unlinked` finds decisions with no commit landed yet — useful when auditing follow-through.
 
 Claude Code skills (`scholia` / `scholia-change` / `scholia-triage` / `scholia-config-setup`) are bundled under `agents/skills/`, and there are two ways to install them:
 

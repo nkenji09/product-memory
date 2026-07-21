@@ -12,8 +12,6 @@ AI との協働や長期の継続開発では、この why の消失がとくに
 記録はすべて対象リポジトリ内の素の JSON として残り、コードと同じ版で git 管理される。
 閲覧用のビューアは単一バイナリに同梱されるため、追加のランタイムやデータベースは要らない。
 
-> 本ファイルはレビュー用の日本語ドラフトである。英語版 README は、この内容が固まってから作成する。
-
 ## コンセプト
 
 `scholia` の設計は、次の中核原理から導かれる（各原理の理由は why ドキュメントで展開する）。
@@ -21,7 +19,7 @@ AI との協働や長期の継続開発では、この why の消失がとくに
 - **原子だけを保存し、構造は派生させる**：保存するのは遷移（transition）という原子だけ。仕様や階層、グルーピングはタグとクエリから導出する。
 - **3 軸で分類する**：カテゴリ（固定）、kind（プロジェクトが宣言）、タグ（自由でネスト可能な横断分類）の 3 軸に絞る。
 - **git をデータベースにする**：1 レコードが 1 テキストファイル。履歴も差分もレビューも、専用 DB でなく git のまま回る。
-- **意思決定は append-only**：decision は消さず直さず、訂正は 1 件足す。凍結された判断が、変更を評価する基準になる。
+- **意思決定は append-only**：decision は消さず直さず、訂正は 1 件足す。訂正は元の decision を「置き換える／部分改訂する／例外とする」（`supersedes`）と機械可読に宣言できるので、「今どれが正か」も辿れる。凍結された判断が、変更を評価する基準になる。
 - **語彙とタグは直交する**：語彙（vocab）は振る舞いを組み立て、タグ（tag）は分類する（tags classify; vocab composes.）。
 
 保存する原子と、そこから導出される派生ビューの関係を、次の図に示す。
@@ -128,10 +126,23 @@ scholia view   # http://127.0.0.1:4577 で開く
 `scholia` が読み取りから書き込みまでを一貫して行い、正規化と不変条件チェック、decision の append-only 保証を担う。
 手で書くとこの保証が崩れ、記録の信頼性が失われる。
 
+## 基本を超えて
+
+記録が増えてくると、それを腐らせないための機構がいくつか効いてくる。
+
+- **容認の型付き宣言**：`scholia decide --acknowledges <ruleId>` は、lint や flow の finding を「意図的に確認済みの gap」として、対象の rule id に紐づけて記録する。無関係な decision がたまたま実在の gap を隠してしまう事故を防ぐ。
+- **重なる遷移の評価順**：`scholia tx add/edit --priority <n>` で、同じケースに複数の遷移が当てはまりうるときどれが勝つかを宣言できる。`scholia flow`/`scholia gaps` はこれをもとに重なりを「未定義」のまま報告せず解決済みとして畳める。
+- **語彙の出自**：`scholia vocab add/edit --ref --alt-label --establishes` で、その語彙がどこから来て何の状態を確立するのかを記録できる。`scholia show vocab <id>` は使用箇所と出自の両方を逆引きする。
+- **CI での強制**：`scholia lint --ci` は warn の baseline（`scholia lint baseline update`）に対する歯止めを、`scholia diff --check` は decision の append-only 保証を CI で検査する。
+- **既存リポジトリの導入支援**：`scholia retrofit` は advisory 規則の違反を read-only で棚卸しし、`scholia config infer-id-policy` は既存の id 分布から命名規約の宣言案を出す。
+
+詳しいフラグは `scholia <command> --help`、内部モデルは [DESIGN.md](DESIGN.md) を参照。
+
 ## AI エージェント向け
 
 `scholia rules` で「守るべき規則」を、`scholia decision list` で過去の判断を、機械可読な形で引ける。
 `scholia show vocab <id>` は、その語彙を参照している遷移を逆引きする（安全にリファクタするための、真の影響集合）。
+`scholia rules --current` は失効した（supersede された）decision を畳んで現行のものだけを見せ、`scholia decision list --unlinked` は commit がまだ結線されていない decision を洗い出す（フォローアップの棚卸しに使える）。
 
 Claude Code 向けのスキル（`scholia` / `scholia-change` / `scholia-triage` / `scholia-config-setup`）を `agents/skills/` に同梱している。導入経路は 2 つある。
 
