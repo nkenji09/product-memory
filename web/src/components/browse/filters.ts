@@ -1,4 +1,4 @@
-import type { FacetTreeNode, Tag, TransitionDetail, VocabEntry } from '../../types';
+import type { FacetTreeNode, Tag, Transition, TransitionDetail, VocabEntry } from '../../types';
 
 // Pure, presentation-only helpers for BrowseView's AND-filter chips (design
 // §A-2 "検索レール＋タグ/仕様カード"). Every membership test here runs
@@ -37,6 +37,22 @@ export function ancestorClosure(startIds: string[], parents: Map<string, string[
     for (const p of parents.get(cur) || []) if (!seen.has(p)) stack.push(p);
   }
   return seen;
+}
+
+/** A transition's own tags plus the tags of every vocab entry it references
+    (action/given/then) — the pre-ancestor-rollup seed for DESIGN §3.7's
+    "effective tag" formula (own ∪ vocab tags). Feed the result through
+    ancestorClosure() to get the full effective set. Needs only the already
+    bulk-loaded vocab list (no per-transition detail fetch) — req.comfortable-
+    viewer.decision-browse/.flow-browse amend (vocab-derived tags brought back
+    into the #/decisions and #/flow tag-filter comboboxes). */
+export function transitionVocabTagIds(tx: Transition, vocabById: Map<string, VocabEntry>): string[] {
+  const ids = tx.tags ? [...tx.tags] : [];
+  for (const vid of [tx.action, ...tx.given, ...tx.then]) {
+    const v = vocabById.get(vid);
+    if (v?.tags) ids.push(...v.tags);
+  }
+  return ids;
 }
 
 /** All tag ids in the subtree rooted at `rootId` (inclusive of rootId itself). */

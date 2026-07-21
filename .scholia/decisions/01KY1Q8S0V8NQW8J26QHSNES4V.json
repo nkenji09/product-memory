@@ -1,0 +1,16 @@
+{
+  "id": "01KY1Q8S0V8NQW8J26QHSNES4V",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.flow-browse"
+  },
+  "why": "フロー一覧（#/flow）のタグAND絞り込みコンボボックスの実効タグ計算に、actionが持つ各transitionが参照するvocabのタグ（vocab-derived tags）を含める（従来除外していた近似を解消）。旧decisionは『action が消費するタグ』をtransitionのownタグ合併に限定し、vocab派生タグを非包含としたが、理由は#/decisions側と同じくper-transition detail取得のコスト回避であり、そのコストは既にBrowseViewが払っている（req.comfortable-viewer.decision-browse 同時amendを参照）。同じ理由・同じ解法で揃える: 一括GET /api/vocabをクライアント側でtransition.action/given/thenに突き合わせ（transitionVocabTagIds）、action配下の全transitionのown∪参照vocabタグを合併して祖先クロージャを取る。kind facetの算出元（実効タグのkind）・フリーワード（action label/id部分一致）・表示内容（mermaidのみ）は不変の部分改訂（amend）。",
+  "ref": "web/src/components/browse/filters.ts,web/src/components/FlowIndexView.tsx",
+  "at": "2026-07-21T06:54:30Z",
+  "supersedes": [
+    {
+      "id": "01KXZK5BXRNDRDVXY9ZCQDKF88",
+      "mode": "amend"
+    }
+  ]
+}

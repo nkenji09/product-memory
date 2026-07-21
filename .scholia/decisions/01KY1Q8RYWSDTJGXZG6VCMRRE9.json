@@ -1,0 +1,16 @@
+{
+  "id": "01KY1Q8RYWSDTJGXZG6VCMRRE9",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.decision-browse"
+  },
+  "why": "タグ絞り込みコンボボックス（#/decisions）の実効タグ計算に、transition target が参照する vocab のタグ（vocab-derived tags）を含める（従来除外していた近似を解消）。旧decisionは『per-transition の getTransition を避けgetTransitionsのownタグ1回で賄う範囲に留める』ことを理由にvocab派生タグを非包含としたが、同じ画面群が使うBrowseView（仕様/語彙/タグ画面）は既にPromise.all(list.map(t=\u003eapi.getTransition(t.id)))でper-transition detail取得を行い、vocab派生タグまで含めた完全な実効タグ（DESIGN §3.7: own∪参照vocabタグ、祖先展開）でコンボボックスを埋めている。避けたかったコストは同じアプリの別画面で既に払われており、画面間でサジェスト対象が食い違う理由がなくなっていた。実装はper-transitionのN+1取得ではなく、既存の一括GET /api/vocab（VocabEntry.tagsを含む）をクライアント側でtransition.action/given/thenに突き合わせて実効タグを合成する方式（web/src/components/browse/filters.ts の transitionVocabTagIds）——BrowseViewより低コストにDESIGN §3.7と同じ結果を得る。target種別ごとの計算方法（tag→自身／vocab→own tags／transition→own∪参照vocabタグ、いずれも祖先クロージャ）という枠組み自体は変えない部分改訂（amend）。",
+  "ref": "web/src/components/browse/filters.ts,web/src/components/decisions/DecisionsView.tsx",
+  "at": "2026-07-21T06:54:30Z",
+  "supersedes": [
+    {
+      "id": "01KXZK5BWEX3HH15B78E4Z3BXK",
+      "mode": "amend"
+    }
+  ]
+}

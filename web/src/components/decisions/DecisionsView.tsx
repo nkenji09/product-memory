@@ -6,7 +6,7 @@ import { useDrawer } from '../../drawer';
 import type { Decision, Tag, Transition, VocabEntry } from '../../types';
 import { BrowseRail } from '../browse/BrowseRail';
 import type { ConditionChip, IndexItem, SuggestionItem } from '../browse/BrowseRail';
-import { ancestorClosure } from '../browse/filters';
+import { ancestorClosure, transitionVocabTagIds } from '../browse/filters';
 import { Resizer } from '../layout/Resizer';
 import { RAIL_WIDTH } from '../layout/resizableWidths';
 import { kindColor } from '../shared/Chip';
@@ -146,17 +146,24 @@ export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, pe
 
   const currencyIndex = useMemo(() => buildCurrencyIndex(decisions || []), [decisions]);
 
-  // The effective tag set of each decision (viewer-search-consistency): the
-  // ancestor-closure of the decision's target's own tags. tag targets seed
-  // with themselves; vocab/transition targets seed with their own tags. The
-  // AND tag filter matches when every selected tag is in this set.
+  // The effective tag set of each decision (viewer-search-consistency,
+  // req.comfortable-viewer.decision-browse amend): the ancestor-closure of
+  // the decision's target's own tags. tag targets seed with themselves;
+  // vocab targets seed with their own tags; transition targets seed with
+  // their own tags PLUS the tags of every vocab entry they reference
+  // (action/given/then) — DESIGN §3.7's full effective-tag formula, matching
+  // BrowseView. The AND tag filter matches when every selected tag is in
+  // this set.
   const effTagsById = useMemo(() => {
     const m = new Map<string, Set<string>>();
     for (const d of decisions || []) {
       let own: string[] = [];
       if (d.target.type === 'tag') own = [d.target.id];
       else if (d.target.type === 'vocab') own = vocabById.get(d.target.id)?.tags || [];
-      else own = txById.get(d.target.id)?.tags || [];
+      else {
+        const tx = txById.get(d.target.id);
+        own = tx ? transitionVocabTagIds(tx, vocabById) : [];
+      }
       m.set(d.id, ancestorClosure(own, parents));
     }
     return m;

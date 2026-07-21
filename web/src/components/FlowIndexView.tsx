@@ -4,10 +4,10 @@ import { useT } from '../i18n';
 import { useLookups } from '../lookups';
 import { useDrawer } from '../drawer';
 import { routeHash } from '../router';
-import type { Tag, Transition } from '../types';
+import type { Tag, Transition, VocabEntry } from '../types';
 import { BrowseRail } from './browse/BrowseRail';
 import type { ConditionChip, IndexItem, KindOption, SuggestionItem } from './browse/BrowseRail';
-import { ancestorClosure } from './browse/filters';
+import { ancestorClosure, transitionVocabTagIds } from './browse/filters';
 import { Resizer } from './layout/Resizer';
 import { RAIL_WIDTH } from './layout/resizableWidths';
 import { kindColor } from './shared/Chip';
@@ -51,6 +51,7 @@ export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags
   const { closeDrawer } = useDrawer();
   const [transitions, setTransitions] = useState<Transition[] | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [vocab, setVocab] = useState<VocabEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -85,21 +86,28 @@ export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags
 
   useEffect(() => {
     // tags carry parentIds (ancestor rollup) and kind (facet); transitions
-    // carry each action's own tags. Both are single bulk calls, static-safe.
-    Promise.all([api.getTransitions({}), api.getTags()])
-      .then(([res, tgs]) => {
+    // carry each action's own tags; vocab carries the tags referenced
+    // action/given/then entries add via vocab-tag assignment (req.comfortable-
+    // viewer.flow-browse amend — vocab-derived tags count as "consumed" by the
+    // action too, not just each transition's own tags). All three are single
+    // bulk calls, static-safe.
+    Promise.all([api.getTransitions({}), api.getTags(), api.getVocab()])
+      .then(([res, tgs, vcb]) => {
         setTransitions(res.transitions ?? []);
         setTags(tgs);
+        setVocab(vcb);
       })
       .catch((err) => setError(String(err)));
   }, []);
 
   const tagById = useMemo(() => new Map(tags.map((tg) => [tg.id, tg])), [tags]);
   const parents = useMemo(() => new Map(tags.map((tg) => [tg.id, tg.parentIds || []])), [tags]);
+  const vocabById = useMemo(() => new Map(vocab.map((v) => [v.id, v])), [vocab]);
 
   // Distinct action ids actually used by a transition, each with a per-action
-  // count and its effective tag set (ancestor-closed union of the own tags of
-  // every transition carrying that action — "action が消費するタグ").
+  // count and its effective tag set (ancestor-closed union of the own tags AND
+  // referenced-vocab tags of every transition carrying that action —
+  // "action が消費するタグ", req.comfortable-viewer.flow-browse amend).
   const actions = useMemo(() => {
     const byAction = new Map<string, Transition[]>();
     for (const tx of transitions ?? []) {
@@ -110,14 +118,14 @@ export function FlowIndexView({ onSelectAction, searchQuery, kindFacet, flowTags
     return Array.from(byAction.entries())
       .map(([id, txs]) => {
         const own = new Set<string>();
-        for (const tx of txs) for (const tg of tx.tags || []) own.add(tg);
+        for (const tx of txs) for (const tg of transitionVocabTagIds(tx, vocabById)) own.add(tg);
         return { id, label: vocabLabel(id), count: txs.length, tags: ancestorClosure(Array.from(own), parents) };
       })
       .sort((a, b) => a.label.localeCompare(b.label) || a.id.localeCompare(b.id));
     // vocabLabel closes over lookups (id fallback is stable enough); excluded
     // from deps intentionally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transitions, parents]);
+  }, [transitions, parents, vocabById]);
 
   const hasKind = (a: { tags: Set<string> }, k: string) => Array.from(a.tags).some((tid) => tagById.get(tid)?.kind === k);
 

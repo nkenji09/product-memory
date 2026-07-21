@@ -138,18 +138,22 @@ export function Header({ view, onSelectView, railActive }: Props) {
             A comment on a record that has a pending change is a "proposal"
             (rendered with an inline diff card in the drawer — see
             CommentPanel), so it's already counted here without a separate
-            tally. */}
-        {badgeCount > 0 && (
-          <button
-            type="button"
-            class={'topbar-icon-btn comment-header-btn' + (panelOpen ? ' active' : '')}
-            aria-label={t.header.commentList}
-            onClick={openPanel}
-          >
-            <Icon name="message-filled" size={18} />
-            <span class="comment-header-badge">{badgeCount}</span>
-          </button>
-        )}
+            tally.
+            req.comfortable-viewer.annotations amend: the icon itself is now
+            always present (not gated on badgeCount > 0) — it's the only entry
+            point that opens CommentPanel without a specific record's
+            CommentButton, and with count=0 it opens straight to the panel's
+            own "click + on a card to add one" empty state instead of being
+            unreachable. Only the numeric badge stays conditional. */}
+        <button
+          type="button"
+          class={'topbar-icon-btn comment-header-btn' + (panelOpen ? ' active' : '')}
+          aria-label={t.header.commentList}
+          onClick={openPanel}
+        >
+          <Icon name={badgeCount > 0 ? 'message-filled' : 'message-plus'} size={18} />
+          {badgeCount > 0 && <span class="comment-header-badge">{badgeCount}</span>}
+        </button>
         <button
           type="button"
           class={'topbar-icon-btn' + (view === 'config' ? ' active' : '')}
