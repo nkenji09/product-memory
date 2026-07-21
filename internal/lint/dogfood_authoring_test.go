@@ -27,9 +27,16 @@ func dogfoodSnapshot(t *testing.T) store.Snapshot {
 	return snap
 }
 
-// dangling-id: 真ヒット 1 件（偽陽性ゼロ）。素朴実装は偽陽性が多発する実データ
+// dangling-id: 真ヒット 2 件（偽陽性ゼロ）。素朴実装は偽陽性が多発する実データ
 // （族 glob `T-comment-*`・プレースホルダ `req.foobar`・kind 族 `eff.log`）を、
 // 除外3種 (E1)(E2)(E3) が全て畳むことを固定する。
+//
+// decision 01KY1VDJWZF7M23K4X1J62QYXV（req.comfortable-viewer.faceted-nav
+// amend・BrowseRail サジェスト順位付け）の why が例示に使った `req.foo.1-1`
+// は E2（`req.foobar`／`req.foo-bar` 形）に一致しないハイフン+数字の別形なの
+// で新たに真ヒットし 1→2。判断欄位（why）は append-only ゆえ是正不能・
+// acknowledge-only（コメント冒頭の「retrofit で実測が変わったら追随する」
+// 方針どおりの実測値更新）。
 //
 // フェーズ2 の retrofit（#45・決定①）で store が全面改名され、prefix 候補集合が
 // 入れ替わった。旧真ヒット（decision 01KXM9X0… の changed 内 `T-viewer-adopt-
@@ -62,13 +69,19 @@ func TestDogfoodDanglingIDHasZeroFalsePositives(t *testing.T) {
 		}
 	}
 
-	if len(findings) != 1 {
-		t.Fatalf("真ヒット 1 件（偽陽性ゼロ）のはずが %d 件: %+v", len(findings), findings)
+	if len(findings) != 2 {
+		t.Fatalf("真ヒット 2 件（偽陽性ゼロ）のはずが %d 件: %+v", len(findings), findings)
 	}
+	sort.Slice(findings, func(i, j int) bool { return findings[i].Target < findings[j].Target })
 	f := findings[0]
 	if f.Target != "01KXFEXG01RS00RHAVS3TMP25Y" || f.TargetType != "decision" ||
 		f.Field != "changed" || f.Quote != "tx.action" || !f.AcknowledgeOnly {
-		t.Fatalf("真ヒットの内容が想定と違う: %+v", f)
+		t.Fatalf("真ヒット1件目の内容が想定と違う: %+v", f)
+	}
+	f2 := findings[1]
+	if f2.Target != "01KY1VDJWZF7M23K4X1J62QYXV" || f2.TargetType != "decision" ||
+		f2.Field != "why" || f2.Quote != "req.foo.1-1" || !f2.AcknowledgeOnly {
+		t.Fatalf("真ヒット2件目の内容が想定と違う: %+v", f2)
 	}
 }
 
@@ -132,7 +145,7 @@ func TestDogfoodAdvisoryRuleCounts(t *testing.T) {
 		"why-file-line":         4,
 		"axis-without-decision": 0,
 		"duplicate-atom":        0, // フェーズ2 の duplicate merge（決定⑩）で 5グループ13遷移→5 に統合済み
-		"dangling-id":           1,
+		"dangling-id":           2, // decision 01KY1VDJWZF7M23K4X1J62QYXV の why 例示 `req.foo.1-1` が新規真ヒット
 		"dead-doc-ref":          8, // 増分2.3a で tag/vocab desc の design-options 参照 11 を除去し 19→8（残 8 は decision 判断欄位＝append-only）
 	}
 	for rule, n := range want {

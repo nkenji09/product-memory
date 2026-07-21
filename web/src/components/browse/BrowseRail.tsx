@@ -111,7 +111,21 @@ export function BrowseRail({
   const { isNarrow, drawerOpen, closeDrawer } = useDrawer();
 
   const q = query.trim().toLowerCase();
-  const matches = focused && q ? suggestions.filter((s) => (s.id + ' ' + s.label).toLowerCase().includes(q)).slice(0, MAX_SUGGESTIONS) : [];
+  // req.comfortable-viewer.faceted-nav amend: candidates whose visible label
+  // matches rank above candidates that only match via id (an internal
+  // identifier, e.g. a numbered child req.foo-1-1 whose id contains a parent
+  // component's name but whose own label doesn't) — otherwise a large family
+  // of id-only matches can fill every MAX_SUGGESTIONS slot before the one
+  // candidate a human is actually typing the name of ever gets a chance.
+  // Stable sort keeps each caller's own ordering (e.g. alphabetical-by-name)
+  // as the tiebreak within a rank.
+  const labelMatches = (s: SuggestionItem) => s.label.toLowerCase().includes(q);
+  const matches = focused && q
+    ? suggestions
+        .filter((s) => (s.id + ' ' + s.label).toLowerCase().includes(q))
+        .sort((a, b) => Number(!labelMatches(a)) - Number(!labelMatches(b)))
+        .slice(0, MAX_SUGGESTIONS)
+    : [];
   const open = matches.length > 0;
   const idx = open ? Math.max(0, Math.min(activeIndex, matches.length - 1)) : -1;
 

@@ -219,8 +219,12 @@ func TestRetrofitDogfoodCounts(t *testing.T) {
 	// 記録・正本 decision 01KXYED63YFK… は前もって base commit 326007a で記録済ゆえ当該
 	// commit 自体には decision 非同伴）が decision-stale の5件目として真ヒットし
 	// 17/17 → 18/18。D7 規定どおりの新実測（info・lint --ci 緑・regression ではない）。
-	if resp.AcknowledgeOnly.FindingCount != 18 || resp.AcknowledgeOnly.RecordCount != 18 {
-		t.Fatalf("dogfood acknowledgeOnly = %d findings / %d records, want 18/18", resp.AcknowledgeOnly.FindingCount, resp.AcknowledgeOnly.RecordCount)
+	// decision 01KY1VDJWZF7M23K4X1J62QYXV（BrowseRail サジェスト順位付け・
+	// req.comfortable-viewer.faceted-nav amend）の why 例示 `req.foo.1-1` が
+	// dangling-id の新規真ヒットとして加わり 18/18 → 19/19（判断欄位＝append-only
+	// ゆえ是正不能・acknowledge-only）。
+	if resp.AcknowledgeOnly.FindingCount != 19 || resp.AcknowledgeOnly.RecordCount != 19 {
+		t.Fatalf("dogfood acknowledgeOnly = %d findings / %d records, want 19/19", resp.AcknowledgeOnly.FindingCount, resp.AcknowledgeOnly.RecordCount)
 	}
 	if total := resp.Fixable.ByRule["dead-doc-ref"] + resp.AcknowledgeOnly.ByRule["dead-doc-ref"]; total != 8 {
 		t.Fatalf("dogfood dead-doc-ref total = %d, want 8", total)
