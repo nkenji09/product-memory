@@ -1,0 +1,14 @@
+{
+  "id": "01KY1911QDZFM4MVYZ6QHDZ9YP",
+  "target": {
+    "type": "tag",
+    "id": "concern.traceability"
+  },
+  "why": "## 実プロジェクトの dogfood が core 正典の具体ガイダンスの穴を surface\n\nvocab 同一性の north star（本タグ既決 `01KXDFHK12JN0GPJ605B01WVGW`: vocab=実装同一性・per-component 既定・共有は後からの意図的 decision）は正しかったが、それを具体へ落とす `modeling-principles.md` の記述に穴があり、ある実プロジェクトの dogfood で condition vocab が概念scope命名（`cond.\u003c共有概念\u003e.\u003cname\u003e`＝共有に見える形）へ逸脱した。**原則の欠落ではなく、原則→具体の橋渡しの欠落**。additive に3点を明示（既存原則は不変）:\n\n- **§4 命名 — condition vocab も owner-scope 既定**: owner-scope 命名例が effect/action だけを列挙し `cond` を欠いていた（`\u003ceff|act\u003e` → `\u003ceff|act|cond\u003e`）。概念名で切ると実装は各コンポ独立なのに逆引きが偽の影響を出す（false-share）。\n- **§3 軸 gaps 健全性 — vocab と axis は非対称（最重要の非自明点）**: `scholia gaps` は軸値をストア全体からグローバル列挙するため、共有した1つの axis が独立実装の複数コンポを跨ぐと各コンポ action に偽の L-total（抜け）が混入する（実証: あるコンポの action gaps に別コンポ専用の軸値が抜けとして出た）。ゆえに **vocab は per-component 既定／axis は単一 consumer なら概念scope維持・独立実装が複数コンポを跨ぐときだけ per-component 分割**。vocab だけ分割し軸を共有のまま残すと偽 L-total が残る。\n- **§1 判定根拠は両方向で実装同一性**: 「概念で false-share しない」に加え「usage が片コンポだけでも実装共有なら共有維持（usage で false-split しない）」を対置。判定根拠は usage でも概念でもなく常に実装同一性。\n\n**記録する非自明な WHY**: (1) 実プロジェクトの dogfood（実使用）が core 正典の穴を surface した経路、(2) vocab/axis の scope 非対称。将来同種の逸脱時の既決になる。#44-A 系列（命名規約の正典↔store 乖離）と同じ「ガイダンス増量では直らない」教訓の延長だが、今回は原則自体は正しく具体の穴だった点が異なる。",
+  "changed": "modeling-principles.md に vocab/axis 粒度の具体ガイダンス3件を additive 追記（§4 condition vocab owner-scope・§3 軸 gaps 健全性と vocab/axis 非対称・§1 実装同一性の両方向締め）。範例は非公開プロジェクト非依存の抽象例。scholia/SKILL.md L90 チェックリストへポインタ追記。",
+  "at": "2026-07-21T02:45:37Z",
+  "commits": [
+    "52b0dea",
+    "105eb2e"
+  ]
+}
