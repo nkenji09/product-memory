@@ -13,7 +13,6 @@ import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
 import type { KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
-import { formatDecisionAt } from '../decisions/decisionModel';
 import { GovernsSection } from './GovernsSection';
 
 interface Props {
@@ -44,7 +43,7 @@ const CATEGORY_ICON: Record<VocabEntry['category'], IconName> = {
 // tag-specific.
 export function VocabCard({ entry, uses, decisions, establishedBy, cardRef, onFilterTag, onFilterOwner, onSelectTx }: Props) {
   const t = useT();
-  const { tagById, transitionLabel, vocabLabel, ownerKind } = useLookups();
+  const { tagById, transitionLabel, vocabLabel, ownerKind, formatDecisionAt } = useLookups();
   const { changedVocabIds } = usePendingDiff();
   const { openComposer, comments } = useComments();
   const tags = entry.tags || [];

@@ -180,6 +180,12 @@ export interface Config {
       every GET/PUT (2026-07-11 tweaks5 §2), never persisted to config.json.
       Empty/missing when the project isn't a git repo or HEAD is detached. */
   branch?: string;
+  /** IANA zone name (e.g. "Asia/Tokyo") decision.at renders in — additive,
+      empty/unset means "show UTC" (req.comfortable-viewer.config-editing
+      amend). Storage stays UTC always; this only controls display. Resolve
+      through useLookups().formatDecisionAt rather than reading this
+      directly, so the fallback lives in one place (lookups.tsx). */
+  timezone?: string;
 }
 
 export interface ConfigPatch {
@@ -190,6 +196,7 @@ export interface ConfigPatch {
   viewer: { port: number };
   tagKindLabels: Record<string, string>;
   display: DisplayConfig;
+  timezone: string;
 }
 
 export interface FacetTreeNode {

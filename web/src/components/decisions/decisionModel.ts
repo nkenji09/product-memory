@@ -1,11 +1,27 @@
 import type { Decision } from '../../types';
 
-/** `decision.at` (ISO 8601) → `YYYY-MM-DD HH:MM`, shared by the list row and
-    detail header so a decision's time-of-day (not just the day) is visible
-    without opening every record — same substring-slice approach as the
-    date-only rendering it replaces, just two characters wider. */
-export function formatDecisionAt(at: string): string {
-  return at.slice(0, 16).replace('T', ' ');
+/** `decision.at` (ISO 8601 UTC, always) → `YYYY-MM-DD HH:MM` rendered in
+    `timezone` (an IANA zone name, e.g. "Asia/Tokyo"). Omitted/empty
+    `timezone` renders UTC — the pre-timezone-config behavior, unchanged
+    (req.comfortable-viewer.config-editing amend: storage stays UTC always;
+    only display is configurable). Call through
+    useLookups().formatDecisionAt rather than this directly in components —
+    that binds config.timezone once so every screen renders the same
+    wall-clock time without each caller threading config through itself. */
+export function formatDecisionAt(at: string, timezone?: string): string {
+  const d = new Date(at);
+  if (Number.isNaN(d.getTime())) return at;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone || 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`;
 }
 
 // Currency of a decision relative to the full decision set (D10a).

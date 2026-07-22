@@ -13,7 +13,6 @@ import { HashLink } from '../shared/HashLink';
 import { KebabMenu } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
 import { GovernsSection } from './GovernsSection';
-import { formatDecisionAt } from '../decisions/decisionModel';
 
 // VocabCard と同じ category→アイコン対応（きっかけ/前提/結果 = action/
 // condition/effect の固定3軸）。関連語彙行（H3）で流用する。
@@ -50,7 +49,7 @@ function dedupeDecisions(decisions: Decision[]): Decision[] {
 
 export function TagCard({ tag, report, isGap, parents, children, cardRef, onFilterSelf, onSelectParent, onSelectChild, onSelectSpec, onSelectVocab }: Props) {
   const t = useT();
-  const { tagKindLabel, tagKindDescription, vocabLabel } = useLookups();
+  const { tagKindLabel, tagKindDescription, vocabLabel, formatDecisionAt } = useLookups();
   const { changedTagIds } = usePendingDiff();
   const { openComposer, comments } = useComments();
   const entries = report?.entries || [];

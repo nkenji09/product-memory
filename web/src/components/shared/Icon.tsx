@@ -269,6 +269,10 @@ const ICONS = {
     { tag: 'path', d: 'm5 16-3 3 3 3' },
     { tag: 'path', d: 'm9 22 3-3-3-3' },
   ],
+  clock: [
+    { tag: 'circle', cx: 12, cy: 12, r: 10 },
+    { tag: 'path', d: 'M12 6v6l4 2' },
+  ],
   info: [
     { tag: 'circle', cx: 12, cy: 12, r: 10 },
     { tag: 'path', d: 'M12 16v-4' },

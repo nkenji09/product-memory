@@ -418,13 +418,14 @@ const ja = {
     savedMessage: '保存しました — .scholia/config.json に書き込みました',
     portInvalid: (current: string) => `ポートは 1〜65535 の整数で入力してください（現在: ${current}）`,
     portEmptyWord: '空',
+    timezoneInvalid: (current: string) => `"${current}" は IANA タイムゾーン名として解決できません（例: Asia/Tokyo）`,
     sections: {
       // 「分類軸」= タグをどう分類し facet ナビでどう束ねるか（グルーピングの軸）。
       // kind バッジの「軸」（axis kind＝状態次元）とは別義（D10b-6 文言是正）。
       classification: { title: 'タグの分類', desc: 'タグをどの種類（kind）で分類し、どの種類で facet ナビに束ねて見せるか' },
       traceability: { title: 'トレーサビリティ', desc: '要件↔実装（仕様）の対応を追跡する対象' },
       viewer: { title: 'ビューア', desc: 'ローカルサーバの設定' },
-      display: { title: '表示', desc: 'ヘッダーの製品名と概要画面の見出し文。空欄は既定文言にフォールバックします。' },
+      display: { title: '表示', desc: 'ヘッダーの製品名・概要画面の見出し文・意思決定日時のタイムゾーン。空欄は既定にフォールバックします。' },
       readonlyMeta: {
         title: '読み取り専用メタ',
         descBefore: '語彙(vocab)の種別・接頭辞・スキーマ版。変更は CLI（',
@@ -446,6 +447,10 @@ const ja = {
       productName: { label: '製品名', description: 'ヘッダー左上に表示する製品名。空欄なら既定の「scholia」を使います。' },
       tagline: { label: 'タグライン', description: '概要（HOME）画面の見出し。空欄なら既定文言を使います。' },
       intro: { label: 'イントロ文', description: '概要（HOME）画面の説明文。空欄なら既定文言を使います。' },
+      timezone: {
+        label: 'タイムゾーン',
+        description: '意思決定の日時（記録はUTC・常に不変）を表示する際のIANAタイムゾーン名（例: Asia/Tokyo）。空欄ならUTCのまま表示します。',
+      },
     },
     tagKindLabelsField: { label: 'タグ種別の表示ラベル', description: '各タグ種別の画面表示名。未設定のままなら id をそのまま表示します。' },
     tagKindsUnset: '（タグ種別が未設定です）',
@@ -777,13 +782,17 @@ const en: Strings = {
     savedMessage: 'Saved — written to .scholia/config.json',
     portInvalid: (current) => `Port must be an integer between 1 and 65535 (current: ${current})`,
     portEmptyWord: 'empty',
+    timezoneInvalid: (current) => `"${current}" doesn't resolve as an IANA timezone name (e.g. Asia/Tokyo)`,
     sections: {
       // "Tag classification" = how tags are grouped in the facet nav — the
       // grouping axis, distinct from the axis *kind* (a state dimension).
       classification: { title: 'Tag classification', desc: 'Which kind classifies tags, and which kind groups them in the facet nav' },
       traceability: { title: 'Traceability', desc: 'What requirement↔implementation (spec) traceability tracks' },
       viewer: { title: 'Viewer', desc: 'Local server settings' },
-      display: { title: 'Display', desc: "The header product name and HOME headline text. Blank falls back to the built-in copy." },
+      display: {
+        title: 'Display',
+        desc: 'The header product name, HOME headline text, and the timezone decision timestamps render in. Blank falls back to the built-in default.',
+      },
       readonlyMeta: {
         title: 'Read-only metadata',
         descBefore: 'Vocab category/idPrefix/schema version. Changed via the CLI (',
@@ -803,6 +812,10 @@ const en: Strings = {
       productName: { label: 'Product name', description: 'The product name shown at the top-left of the header. Blank uses the built-in "scholia".' },
       tagline: { label: 'Tagline', description: "The HOME screen's headline. Blank uses the built-in copy." },
       intro: { label: 'Intro text', description: "The HOME screen's description text. Blank uses the built-in copy." },
+      timezone: {
+        label: 'Timezone',
+        description: 'The IANA timezone name (e.g. Asia/Tokyo) decision timestamps render in — storage stays UTC always. Blank shows UTC.',
+      },
     },
     tagKindLabelsField: { label: 'Tag kind display labels', description: 'The display name for each tag kind. Left unset, the id is shown as-is.' },
     tagKindsUnset: '(no tag kinds set)',

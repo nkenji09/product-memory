@@ -20,6 +20,7 @@ interface EditableConfig {
   productName: string;
   tagline: string;
   intro: string;
+  timezone: string;
 }
 
 function toEditable(cfg: Config): EditableConfig {
@@ -33,11 +34,26 @@ function toEditable(cfg: Config): EditableConfig {
     productName: cfg.display?.productName || '',
     tagline: cfg.display?.tagline || '',
     intro: cfg.display?.intro || '',
+    timezone: cfg.timezone || '',
   };
 }
 
 function addUnique(arr: string[], value: string): string[] {
   return arr.includes(value) ? arr : [...arr, value];
+}
+
+// Client-side mirror of the server's model.ValidateTimezone (Go's
+// time.LoadLocation) — Intl.DateTimeFormat throws RangeError for a
+// timeZone it can't resolve, so this catches the same class of typo before
+// the round-trip to PUT /api/config. Empty is valid here (means "clear").
+function isValidTimezone(tz: string): boolean {
+  if (tz === '') return true;
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // addTagKindID は id を tagKinds に string 宣言で追加する（既存は温存・重複は無視）。
@@ -91,6 +107,11 @@ export function ConfigView() {
       setMessage({ kind: 'error', text: t.config.portInvalid(portStr || t.config.portEmptyWord) });
       return;
     }
+    const timezone = draft.timezone.trim();
+    if (!isValidTimezone(timezone)) {
+      setMessage({ kind: 'error', text: t.config.timezoneInvalid(timezone) });
+      return;
+    }
     api
       .putConfig({
         tagKinds: draft.tagKinds,
@@ -100,6 +121,7 @@ export function ConfigView() {
         viewer: { port: Number(portStr) },
         tagKindLabels: draft.tagKindLabels,
         display: { productName: draft.productName, tagline: draft.tagline, intro: draft.intro },
+        timezone,
       })
       .then((cfg) => {
         setRemote(cfg);
@@ -343,6 +365,26 @@ export function ConfigView() {
             />
           ) : (
             <span class="config-port-readonly">{draft.intro}</span>
+          )}
+        </div>
+        <div class="config-field">
+          <div class="config-field-head">
+            <span class="config-field-icon">
+              <Icon name="clock" size={14} />
+            </span>
+            <span class="config-field-label">{t.config.fields.timezone.label}</span>
+            <span class="config-field-mono">timezone</span>
+          </div>
+          <p class="config-field-desc dim">{t.config.fields.timezone.description}</p>
+          {editable ? (
+            <input
+              class="config-port-input config-wide-input"
+              value={draft.timezone}
+              placeholder="UTC"
+              onInput={(e) => update({ timezone: (e.target as HTMLInputElement).value })}
+            />
+          ) : (
+            <span class="config-port-readonly">{draft.timezone || 'UTC'}</span>
           )}
         </div>
       </section>

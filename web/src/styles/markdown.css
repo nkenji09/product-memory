@@ -53,6 +53,11 @@
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 0.9em;
+  /* Inline code tokens (type signatures, long identifiers) often have no
+     spaces to break at — without this, a long one overflows its container
+     edge instead of wrapping onto the next line (block code inside <pre>
+     keeps its own horizontal scroll instead, unaffected by this rule). */
+  overflow-wrap: break-word;
 }
 
 .markdown-body pre code {

@@ -5,7 +5,7 @@ import { useLookups } from '../../lookups';
 import type { Decision, SupersedeLink } from '../../types';
 import { Icon } from '../shared/Icon';
 import { Markdown } from '../Markdown';
-import { buildCurrencyIndex, currencyOf, formatDecisionAt, linkMode, type Currency } from './decisionModel';
+import { buildCurrencyIndex, currencyOf, linkMode, type Currency } from './decisionModel';
 
 interface Props {
   decisionId?: string;
@@ -19,7 +19,7 @@ function isUrl(s: string): boolean {
 
 export function DecisionDetailView({ decisionId, onBack, onOpenDecision }: Props) {
   const t = useT();
-  const { tagName, vocabLabel, transitionLabel } = useLookups();
+  const { tagName, vocabLabel, transitionLabel, formatDecisionAt } = useLookups();
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 

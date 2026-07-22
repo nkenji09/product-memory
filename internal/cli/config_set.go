@@ -68,6 +68,13 @@ func newConfigSetCmd() *cobra.Command {
 					return err
 				}
 				cfg.TagKindLabels = labels
+			case configKeyTimezone:
+				if value != "" {
+					if err := model.ValidateTimezone(value); err != nil {
+						return err
+					}
+				}
+				cfg.Timezone = value
 			default:
 				return fmt.Errorf("未知の config キーです: %q", key)
 			}

@@ -5,6 +5,7 @@ import { api } from './api';
 import { useT } from './i18n';
 import type { Config, Tag, Transition, VocabEntry } from './types';
 import { kindDeclObject } from './types';
+import { formatDecisionAt as formatDecisionAtWithZone } from './components/decisions/decisionModel';
 
 const EMPTY_TAG_KIND_LABELS: Record<string, string> = {};
 
@@ -60,6 +61,12 @@ interface Lookups {
   tagline: string;
   /** HOME's intro paragraph, same resolution rule as tagline. */
   intro: string;
+  /** decision.at (ISO 8601 UTC) → "YYYY-MM-DD HH:MM" in config.timezone,
+      falling back to UTC when unset (req.comfortable-viewer.config-editing
+      amend). Bound here (not a raw config.timezone read) so every screen
+      renders a decision's time the same way without threading config
+      through itself. */
+  formatDecisionAt: (at: string) => string;
 }
 
 const LookupsContext = createContext<Lookups | null>(null);
@@ -127,6 +134,7 @@ export function LookupsProvider({ children }: { children: ComponentChildren }) {
   const headerSubtitle = config?.branch || DEFAULT_SUBTITLE;
   const tagline = config?.display?.tagline || t.home.tagline;
   const intro = config?.display?.intro || t.home.intro;
+  const formatDecisionAt = (at: string) => formatDecisionAtWithZone(at, config?.timezone);
 
   const value: Lookups = {
     ready,
@@ -144,6 +152,7 @@ export function LookupsProvider({ children }: { children: ComponentChildren }) {
     headerSubtitle,
     tagline,
     intro,
+    formatDecisionAt,
   };
   return <LookupsContext.Provider value={value}>{children}</LookupsContext.Provider>;
 }

@@ -1,0 +1,10 @@
+{
+  "id": "01KY3JCNYNNP5HT34WV8XPMAKK",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.config-editing"
+  },
+  "why": "意思決定の日時表示にタイムゾーン設定を追加する（新規要件）。decision.atは今後もUTC ISO 8601で保存する（保存形式をローカル依存にすると解釈が曖昧になるため不変）——変えるのは表示のみ。config.timezone（additive・任意・IANA名 例: Asia/Tokyo）を新設し、未設定時は現状のままUTC表示（後方互換）。プロジェクト単位（.scholia/config.jsonに保存・コミットされる共有設定）であり、各閲覧者のブラウザ/OSのローカルタイムゾーンには依存させない——同じリポジトリを見る全員が同じ壁時計時刻を見られるようにするため。実装: (1) model.Config.Timezoneフィールド＋model.ValidateTimezone（time.LoadLocationで検証・CLIとviewer PUTの両方が共有）、(2) scholia config get/set timezone、(3) PUT /api/configのconfigPatchに追加、(4) フロントはuseLookups()にformatDecisionAt(at)を生やしてconfig.timezoneを一度だけbindし、意思決定一覧・詳細・Tag/Vocab/SpecCard・GovernsSectionの6箇所が個別にconfigを持たず同じ変換を使う、(5) ConfigViewの「表示」セクションにタイムゾーン入力欄（Intl.DateTimeFormatによるクライアント側検証つき）を追加。",
+  "ref": "internal/model/model.go,internal/cli/config_set.go,internal/viewer/config.go,web/src/lookups.tsx,web/src/components/decisions/decisionModel.ts,web/src/components/config/ConfigView.tsx",
+  "at": "2026-07-22T00:07:44Z"
+}

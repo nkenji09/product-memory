@@ -35,15 +35,16 @@ func getConfigHandler(s *store.Store) http.HandlerFunc {
 // configPatch is the editable subset of model.Config the viewer may write
 // (§7: "ビューアで書けるのは config だけ"). It mirrors the same key set
 // `scholia config set` accepts (internal/cli/config.go configKey* constants),
-// plus TagKindLabels (2026-07-11 tweaks3 §2) and Display (2026-07-11
-// tweaks5 §1/§2, additive — see model.Config's doc comment);
-// schemaVersion/kinds/idPrefix/Branch are excluded the same way (Branch is
-// derived, not a stored preference — never settable via PUT). Unlike
-// `config set` (one key per call), PUT replaces the whole editable object
-// at once to match a single edit-form submission (implementation decision,
-// result.md) — so a PUT body that omits tagKindLabels/display clears them,
-// same as any other field here; ConfigView.tsx always round-trips the full
-// draft it loaded, so a normal save never does this by accident.
+// plus TagKindLabels (2026-07-11 tweaks3 §2), Display (2026-07-11
+// tweaks5 §1/§2, additive — see model.Config's doc comment), and Timezone
+// (req.comfortable-viewer.config-editing amend, additive); schemaVersion/
+// kinds/idPrefix/Branch are excluded the same way (Branch is derived, not a
+// stored preference — never settable via PUT). Unlike `config set` (one key
+// per call), PUT replaces the whole editable object at once to match a
+// single edit-form submission (implementation decision, result.md) — so a
+// PUT body that omits tagKindLabels/display/timezone clears them, same as
+// any other field here; ConfigView.tsx always round-trips the full draft it
+// loaded, so a normal save never does this by accident.
 type configPatch struct {
 	// TagKinds は #45 D9 で []model.KindDecl（union 型）に移行。object 宣言
 	// （label/description/behaviors）を round-trip で保全し、port だけ変えた PUT で
@@ -55,6 +56,7 @@ type configPatch struct {
 	Viewer            viewerPortPatch     `json:"viewer"`
 	TagKindLabels     map[string]string   `json:"tagKindLabels"`
 	Display           model.DisplayConfig `json:"display"`
+	Timezone          string              `json:"timezone"`
 }
 
 type viewerPortPatch struct {
@@ -69,6 +71,13 @@ func putConfigHandler(s *store.Store) http.HandlerFunc {
 		if err := dec.Decode(&patch); err != nil {
 			writeError(w, http.StatusBadRequest, fmt.Sprintf("config body が不正です: %v", err))
 			return
+		}
+
+		if patch.Timezone != "" {
+			if err := model.ValidateTimezone(patch.Timezone); err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
 		}
 
 		cfg, err := s.LoadConfig()
@@ -100,6 +109,7 @@ func putConfigHandler(s *store.Store) http.HandlerFunc {
 		cfg.Viewer.Port = patch.Viewer.Port
 		cfg.TagKindLabels = patch.TagKindLabels
 		cfg.Display = patch.Display
+		cfg.Timezone = patch.Timezone
 
 		if err := s.SaveConfig(cfg); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())

@@ -1,7 +1,11 @@
 // Package model defines the record types persisted under .scholia/ (§3 of DESIGN.md).
 package model
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 // カテゴリ（遷移の文法）は固定・設定不可（DESIGN §2）。
 const (
@@ -281,6 +285,15 @@ type Config struct {
 	IDPrefix  IDPrefix     `json:"idPrefix"`
 	Roots     []string     `json:"roots"`
 	Viewer    ViewerConfig `json:"viewer"`
+	// Timezone is an additive, optional IANA zone name (e.g. "Asia/Tokyo")
+	// the viewer renders decision.at in. Storage stays UTC (decision.at is
+	// always an ISO 8601 UTC timestamp — never rewritten); this only
+	// controls display. Empty (default/unset, including every config.json
+	// predating this field) means "show UTC", the original behavior — an
+	// opt-in project-wide setting rather than each viewer defaulting to its
+	// own browser/OS timezone, so every collaborator reading the same repo
+	// sees the same wall-clock time regardless of where they are.
+	Timezone string `json:"timezone,omitempty"`
 	// TagKindLabels is an additive, optional display-label map for
 	// TagKinds entries (2026-07-11 tweaks3 §2: "requirement" → "要件" etc).
 	// TagKinds itself stays the single source of truth for which kinds are
@@ -356,6 +369,19 @@ type LintConfig struct {
 	// 追加分。built-in（xxx/yyy/foo/bar/foobar/foo-bar/example/sample/dummy）
 	// に加算される（置換ではない）。
 	PlaceholderSegments []string `json:"placeholderSegments,omitempty"`
+}
+
+// ValidateTimezone rejects anything time.LoadLocation can't resolve (IANA
+// zone database names, e.g. "Asia/Tokyo" — offset forms like "+09:00" and
+// "" both fail, on purpose: "" means "clear/unset", not "UTC by another
+// name", so callers must special-case it before calling this). Shared by
+// `scholia config set timezone` and PUT /api/config so the two write paths
+// can't drift on which strings are accepted.
+func ValidateTimezone(tz string) error {
+	if _, err := time.LoadLocation(tz); err != nil {
+		return fmt.Errorf("timezone %q は IANA タイムゾーン名として解決できません（例: Asia/Tokyo）: %w", tz, err)
+	}
+	return nil
 }
 
 // DefaultConfig は `scholia init` が書き出す既定値（§3.6 の例そのまま）。

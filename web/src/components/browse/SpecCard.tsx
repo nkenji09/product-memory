@@ -10,7 +10,6 @@ import { KebabMenu, type KebabMenuItem } from '../shared/KebabMenu';
 import { routeHash } from '../../router';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { GovernsSection } from './GovernsSection';
-import { formatDecisionAt } from '../decisions/decisionModel';
 
 interface Props {
   detail: TransitionDetail;
@@ -51,7 +50,7 @@ function SpecAffordanceMenu({ onFilter, detailHref, flowHref }: { onFilter: () =
 
 export function SpecCard({ detail, isOpen, cardRef, onToggleOpen, onFilterVocab, onFilterTag }: Props) {
   const t = useT();
-  const { tagById } = useLookups();
+  const { tagById, formatDecisionAt } = useLookups();
   const { changedTransitionIds, addedTransitionIds } = usePendingDiff();
   const { openComposer, comments } = useComments();
   // #27 P2′-rework (change-cockpit-design-v3.md §8.3): a pending change with

@@ -12,7 +12,7 @@ import { Resizer } from '../layout/Resizer';
 import { RAIL_WIDTH } from '../layout/resizableWidths';
 import { kindColor } from '../shared/Chip';
 import { Icon } from '../shared/Icon';
-import { buildCurrencyIndex, currencyOf, formatDecisionAt, type Currency } from './decisionModel';
+import { buildCurrencyIndex, currencyOf, type Currency } from './decisionModel';
 
 const COLLAPSE_FACET = 'decisions';
 
@@ -64,7 +64,7 @@ const splitTags = (v: string): string[] => (v ? v.split(',').filter(Boolean) : [
 
 export function DecisionsView({ searchQuery, targetKind, tagFilter, currency, period, onFiltersChange, onOpenDecision }: Props) {
   const t = useT();
-  const { tagName, vocabLabel, transitionLabel } = useLookups();
+  const { tagName, vocabLabel, transitionLabel, formatDecisionAt } = useLookups();
   const { closeDrawer } = useDrawer();
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
