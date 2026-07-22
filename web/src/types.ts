@@ -180,11 +180,27 @@ export interface Config {
       every GET/PUT (2026-07-11 tweaks5 §2), never persisted to config.json.
       Empty/missing when the project isn't a git repo or HEAD is detached. */
   branch?: string;
-  /** IANA zone name (e.g. "Asia/Tokyo") decision.at renders in — additive,
-      empty/unset means "show UTC" (req.comfortable-viewer.config-editing
-      amend). Storage stays UTC always; this only controls display. Resolve
-      through useLookups().formatDecisionAt rather than reading this
-      directly, so the fallback lives in one place (lookups.tsx). */
+  /** Project-default IANA zone name (e.g. "Asia/Tokyo") decision.at renders
+      in — additive, empty/unset means "show UTC" (req.comfortable-viewer.
+      config-editing amend). Storage stays UTC always; this only controls
+      display. This is the *project* value only — a machine can override it
+      via localOverride.timezone. Never read directly for display; resolve
+      through useLookups().formatDecisionAt (which reads effectiveTimezone)
+      so the fallback/override logic lives in one place (lookups.tsx). */
+  timezone?: string;
+  /** This machine's config.local.json content (req.comfortable-viewer.
+      config-editing amend) — gitignored, gives ConfigView's "this machine
+      only" section something to edit independent of the shared project
+      fields above. 0/"" means "not overridden, project value applies". */
+  localOverride: LocalConfigOverride;
+  /** Pre-resolved: localOverride.timezone || timezone || "" (UTC). Read
+      this for display (useLookups().formatDecisionAt does), not `timezone`
+      directly, or a machine's override would be silently ignored. */
+  effectiveTimezone: string;
+}
+
+export interface LocalConfigOverride {
+  viewerPort?: number;
   timezone?: string;
 }
 

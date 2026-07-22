@@ -134,7 +134,11 @@ export function LookupsProvider({ children }: { children: ComponentChildren }) {
   const headerSubtitle = config?.branch || DEFAULT_SUBTITLE;
   const tagline = config?.display?.tagline || t.home.tagline;
   const intro = config?.display?.intro || t.home.intro;
-  const formatDecisionAt = (at: string) => formatDecisionAtWithZone(at, config?.timezone);
+  // effectiveTimezone (not the raw project `timezone`) already folds in
+  // this machine's config.local.json override, if any (req.comfortable-
+  // viewer.config-editing amend) — reading `timezone` directly here would
+  // silently ignore it.
+  const formatDecisionAt = (at: string) => formatDecisionAtWithZone(at, config?.effectiveTimezone);
 
   const value: Lookups = {
     ready,

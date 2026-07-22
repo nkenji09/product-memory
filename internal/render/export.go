@@ -20,6 +20,20 @@ import (
 	webdist "github.com/nkenji09/scholia/web"
 )
 
+// configPayload mirrors GET /api/config's response shape (internal/viewer's
+// unexported configResponse — duplicated here rather than imported, same
+// "render defines its own *Payload mirror types" pattern the rest of this
+// file already follows for facets/traceability/etc.). A static export has
+// no server and no per-machine distinction, so LocalOverride is always the
+// zero value and EffectiveTimezone just echoes the project's own Timezone
+// — there is no config.local.json to apply (req.comfortable-viewer.
+// config-editing amend).
+type configPayload struct {
+	model.Config
+	LocalOverride     model.LocalConfigOverride `json:"localOverride"`
+	EffectiveTimezone string                    `json:"effectiveTimezone"`
+}
+
 // staticData is baked into the exported page as `window.__SCHOLIA_STATIC__`
 // (§7 scholia export --html). Every field is produced by calling the exact
 // same internal/index, internal/render, internal/lint functions the live
@@ -28,7 +42,7 @@ import (
 // transition ids) to precompute for, since a static page has no server to
 // answer arbitrary queries against.
 type staticData struct {
-	Config           model.Config                      `json:"config"`
+	Config           configPayload                     `json:"config"`
 	Facets           facetsPayload                     `json:"facets"`
 	Traceability     traceabilityPayload               `json:"traceability"`
 	TransitionsByTag map[string]transitionsPayload     `json:"transitionsByTag"`
@@ -241,7 +255,7 @@ func collectStaticData(s *store.Store) (staticData, error) {
 	}
 
 	return staticData{
-		Config:           snap.Config,
+		Config:           configPayload{Config: snap.Config, EffectiveTimezone: snap.Config.Timezone},
 		Facets:           facets,
 		Traceability:     trace,
 		TransitionsByTag: transitionsByTag,

@@ -10,14 +10,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nkenji09/scholia/internal/model"
+	"github.com/nkenji09/scholia/internal/store"
 )
 
 func newConfigSetCmd() *cobra.Command {
-	var asJSON bool
+	var asJSON, local bool
 	cmd := &cobra.Command{
 		Use: "set <key> <value>",
-		Short: "config の値を更新する（tagKinds/facetKinds/traceabilityKinds/tagKindLabels/viewer.port/roots）。" +
-			"tagKindLabels の value は kind=label のカンマ区切り（例: requirement=要件,concern=関心事）",
+		Short: "config の値を更新する（tagKinds/facetKinds/traceabilityKinds/tagKindLabels/viewer.port/roots/timezone）。" +
+			"tagKindLabels の value は kind=label のカンマ区切り（例: requirement=要件,concern=関心事）。" +
+			"--local で viewer.port/timezone だけをこの端末専用の上書き（.scholia/config.local.json・gitignore 対象）に書く",
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key, value := args[0], args[1]
@@ -26,6 +28,11 @@ func newConfigSetCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			if local {
+				return setLocalConfigKey(cmd, s, key, value, asJSON)
+			}
+
 			cfg, err := s.LoadConfig()
 			if err != nil {
 				return err
@@ -93,7 +100,61 @@ func newConfigSetCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "更新後の config 全体を JSON で出力する")
+	cmd.Flags().BoolVar(&local, "local", false, "この端末専用の上書き（.scholia/config.local.json）に書く（対象: viewer.port/timezone のみ）")
 	return cmd
+}
+
+// setLocalConfigKey handles `config set --local` — a closed allowlist
+// (viewer.port/timezone: req.comfortable-viewer.config-editing amend) of
+// keys with zero shared-data impact, written to config.local.json instead
+// of config.json. An empty value clears that key's override (falls back to
+// the project config.json value), matching the project-config path's own
+// "empty clears" convention for optional string keys.
+func setLocalConfigKey(cmd *cobra.Command, s *store.Store, key, value string, asJSON bool) error {
+	o, err := s.LoadLocalConfigOverride()
+	if err != nil {
+		return err
+	}
+
+	switch key {
+	case configKeyViewerPort:
+		if value == "" {
+			o.ViewerPort = 0
+		} else {
+			port, err := strconv.Atoi(value)
+			if err != nil {
+				return fmt.Errorf("viewer.port は数値である必要があります: %w", err)
+			}
+			o.ViewerPort = port
+		}
+	case configKeyTimezone:
+		if value != "" {
+			if err := model.ValidateTimezone(value); err != nil {
+				return err
+			}
+		}
+		o.Timezone = value
+	default:
+		return fmt.Errorf(
+			"config set --local が対象にできるのは %s / %s のみです（データの意味論に関わる設定は端末ごとの上書き対象外）: %q",
+			configKeyViewerPort, configKeyTimezone, key)
+	}
+
+	if err := s.SaveLocalConfigOverride(o); err != nil {
+		return err
+	}
+
+	if asJSON {
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(o)
+	}
+	if value == "" {
+		fmt.Fprintf(cmd.OutOrStdout(), "config.local.%s の上書きを解除しました\n", key)
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(), "config.local.%s を更新しました: %s\n", key, value)
+	}
+	return nil
 }
 
 // parseLabelMap parses config set's tagKindLabels value format

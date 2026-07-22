@@ -50,12 +50,15 @@ func newViewCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			// port の優先順: --port > config.viewer.port > 4577（既定・DESIGN §6/§11）。
-			resolvedPort := cfg.Viewer.Port
-			if resolvedPort == 0 {
-				resolvedPort = 4577
+			local, err := s.LoadLocalConfigOverride()
+			if err != nil {
+				return err
 			}
+
+			// port の優先順: --port > config.local.json（この端末の既定） >
+			// config.viewer.port（プロジェクト既定） > 4577（組み込み既定・
+			// DESIGN §6/§11・req.comfortable-viewer.config-editing amend）。
+			resolvedPort := cfg.EffectiveViewerPort(local)
 			if cmd.Flags().Changed("port") {
 				resolvedPort = port
 			}

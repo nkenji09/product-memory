@@ -1,0 +1,16 @@
+{
+  "id": "01KY3KNE68Q169NGWYXFW6RGSZ",
+  "target": {
+    "type": "tag",
+    "id": "req.comfortable-viewer.config-editing"
+  },
+  "why": "config.jsonの一部フィールドを、gitignore対象の個人設定ファイル（.scholia/config.local.json）で端末ごとに上書きできるようにする（新規要件・コアメンテナ提案）。線引きの原則: データの意味論（tagKinds/facetKinds/traceabilityKinds/roots/idPrefix/ownerKind/sourceRefs/idPolicy/lint/display/tagKindLabels）に関わる設定は対象外に固定する——個人ごとに違えばCI（lint --ci/diff --check）や他メンバーの書き込み検証と食い違う事故になるため。上書き可能なのは共有データに一切影響しない2つ、viewer.portとtimezoneのみ（閉じたallowlist・将来増やす場合も都度この基準で判断する）。優先順位: 実行時flag（--port、あれば最優先・1回限り）＞ config.local.json（この端末の既定）＞ config.json（プロジェクト既定）＞ 組み込みdefault。書き込み経路は共有config.jsonの経路（scholia config set／PUT /api/config）とは独立させる: CLIは scholia config set --local key value （allowlist外は拒否）、viewerは新設 PUT /api/config/local 。既存のGET /api/config・設定画面の「表示」セクション（プロジェクト既定の編集）は無改修——ここで返る値をそのまま保存し直しても個人上書きが紛れ込まないようにする。個人上書きの実効値（effectiveTimezone等）はGET /api/configのレスポンスに別キーとして追加で持たせ、表示用途（decision.atのタイムゾーン変換）はそちらを読む。",
+  "ref": "internal/model/model.go,internal/store/store.go,internal/cli/config_set.go,internal/cli/view.go,internal/viewer/config.go,web/src/components/config/ConfigView.tsx",
+  "at": "2026-07-22T00:30:00Z",
+  "supersedes": [
+    {
+      "id": "01KY3JCNYNNP5HT34WV8XPMAKK",
+      "mode": "amend"
+    }
+  ]
+}

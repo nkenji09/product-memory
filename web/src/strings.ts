@@ -416,9 +416,11 @@ const ja = {
     readonlyBannerMid: ' で書き出した1ファイル版です。編集・保存するには ',
     readonlyBannerSuffix: ' でサーバを起動してください。',
     savedMessage: '保存しました — .scholia/config.json に書き込みました',
+    savedLocalMessage: '保存しました — .scholia/config.local.json（この端末のみ・gitignore 対象）に書き込みました',
     portInvalid: (current: string) => `ポートは 1〜65535 の整数で入力してください（現在: ${current}）`,
     portEmptyWord: '空',
     timezoneInvalid: (current: string) => `"${current}" は IANA タイムゾーン名として解決できません（例: Asia/Tokyo）`,
+    localBadge: 'この端末のみ',
     sections: {
       // 「分類軸」= タグをどう分類し facet ナビでどう束ねるか（グルーピングの軸）。
       // kind バッジの「軸」（axis kind＝状態次元）とは別義（D10b-6 文言是正）。
@@ -426,6 +428,10 @@ const ja = {
       traceability: { title: 'トレーサビリティ', desc: '要件↔実装（仕様）の対応を追跡する対象' },
       viewer: { title: 'ビューア', desc: 'ローカルサーバの設定' },
       display: { title: '表示', desc: 'ヘッダーの製品名・概要画面の見出し文・意思決定日時のタイムゾーン。空欄は既定にフォールバックします。' },
+      local: {
+        title: 'この端末だけの設定',
+        desc: '.scholia/config.local.json（gitignore 対象）に保存します。プロジェクト設定より優先されますが、共有はされません。空欄なら上のプロジェクト既定を使います。',
+      },
       readonlyMeta: {
         title: '読み取り専用メタ',
         descBefore: '語彙(vocab)の種別・接頭辞・スキーマ版。変更は CLI（',
@@ -450,6 +456,11 @@ const ja = {
       timezone: {
         label: 'タイムゾーン',
         description: '意思決定の日時（記録はUTC・常に不変）を表示する際のIANAタイムゾーン名（例: Asia/Tokyo）。空欄ならUTCのまま表示します。',
+      },
+      localPort: { label: '待受ポート（この端末だけ）', description: 'この端末で scholia view を起動するときのポート。空欄なら上のプロジェクト既定を使います。' },
+      localTimezone: {
+        label: 'タイムゾーン（この端末だけ）',
+        description: 'この端末での意思決定の日時表示だけをプロジェクト既定と違うタイムゾーンにしたいときに設定します。空欄なら上のプロジェクト既定（またはUTC）を使います。',
       },
     },
     tagKindLabelsField: { label: 'タグ種別の表示ラベル', description: '各タグ種別の画面表示名。未設定のままなら id をそのまま表示します。' },
@@ -780,9 +791,11 @@ const en: Strings = {
     readonlyBannerMid: ' is a single-file export. To edit and save, start the server with ',
     readonlyBannerSuffix: '.',
     savedMessage: 'Saved — written to .scholia/config.json',
+    savedLocalMessage: 'Saved — written to .scholia/config.local.json (this machine only, gitignored)',
     portInvalid: (current) => `Port must be an integer between 1 and 65535 (current: ${current})`,
     portEmptyWord: 'empty',
     timezoneInvalid: (current) => `"${current}" doesn't resolve as an IANA timezone name (e.g. Asia/Tokyo)`,
+    localBadge: 'This machine only',
     sections: {
       // "Tag classification" = how tags are grouped in the facet nav — the
       // grouping axis, distinct from the axis *kind* (a state dimension).
@@ -792,6 +805,10 @@ const en: Strings = {
       display: {
         title: 'Display',
         desc: 'The header product name, HOME headline text, and the timezone decision timestamps render in. Blank falls back to the built-in default.',
+      },
+      local: {
+        title: 'This machine only',
+        desc: "Saved to .scholia/config.local.json (gitignored). Wins over the project settings above, but isn't shared. Blank uses the project default above.",
       },
       readonlyMeta: {
         title: 'Read-only metadata',
@@ -815,6 +832,11 @@ const en: Strings = {
       timezone: {
         label: 'Timezone',
         description: 'The IANA timezone name (e.g. Asia/Tokyo) decision timestamps render in — storage stays UTC always. Blank shows UTC.',
+      },
+      localPort: { label: 'Listen port (this machine only)', description: 'The port this machine uses for scholia view. Blank uses the project default above.' },
+      localTimezone: {
+        label: 'Timezone (this machine only)',
+        description: "Set this only if you want decision timestamps shown in a different timezone than the project default, on this machine. Blank uses the project default (or UTC) above.",
       },
     },
     tagKindLabelsField: { label: 'Tag kind display labels', description: 'The display name for each tag kind. Left unset, the id is shown as-is.' },

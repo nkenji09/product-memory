@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, isStaticMode } from '../../api';
 import { useT } from '../../i18n';
-import type { Config, KindDecl } from '../../types';
+import type { Config, KindDecl, LocalConfigOverride } from '../../types';
 import { kindDeclId } from '../../types';
 import { TokenSetField } from './TokenSetField';
 import { TagKindLabelsField } from './TagKindLabelsField';
@@ -42,6 +42,23 @@ function addUnique(arr: string[], value: string): string[] {
   return arr.includes(value) ? arr : [...arr, value];
 }
 
+// req.comfortable-viewer.config-editing amend: this machine's config.local.
+// json draft — a separate save cycle from EditableConfig above (its own
+// PUT /api/config/local, independent of the shared project PUT /api/config)
+// so a save here can never accidentally round-trip a local override back
+// into the committed config.json.
+interface EditableLocalOverride {
+  port: string;
+  timezone: string;
+}
+
+function toEditableLocal(o: LocalConfigOverride): EditableLocalOverride {
+  return {
+    port: o.viewerPort ? String(o.viewerPort) : '',
+    timezone: o.timezone || '',
+  };
+}
+
 // Client-side mirror of the server's model.ValidateTimezone (Go's
 // time.LoadLocation) — Intl.DateTimeFormat throws RangeError for a
 // timeZone it can't resolve, so this catches the same class of typo before
@@ -70,9 +87,12 @@ export function ConfigView() {
   const t = useT();
   const [remote, setRemote] = useState<Config | null>(null);
   const [draft, setDraft] = useState<EditableConfig | null>(null);
+  const [localDraft, setLocalDraft] = useState<EditableLocalOverride | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [localMessage, setLocalMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const baseline = useRef<string | null>(null);
+  const localBaseline = useRef<string | null>(null);
 
   useEffect(() => {
     api
@@ -82,12 +102,15 @@ export function ConfigView() {
         const ed = toEditable(cfg);
         baseline.current = JSON.stringify(ed);
         setDraft(ed);
+        const led = toEditableLocal(cfg.localOverride);
+        localBaseline.current = JSON.stringify(led);
+        setLocalDraft(led);
       })
       .catch((err) => setError(String(err)));
   }, []);
 
   if (error) return <main class="config-view error">{error}</main>;
-  if (!remote || !draft) return <main class="config-view dim">{t.config.loading}</main>;
+  if (!remote || !draft || !localDraft) return <main class="config-view dim">{t.config.loading}</main>;
 
   const editable = !isStaticMode;
   const dirty = editable && baseline.current !== null && JSON.stringify(draft) !== baseline.current;
@@ -137,6 +160,44 @@ export function ConfigView() {
     if (!baseline.current) return;
     setDraft(JSON.parse(baseline.current));
     setMessage(null);
+  };
+
+  const localDirty = editable && localBaseline.current !== null && JSON.stringify(localDraft) !== localBaseline.current;
+
+  const updateLocal = (patch: Partial<EditableLocalOverride>) => {
+    setLocalDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+    setLocalMessage(null);
+  };
+
+  const onSaveLocal = () => {
+    const portStr = localDraft.port.trim();
+    if (portStr && (!/^\d+$/.test(portStr) || Number(portStr) < 1 || Number(portStr) > 65535)) {
+      setLocalMessage({ kind: 'error', text: t.config.portInvalid(portStr) });
+      return;
+    }
+    const timezone = localDraft.timezone.trim();
+    if (!isValidTimezone(timezone)) {
+      setLocalMessage({ kind: 'error', text: t.config.timezoneInvalid(timezone) });
+      return;
+    }
+    api
+      .putLocalConfig({
+        viewerPort: portStr ? Number(portStr) : undefined,
+        timezone: timezone || undefined,
+      })
+      .then((o) => {
+        const led = toEditableLocal(o);
+        localBaseline.current = JSON.stringify(led);
+        setLocalDraft(led);
+        setLocalMessage({ kind: 'ok', text: t.config.savedLocalMessage });
+      })
+      .catch((err) => setLocalMessage({ kind: 'error', text: String(err) }));
+  };
+
+  const onResetLocal = () => {
+    if (!localBaseline.current) return;
+    setLocalDraft(JSON.parse(localBaseline.current));
+    setLocalMessage(null);
   };
 
   return (
@@ -385,6 +446,78 @@ export function ConfigView() {
             />
           ) : (
             <span class="config-port-readonly">{draft.timezone || 'UTC'}</span>
+          )}
+        </div>
+      </section>
+
+      <section class="config-section config-section-local">
+        <div class="config-section-head">
+          <span class="config-section-icon">
+            <Icon name="clock" size={16} />
+          </span>
+          <span class="config-section-title">{t.config.sections.local.title}</span>
+          <span class="config-local-tag">{t.config.localBadge}</span>
+          <span class="dim">{t.config.sections.local.desc}</span>
+        </div>
+        {editable && (
+          <div class="config-section-local-actions">
+            {localDirty && <span class="config-dirty-badge">{t.config.dirtyBadge}</span>}
+            {localDirty && (
+              <button type="button" class="config-btn-secondary" onClick={onResetLocal}>
+                {t.config.discard}
+              </button>
+            )}
+            <button type="button" class="config-btn-primary" onClick={onSaveLocal}>
+              <Icon name="save" size={14} />
+              {t.common.save}
+            </button>
+          </div>
+        )}
+        {localMessage && (
+          <div class={localMessage.kind === 'ok' ? 'config-message-ok' : 'config-message-error'}>
+            <Icon name={localMessage.kind === 'ok' ? 'check' : 'triangle-alert'} size={15} />
+            {localMessage.text}
+          </div>
+        )}
+        <div class="config-field">
+          <div class="config-field-head">
+            <span class="config-field-icon">
+              <Icon name="plug" size={14} />
+            </span>
+            <span class="config-field-label">{t.config.fields.localPort.label}</span>
+            <span class="config-field-mono">config.local.json:viewerPort</span>
+          </div>
+          <p class="config-field-desc dim">{t.config.fields.localPort.description}</p>
+          {editable ? (
+            <input
+              class="config-port-input"
+              value={localDraft.port}
+              inputMode="numeric"
+              placeholder={draft.port}
+              onInput={(e) => updateLocal({ port: (e.target as HTMLInputElement).value })}
+            />
+          ) : (
+            <span class="config-port-readonly">{localDraft.port || `(${draft.port})`}</span>
+          )}
+        </div>
+        <div class="config-field">
+          <div class="config-field-head">
+            <span class="config-field-icon">
+              <Icon name="clock" size={14} />
+            </span>
+            <span class="config-field-label">{t.config.fields.localTimezone.label}</span>
+            <span class="config-field-mono">config.local.json:timezone</span>
+          </div>
+          <p class="config-field-desc dim">{t.config.fields.localTimezone.description}</p>
+          {editable ? (
+            <input
+              class="config-port-input config-wide-input"
+              value={localDraft.timezone}
+              placeholder={draft.timezone || 'UTC'}
+              onInput={(e) => updateLocal({ timezone: (e.target as HTMLInputElement).value })}
+            />
+          ) : (
+            <span class="config-port-readonly">{localDraft.timezone || `(${draft.timezone || 'UTC'})`}</span>
           )}
         </div>
       </section>

@@ -15,6 +15,22 @@ import (
 func registerConfigRoutes(mux *http.ServeMux, s *store.Store) {
 	mux.HandleFunc("GET /api/config", getConfigHandler(s))
 	mux.HandleFunc("PUT /api/config", putConfigHandler(s))
+	mux.HandleFunc("PUT /api/config/local", putLocalConfigHandler(s))
+}
+
+// configResponse embeds model.Config (its fields flatten into the top level
+// of the JSON object, unchanged from before) and adds the machine-local
+// override state (req.comfortable-viewer.config-editing amend): LocalOverride
+// is config.local.json's raw content (for the settings screen's "this
+// machine only" section — editing it must never accidentally round-trip an
+// override value back into the shared project PUT /api/config below), and
+// EffectiveTimezone is the already-resolved value display code should
+// render decision.at with (local override wins, DESIGN model.Config.
+// EffectiveTimezone).
+type configResponse struct {
+	model.Config
+	LocalOverride     model.LocalConfigOverride `json:"localOverride"`
+	EffectiveTimezone string                    `json:"effectiveTimezone"`
 }
 
 func getConfigHandler(s *store.Store) http.HandlerFunc {
@@ -28,7 +44,47 @@ func getConfigHandler(s *store.Store) http.HandlerFunc {
 		// comment) — computed fresh on every GET rather than cached, so it
 		// stays correct across `git checkout` while the server keeps running.
 		cfg.Branch = diff.CurrentBranch(filepath.Dir(s.Dir))
-		writeJSON(w, http.StatusOK, cfg)
+
+		local, err := s.LoadLocalConfigOverride()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		writeJSON(w, http.StatusOK, configResponse{
+			Config:            cfg,
+			LocalOverride:     local,
+			EffectiveTimezone: cfg.EffectiveTimezone(local),
+		})
+	}
+}
+
+// putLocalConfigHandler serves PUT /api/config/local — the machine-local
+// override write path, independent of PUT /api/config (req.comfortable-
+// viewer.config-editing amend). Full-replace semantics, same as the project
+// config PUT (§7.2 note in putConfigHandler's doc): the settings screen's
+// "this machine only" form round-trips the whole local-override draft it
+// loaded, so a save that doesn't touch one field still resends it.
+func putLocalConfigHandler(s *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		var patch model.LocalConfigOverride
+		if err := dec.Decode(&patch); err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("config body が不正です: %v", err))
+			return
+		}
+		if patch.Timezone != "" {
+			if err := model.ValidateTimezone(patch.Timezone); err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+		}
+		if err := s.SaveLocalConfigOverride(patch); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, patch)
 	}
 }
 

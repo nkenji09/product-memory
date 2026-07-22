@@ -5,6 +5,7 @@ import type {
   FacetsResponse,
   FlowReport,
   LintResult,
+  LocalConfigOverride,
   ScholiaStaticData,
   SearchResult,
   SpecReport,
@@ -138,6 +139,20 @@ export const api = {
   putConfig: (patch: ConfigPatch) => {
     if (staticData) return staticUnavailable(DICTS[loadLang()].api.configEdit);
     return request<Config>('/api/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+  },
+
+  // req.comfortable-viewer.config-editing amend: writes .scholia/
+  // config.local.json (gitignored, this machine only), independent of
+  // putConfig above (the shared project config.json). Full-replace, same
+  // as putConfig — ConfigView's local-override form round-trips the whole
+  // draft it loaded.
+  putLocalConfig: (patch: LocalConfigOverride) => {
+    if (staticData) return staticUnavailable(DICTS[loadLang()].api.configEdit);
+    return request<LocalConfigOverride>('/api/config/local', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),

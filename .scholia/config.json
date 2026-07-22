@@ -82,6 +82,7 @@
     "subject": "コンポーネント"
   },
   "display": {},
+  "timezone": "Asia/Tokyo",
   "idPolicy": {
     "transition": "tx.",
     "vocab": {

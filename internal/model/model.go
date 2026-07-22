@@ -384,6 +384,46 @@ func ValidateTimezone(tz string) error {
 	return nil
 }
 
+// LocalConfigOverride is .scholia/config.local.json's schema — a gitignored,
+// machine-specific overlay (req.comfortable-viewer.config-editing amend)
+// for the small, closed allowlist of settings that have zero impact on
+// shared data semantics. Unlike TagKinds/FacetKinds/OwnerKind/IDPolicy/etc.
+// (which define how records are validated/interpreted — every collaborator
+// and CI must agree on them), nothing here changes what a record means, so
+// it's safe for each machine to disagree. Zero value (0 / "") means "no
+// override" — the project config.json value applies, the same "empty
+// means unset" convention Config.Timezone/Viewer.Port already use, so a
+// missing file behaves identically to an empty one. Only ViewerPort and
+// Timezone are eligible; adding a field here is a decision (does it truly
+// have zero shared-data impact?), not a mechanical extension.
+type LocalConfigOverride struct {
+	ViewerPort int    `json:"viewerPort,omitempty"`
+	Timezone   string `json:"timezone,omitempty"`
+}
+
+// EffectiveTimezone resolves the timezone decision.at renders in: the local
+// override wins over the project default (empty = UTC, ValidateTimezone's
+// doc).
+func (c Config) EffectiveTimezone(local LocalConfigOverride) string {
+	if local.Timezone != "" {
+		return local.Timezone
+	}
+	return c.Timezone
+}
+
+// EffectiveViewerPort resolves the port `scholia view` binds absent a
+// --port flag: the local override wins over the project default, which
+// wins over the hardcoded 4577 (Config.Viewer.Port's zero value).
+func (c Config) EffectiveViewerPort(local LocalConfigOverride) int {
+	if local.ViewerPort != 0 {
+		return local.ViewerPort
+	}
+	if c.Viewer.Port != 0 {
+		return c.Viewer.Port
+	}
+	return 4577
+}
+
 // DefaultConfig は `scholia init` が書き出す既定値（§3.6 の例そのまま）。
 func DefaultConfig() Config {
 	return Config{

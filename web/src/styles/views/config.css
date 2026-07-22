@@ -202,6 +202,34 @@
   border-radius: var(--r-full);
 }
 
+/* この端末だけの設定（req.comfortable-viewer.config-editing amend）:
+   config.local.json 行き・共有 config.json とは独立した保存経路を持つので、
+   左のアクセント帯と専用バッジで「共有されない」ことを視覚的に区別する。 */
+.config-section-local {
+  border-color: color-mix(in srgb, var(--lm-info) 40%, var(--lm-border));
+}
+
+.config-section-local .config-section-head {
+  border-left: 3px solid var(--lm-info);
+}
+
+.config-local-tag {
+  font-size: var(--fs-3xs);
+  font-weight: 700;
+  color: var(--lm-info-strong);
+  background: var(--lm-info-weak);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+}
+
+.config-section-local-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-5) 13px;
+}
+
 .config-readonly-desc {
   padding: 0 var(--sp-5) var(--sp-3);
 }

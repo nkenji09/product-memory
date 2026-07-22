@@ -7,3 +7,4 @@ _workspace/
 /dist/
 .scholia/index.db
 .scholia/reviews/
+.scholia/config.local.json

@@ -19,6 +19,10 @@ const (
 	transitionsDir = "transitions"
 	decisionsDir   = "decisions"
 	configFile     = "config.json"
+	// localConfigFile is model.LocalConfigOverride's file — gitignored,
+	// machine-specific (req.comfortable-viewer.config-editing amend). Not
+	// created by `scholia init`; absent is the normal, "no overrides" state.
+	localConfigFile = "config.local.json"
 )
 
 // Store は .scholia ディレクトリ 1 個への参照。Dir は .scholia 自身の絶対パス。
@@ -201,6 +205,23 @@ func (s *Store) LoadConfig() (model.Config, error) {
 
 func (s *Store) SaveConfig(c model.Config) error {
 	return writeJSONAtomic(filepath.Join(s.Dir, configFile), c)
+}
+
+// LoadLocalConfigOverride reads .scholia/config.local.json (model.
+// LocalConfigOverride's doc). A missing file is not an error — it's the
+// normal "no overrides" state, returning the zero value.
+func (s *Store) LoadLocalConfigOverride() (model.LocalConfigOverride, error) {
+	var o model.LocalConfigOverride
+	path := filepath.Join(s.Dir, localConfigFile)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return o, nil
+	}
+	err := readJSON(path, &o)
+	return o, err
+}
+
+func (s *Store) SaveLocalConfigOverride(o model.LocalConfigOverride) error {
+	return writeJSONAtomic(filepath.Join(s.Dir, localConfigFile), o)
 }
 
 func (s *Store) LoadVocab(id string) (model.VocabEntry, error) {
