@@ -1,6 +1,8 @@
 package index
 
 import (
+	"sort"
+
 	"github.com/nkenji09/scholia/internal/model"
 	"github.com/nkenji09/scholia/internal/store"
 )
@@ -135,6 +137,73 @@ func (s *TagScope) Includes(typ, id string) bool {
 		}
 	}
 	return false
+}
+
+// OwningSubjects returns the subject-kind (config ownerKind) tag ids that own
+// the record (typ,id) — the scope candidates a user could pass to `search
+// --tag` to include this record. It is the discovery counterpart of TagScope
+// (案 B): TagScope answers "is R under tag X?", OwningSubjects answers "which
+// subjects is R under?", both from the same attribution:
+//   - tag:        its own subject-kind ancestors (or itself if it is a subject).
+//   - transition: its subject-kind effective tags (§3.7 ancestor closure).
+//   - vocab:      the subjects of the transitions that reference it
+//     (action/given/then) ∪ subject-kind ancestors of its direct
+//     tags — the same via-transition attribution TagScope uses.
+//   - decision:   the owning subjects of its target record.
+//
+// ownerKind empty (unwired config) yields no subjects. Result is sorted and
+// never nil.
+func OwningSubjects(ix *Index, snap *store.Snapshot, ownerKind, typ, id string) []string {
+	set := make(map[string]bool)
+	if ownerKind != "" {
+		collectOwningSubjects(ix, snap, ownerKind, typ, id, set)
+	}
+	out := make([]string, 0, len(set))
+	for s := range set {
+		out = append(out, s)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func collectOwningSubjects(ix *Index, snap *store.Snapshot, ownerKind, typ, id string, set map[string]bool) {
+	addAncestorSubjects := func(tagID string) {
+		for _, a := range TagAncestors(snap, tagID) {
+			if ix.TagByID[a].Kind == ownerKind {
+				set[a] = true
+			}
+		}
+	}
+	addEffectiveSubjects := func(txID string) {
+		for _, et := range ix.EffectiveTags[txID] {
+			if ix.TagByID[et].Kind == ownerKind {
+				set[et] = true
+			}
+		}
+	}
+	switch typ {
+	case RecordTag:
+		addAncestorSubjects(id)
+	case RecordTransition:
+		addEffectiveSubjects(id)
+	case RecordVocab:
+		for _, t := range ix.TransitionsByVocab(id) {
+			addEffectiveSubjects(t.ID)
+		}
+		if v, ok := ix.VocabByID[id]; ok {
+			for _, t := range v.Tags {
+				addAncestorSubjects(t)
+			}
+		}
+	case RecordDecision:
+		for _, d := range ix.Decisions {
+			if d.ID == id {
+				// Decision target types share the Record* string values.
+				collectOwningSubjects(ix, snap, ownerKind, d.Target.Type, d.Target.ID, set)
+				return
+			}
+		}
+	}
 }
 
 // FilterMatchesByTags keeps only matches whose record is in the subtree of any

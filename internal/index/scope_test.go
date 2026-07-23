@@ -42,6 +42,68 @@ func scopeSnapshot() *store.Snapshot {
 	}
 }
 
+// scopeSnapshotWithSubjectKind returns scopeSnapshot plus a Config declaring
+// "subject" as the ownerKind, so OwningSubjects can resolve subject-kind tags.
+func scopeSnapshotWithSubjectKind() *store.Snapshot {
+	snap := scopeSnapshot()
+	snap.Config.OwnerKind = "subject"
+	return snap
+}
+
+func TestOwningSubjects_PerRecordType(t *testing.T) {
+	snap := scopeSnapshotWithSubjectKind()
+	ix := Build(snap)
+
+	// transition: subject-kind effective tag (req.picker-swap rolls up to subject.picker).
+	if got := OwningSubjects(ix, snap, "subject", RecordTransition, "T-swap"); !eqStrs(got, []string{"subject.picker"}) {
+		t.Fatalf("transition T-swap subjects = %v, want [subject.picker]", got)
+	}
+	// tag: a requirement tag's owning subject is its subject-kind ancestor.
+	if got := OwningSubjects(ix, snap, "subject", RecordTag, "req.picker-swap"); !eqStrs(got, []string{"subject.picker"}) {
+		t.Fatalf("tag req.picker-swap subjects = %v, want [subject.picker]", got)
+	}
+	// a subject tag owns itself.
+	if got := OwningSubjects(ix, snap, "subject", RecordTag, "subject.picker"); !eqStrs(got, []string{"subject.picker"}) {
+		t.Fatalf("tag subject.picker subjects = %v, want [subject.picker]", got)
+	}
+	// vocab via transition: eff.swap-range has no tag but T-swap references it.
+	if got := OwningSubjects(ix, snap, "subject", RecordVocab, "eff.swap-range"); !eqStrs(got, []string{"subject.picker"}) {
+		t.Fatalf("vocab eff.swap-range subjects = %v, want [subject.picker]", got)
+	}
+	// vocab via direct tag: cond.picker-open carries subject.picker directly AND
+	// is referenced by T-swap — both resolve to subject.picker.
+	if got := OwningSubjects(ix, snap, "subject", RecordVocab, "cond.picker-open"); !eqStrs(got, []string{"subject.picker"}) {
+		t.Fatalf("vocab cond.picker-open subjects = %v, want [subject.picker]", got)
+	}
+	// decision: owning subjects of its target tag.
+	if got := OwningSubjects(ix, snap, "subject", RecordDecision, "d-picker"); !eqStrs(got, []string{"subject.picker"}) {
+		t.Fatalf("decision d-picker subjects = %v, want [subject.picker]", got)
+	}
+	if got := OwningSubjects(ix, snap, "subject", RecordDecision, "d-other"); !eqStrs(got, []string{"subject.other"}) {
+		t.Fatalf("decision d-other subjects = %v, want [subject.other]", got)
+	}
+}
+
+func TestOwningSubjects_EmptyOwnerKindYieldsNone(t *testing.T) {
+	snap := scopeSnapshot() // no OwnerKind
+	ix := Build(snap)
+	if got := OwningSubjects(ix, snap, "", RecordTransition, "T-swap"); len(got) != 0 {
+		t.Fatalf("unwired ownerKind should yield no subjects, got %v", got)
+	}
+}
+
+func eqStrs(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func idsOf(matches []RecordMatch) map[string]bool {
 	out := make(map[string]bool, len(matches))
 	for _, m := range matches {

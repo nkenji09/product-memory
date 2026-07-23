@@ -200,6 +200,7 @@ func seedTagScopeFixture(t *testing.T, dir string) {
 		}
 	}
 	must("init")
+	setOwnerKind(t, dir, "subject") // 案 B: subject 表示は config.ownerKind に依存
 	must("vocab", "add", "action", "act.swap-range", "--label", "範囲を swap する", "--kind", "user")
 	must("vocab", "add", "effect", "eff.swap-range", "--label", "範囲 swap 効果", "--kind", "state")
 	must("vocab", "add", "action", "act.swap-days", "--label", "曜日を swap する", "--kind", "user")
@@ -292,6 +293,116 @@ func TestSearch_TagFlagUnknownTagIsError(t *testing.T) {
 	// not a silent 0-hit (catches typos in the scope argument).
 	if _, err := run(t, dir, "search", "swap", "--tag", "subject.nope"); err == nil {
 		t.Fatalf("expected error for nonexistent --tag")
+	}
+}
+
+func TestSearch_ShowsOwningSubjectsInline(t *testing.T) {
+	dir := t.TempDir()
+	seedTagScopeFixture(t, dir)
+
+	out, err := run(t, dir, "search", "swap")
+	if err != nil {
+		t.Fatalf("search: %v\n%s", err, out)
+	}
+	// Every type's hits should carry a subject annotation for the right subtree.
+	// T-picker-swap (transition) → subject.picker; T-calendar-swap → subject.calendar.
+	for _, want := range []string{
+		"T-picker-swap [id] T-picker-swap  · subject: subject.picker",
+		"T-calendar-swap [id] T-calendar-swap  · subject: subject.calendar",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected inline subject annotation %q in:\n%s", want, out)
+		}
+	}
+	// req.picker-swap (tag, requirement) rolls up to its subject ancestor.
+	if !strings.Contains(out, "· subject: subject.picker") {
+		t.Fatalf("expected a subject.picker annotation:\n%s", out)
+	}
+	// vocab reached only via transition (eff.swap-range) still shows the subject.
+	if !strings.Contains(out, "eff.swap-range [id] eff.swap-range  · subject: subject.picker") {
+		t.Fatalf("expected vocab via-transition subject annotation:\n%s", out)
+	}
+}
+
+func TestSearch_TrailingMatchedSubjectsSummary(t *testing.T) {
+	dir := t.TempDir()
+	seedTagScopeFixture(t, dir)
+
+	out, err := run(t, dir, "search", "swap")
+	if err != nil {
+		t.Fatalf("search: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "matched subjects") {
+		t.Fatalf("expected trailing matched-subjects summary:\n%s", out)
+	}
+	// Both subjects appear as --tag candidates with counts.
+	for _, want := range []string{"subject.picker (", "subject.calendar ("} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected %q in matched-subjects summary:\n%s", want, out)
+		}
+	}
+}
+
+func TestSearch_SubjectsConsistentUnderTagScope(t *testing.T) {
+	dir := t.TempDir()
+	seedTagScopeFixture(t, dir)
+
+	out, err := run(t, dir, "search", "swap", "--tag", "subject.picker")
+	if err != nil {
+		t.Fatalf("search --tag: %v\n%s", err, out)
+	}
+	// Under --tag subject.picker, only picker subjects annotate rows, and the
+	// summary must not offer subject.calendar as a candidate.
+	if !strings.Contains(out, "· subject: subject.picker") {
+		t.Fatalf("expected subject.picker annotations under --tag:\n%s", out)
+	}
+	if strings.Contains(out, "subject.calendar") {
+		t.Fatalf("--tag subject.picker must not surface subject.calendar:\n%s", out)
+	}
+}
+
+func TestSearch_JSONSubjectsFieldIsAdditive(t *testing.T) {
+	dir := t.TempDir()
+	seedTagScopeFixture(t, dir)
+
+	out, err := run(t, dir, "search", "swap", "--json")
+	if err != nil {
+		t.Fatalf("search --json: %v\n%s", err, out)
+	}
+	var parsed struct {
+		Matches []struct {
+			Type     string   `json:"type"`
+			ID       string   `json:"id"`
+			Field    string   `json:"field"`
+			Snippet  string   `json:"snippet"`
+			Subjects []string `json:"subjects"`
+		} `json:"matches"`
+	}
+	if err := json.Unmarshal([]byte(out), &parsed); err != nil {
+		t.Fatalf("unmarshal: %v\n%s", err, out)
+	}
+	if len(parsed.Matches) == 0 {
+		t.Fatalf("expected matches:\n%s", out)
+	}
+	// Backward-compat: the original four fields still populate.
+	for _, m := range parsed.Matches {
+		if m.ID == "" || m.Field == "" || m.Snippet == "" || m.Type == "" {
+			t.Fatalf("match missing a legacy field: %+v", m)
+		}
+	}
+	// Additive: at least one transition hit carries its subject.
+	found := false
+	for _, m := range parsed.Matches {
+		if m.ID == "T-picker-swap" {
+			for _, s := range m.Subjects {
+				if s == "subject.picker" {
+					found = true
+				}
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected T-picker-swap JSON match to include subjects:[subject.picker]:\n%s", out)
 	}
 }
 

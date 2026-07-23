@@ -3,6 +3,8 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -26,8 +28,18 @@ var searchTypeOrder = []string{searchTypeTag, searchTypeTransition, searchTypeVo
 // index.RecordMatch と同一構造（CLI 出力書式の安定のため別型で保持）。
 type searchMatch = index.RecordMatch
 
+// searchMatchOut is one match enriched with its owning subjects（案 B・発見性）:
+// the subject-kind tags the record belongs to, i.e. the scope candidates a user
+// can pass to `--tag` to narrow to this record. Embeds index.RecordMatch so the
+// JSON keeps type/id/field/snippet unchanged and only adds "subjects"（additive・
+// 後方互換）。
+type searchMatchOut struct {
+	searchMatch
+	Subjects []string `json:"subjects"`
+}
+
 type searchOutput struct {
-	Matches []searchMatch `json:"matches"`
+	Matches []searchMatchOut `json:"matches"`
 }
 
 // newSearchCmd は `scholia search` を新設する。id を知らなくても keyword から
@@ -46,6 +58,10 @@ func newSearchCmd() *cobra.Command {
 複数 keyword は OR（ヒットが広がる）。記録が増えると概念語だけではノイズが増えるため、
 --tag <tagId> で「その tag のサブツリー（実効タグ包含・list --tag と同義）に属する record」へ
 絞り込める（--type と AND 合成）。vocab はそのサブツリーの遷移が参照する語彙（コンポの語彙）も含む。
+
+各ヒットには属する subject（コンポ）を注記し、末尾に matched subjects を要約する。tagId を
+知らなくても、まず広く search して結果から scope 候補（subject）を見つけ、そのまま --tag に
+渡して絞り込める（発見性）。
 
 例:
   scholia search swap                                  # "swap" を全型から逆引き（広い）
@@ -102,12 +118,24 @@ func newSearchCmd() *cobra.Command {
 			// 同義）に属する record へ絞る（keyword=OR・--type=AND と AND 合成・#1）。
 			matches = index.FilterMatchesByTags(ix, &snap, matches, scopeTags)
 
+			// 案 B（発見性）: 各ヒットに owning subject（属する subject タグ＝そのまま
+			// --tag に渡せるスコープ候補）を付ける。--tag と同じ帰属判定を流用する
+			// （index.OwningSubjects）。ownerKind 未宣言なら subjects は空で無害。
+			ownerKind := snap.Config.OwnerKind
+			enriched := make([]searchMatchOut, 0, len(matches))
+			for _, m := range matches {
+				enriched = append(enriched, searchMatchOut{
+					searchMatch: m,
+					Subjects:    index.OwningSubjects(ix, &snap, ownerKind, m.Type, m.ID),
+				})
+			}
+
 			if asJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(searchOutput{Matches: matches})
+				return enc.Encode(searchOutput{Matches: enriched})
 			}
-			printSearchMatches(cmd, matches)
+			printSearchMatches(cmd, enriched)
 			return nil
 		},
 	}
@@ -126,7 +154,7 @@ func isValidSearchType(t string) bool {
 	return false
 }
 
-func printSearchMatches(cmd *cobra.Command, matches []searchMatch) {
+func printSearchMatches(cmd *cobra.Command, matches []searchMatchOut) {
 	out := cmd.OutOrStdout()
 	if len(matches) == 0 {
 		fmt.Fprintln(out, "search: 該当なし")
@@ -134,7 +162,7 @@ func printSearchMatches(cmd *cobra.Command, matches []searchMatch) {
 	}
 	fmt.Fprintf(out, "search: %d 件\n", len(matches))
 
-	grouped := make(map[string][]searchMatch, len(searchTypeOrder))
+	grouped := make(map[string][]searchMatchOut, len(searchTypeOrder))
 	for _, m := range matches {
 		grouped[m.Type] = append(grouped[m.Type], m)
 	}
@@ -145,7 +173,47 @@ func printSearchMatches(cmd *cobra.Command, matches []searchMatch) {
 		}
 		fmt.Fprintf(out, "%s (%d):\n", typ, len(ms))
 		for _, m := range ms {
-			fmt.Fprintf(out, "  %s [%s] %s\n", m.ID, m.Field, m.Snippet)
+			// 案 B: 各行に owning subject を注記（無ければ従来どおり注記なし）。
+			suffix := ""
+			if len(m.Subjects) > 0 {
+				suffix = "  · subject: " + strings.Join(m.Subjects, ", ")
+			}
+			fmt.Fprintf(out, "  %s [%s] %s%s\n", m.ID, m.Field, m.Snippet, suffix)
 		}
 	}
+
+	// 末尾に matched subjects の要約（そのまま --tag に渡せるスコープ候補）。
+	printMatchedSubjects(out, matches)
+}
+
+// printMatchedSubjects prints a trailing summary of the distinct subjects the
+// hits belong to, each with its hit count — the concrete `--tag` values a user
+// can try to narrow (案 B の発見性導線). Silent when no hit carries a subject
+// (e.g. ownerKind 未宣言・subject に属さない記録のみ).
+func printMatchedSubjects(out io.Writer, matches []searchMatchOut) {
+	counts := make(map[string]int)
+	for _, m := range matches {
+		for _, s := range m.Subjects {
+			counts[s]++
+		}
+	}
+	if len(counts) == 0 {
+		return
+	}
+	subjects := make([]string, 0, len(counts))
+	for s := range counts {
+		subjects = append(subjects, s)
+	}
+	// 件数降順 → id 昇順で安定ソート。
+	sort.Slice(subjects, func(i, j int) bool {
+		if counts[subjects[i]] != counts[subjects[j]] {
+			return counts[subjects[i]] > counts[subjects[j]]
+		}
+		return subjects[i] < subjects[j]
+	})
+	parts := make([]string, 0, len(subjects))
+	for _, s := range subjects {
+		parts = append(parts, fmt.Sprintf("%s (%d)", s, counts[s]))
+	}
+	fmt.Fprintf(out, "matched subjects（--tag <id> で絞り込めます）: %s\n", strings.Join(parts, ", "))
 }
