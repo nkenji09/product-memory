@@ -65,8 +65,8 @@ func newSearchCmd() *cobra.Command {
 
 例:
   scholia search swap                                  # "swap" を全型から逆引き（広い）
-  scholia search swap --tag ui.date-range-picker       # そのコンポのサブツリーに絞る
-  scholia search swap --tag ui.date-range-picker --type transition
+  scholia search swap --tag subject.picker             # そのコンポのサブツリーに絞る
+  scholia search swap --tag subject.picker --type transition
   scholia search swap --tag a --tag b                  # tag は繰り返し可＝OR`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
