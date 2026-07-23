@@ -200,7 +200,7 @@ scholia show tx <id> [--resolve] [--json]
 scholia spec <subjectTag> [--json]
 scholia list [--facet <tagKind>] [--tag <id>] [--kind <k>] [--json]
 scholia rules [--tag <id> | --tx <id> | --vocab <id> | --facet <k>] [--sort chrono|target] [--json]  # --vocab=own∪ vocab.tags＋祖先（#45 D10b）
-scholia search <keyword> [--type tag|transition|vocab|decision] [--json]   # keyword で横断逆引き（id 未確定な入口）。transition は実効タグ・action kind でもヒット（viewer 検索と同一コア・#45 D10b）
+scholia search <keyword> [--type tag|transition|vocab|decision] [--tag <id>]… [--json]   # keyword で横断逆引き（id 未確定な入口）。transition は実効タグ・action kind でもヒット（viewer 検索と同一コア・#45 D10b）。--tag は候補タグのサブツリー（実効タグ包含・list --tag と同義）へ絞り込み（繰り返し可＝OR・#1）
 scholia lint [--json]
 scholia retrofit [--rule <id>] [--json]                       # advisory 規則で store を read-only 走査し是正候補を棚卸し（--fix なし・exit 0）
 scholia diff [<ref1> [<ref2>]] [--json]                       # 現在 vs ref1、または ref1 vs ref2（landed 監査）
